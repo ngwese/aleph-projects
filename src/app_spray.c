@@ -8,14 +8,12 @@
 
 // asf
 #include "delay.h"
-#include "gpio.h"
 #include "print_funcs.h"
 #include "sd_mmc_spi.h"
 
 // avr32_lib
 #include "app.h"
 #include "bfin.h"
-#include "encoders.h"
 
 //--- app-specific
 #include "app_timers.h"

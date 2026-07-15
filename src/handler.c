@@ -20,7 +20,6 @@
 // asf
 #include "gpio.h"
 #include "delay.h"
-#include "print_funcs.h"
 
 // aleph-avr32
 #include "conf_board.h"
@@ -28,10 +27,8 @@
 #include "events.h"
 
 // custom app sources
-#include "app_timers.h"
 #include "ctl.h"
 #include "handler.h"
-#include "render.h"
 
 
 //--------------------------------------

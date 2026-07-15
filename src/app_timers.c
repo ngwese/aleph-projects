@@ -8,19 +8,12 @@
    which should be used when timer-based processing needs to be deferred to the main loop.
 */
 
-//asf
-#include "print_funcs.h"
-
 // aleph-avr32
-#include "adc.h"
-#include "control.h"
 #include "encoders.h"
 #include "events.h"
-#include "midi.h"
-#include "monome.h"
 #include "timers.h"
 
-// bees
+// spray
 #include "app_timers.h"
 #include "render.h"
 

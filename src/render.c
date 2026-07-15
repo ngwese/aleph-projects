@@ -10,20 +10,15 @@
 //--- std headers
 #include <string.h>
 
-//--- asf headers
-#include "print_funcs.h"
-
 //--- libavr32 headers
-// font-rendering functions
-#include "font.h"
 // region class
 #include "region.h"
-// screen refresh function
-#include "screen.h"
 
 //--- aleph-specific headers
 // application framework
 #include "app.h"
+// fixed-point formatting (print_fix16)
+#include "fix.h"
 // extra drawing routines
 #include "region_extra.h"
 

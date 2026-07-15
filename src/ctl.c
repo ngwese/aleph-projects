@@ -13,35 +13,19 @@
   
 */
 
-// standard lib headers
-#include <string.h>
-
 //--- asf headers
 
-// for delay_ms()
-#include "delay.h"
 // for print_dbg()
 #include "print_funcs.h"
 
 //--- -aleph-avr32 headers
-// includes pause/resume
-#include "app.h"
 // control change functions
 #include "control.h"
 
-//---- aleph/common headers
-// fixed-point representation
-#include "fix.h"
-// parameter types
-#include "param_common.h"
-
 //--- custom app headers
-#include "app_timers.h"
 #include "ctl.h"
 #include "render.h"
 #include "scaler.h"
-
-//#include "util.h"
 
 //-----------------
 //---- static variables

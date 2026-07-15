@@ -8,9 +8,6 @@
 
  */
 
-// asf
-#include "print_funcs.h"
-
 // app
 #include "scaler.h"
 
@@ -54,7 +51,7 @@ static const s32 ampTableDb[512] = {
 // this implementation is not intended for speed,
 // but to illustrate what is happening.
 // all the parts of the calculation are separated for easier printing.
-static s32 scaler_lerp(const s32* tab, u32 input, bool print) {
+static s32 scaler_lerp(const s32* tab, u32 input) {
   // index
   const u32 idx = input >> INTERP_SHIFT;
   const u32 idx1 = (idx + 1) & TABLE_MASK;
@@ -71,19 +68,6 @@ static s32 scaler_lerp(const s32* tab, u32 input, bool print) {
   // but that shouldn't happen with the data we're using.
   const s32 add = (dif * fr) >> INTERP_SHIFT;
   const s32 res = a + add;
-
-  /*
-  if(print) {
-    print_dbg("\r\n interpolating; input: 0x");
-    print_dbg_hex(input);
-    print_dbg(" dif: 0x");
-    print_dbg_hex(dif);
-    print_dbg(" add: 0x");
-    print_dbg_hex(add);
-    print_dbg(" result: 0x");
-    print_dbg_hex(res);
-    }
-  */
 
   // cheat a little.
   // at the very top end of the range, idx1 will have wrapped to 0.
@@ -108,6 +92,6 @@ static s32 scaler_lerp(const s32* tab, u32 input, bool print) {
 // we could deal with this differently.)
 
 void scale_level(s32 val, s32* resAmp, s32* resDb) {
-  *resAmp = scaler_lerp(ampTableLinear, (u32)val, 1);
-  *resDb = scaler_lerp(ampTableDb, (u32)val, 0);
+  *resAmp = scaler_lerp(ampTableLinear, (u32)val);
+  *resDb = scaler_lerp(ampTableDb, (u32)val);
 }

@@ -1,6 +1,7 @@
 #ifndef _ALEPH_APP_SPRAY_RENDER_H_
 #define _ALEPH_APP_SPRAY_RENDER_H_
 
+#include "types.h"
 
 // init
 extern void render_init(void);
