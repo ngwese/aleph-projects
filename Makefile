@@ -3,6 +3,7 @@
 # all                     Default target, builds the project
 # clean                   Clean up the project
 # rebuild                 Rebuild the project
+# format                  Run clang-format on src/*.c and src/*.h
 #
 # isp                     Use BatchISP instead of avr32program when interfacing
 #                         the target device.
@@ -32,3 +33,11 @@ PRJ_PATH = ../../libavr32/asf
 
 MAKEFILE_PATH = $(PRJ_PATH)/avr32/utils/make/Makefile.avr32.in
 include $(MAKEFILE_PATH)
+
+# Prefix with aleph-builder when available (toolchain wrapper).
+ALEPH_BUILDER := $(shell command -v aleph-builder 2>/dev/null)
+CLANG_FORMAT := $(if $(ALEPH_BUILDER),aleph-builder clang-format,clang-format)
+
+.PHONY: format
+format:
+	$(CLANG_FORMAT) -i src/*.h src/*.c
