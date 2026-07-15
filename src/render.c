@@ -41,11 +41,11 @@
 */
 
 // one drawing region for each channel
-static region regChan[] = { 
-  { .w=62, .h=30, .x=0,  .y=0  },
-  { .w=62, .h=30, .x=64, .y=0  },
-  { .w=62, .h=30, .x=0,  .y=32 },
-  { .w=62, .h=30, .x=64, .y=32 },
+static region regChan[] = {
+  {.w = 62, .h = 30, .x = 0, .y = 0},
+  {.w = 62, .h = 30, .x = 64, .y = 0},
+  {.w = 62, .h = 30, .x = 0, .y = 32},
+  {.w = 62, .h = 30, .x = 64, .y = 32},
 };
 
 //-------------------------
@@ -68,7 +68,7 @@ void render_init(void) {
 // fill with initial graphics
 void render_startup(void) {
   u32 i;
-  for(i=0; i<4; i++) { 
+  for(i = 0; i < 4; i++) {
     // fill the graphics buffer (with black)
     region_fill(&(regChan[i]), 0x0);
     // physically render the region data to the screen
@@ -82,10 +82,10 @@ void render_update(void) {
   app_pause();
 
   // physically update the screen with each region's data (if changed)
-  region_draw( &(regChan[0]) );
-  region_draw( &(regChan[1]) );
-  region_draw( &(regChan[2]) );
-  region_draw( &(regChan[3]) );
+  region_draw(&(regChan[0]));
+  region_draw(&(regChan[1]));
+  region_draw(&(regChan[2]));
+  region_draw(&(regChan[3]));
 
   app_resume();
 }
@@ -95,9 +95,9 @@ void render_chan(u8 ch) {
   // tmp decibel value
   s32 db;
   // tmp position for left-justify
-  int pos=0;
+  int pos = 0;
   // stupid way to show channel numbers
-  static const char num[4][3] = { "0.", "1.", "2.", "3." };
+  static const char num[4][3] = {"0.", "1.", "2.", "3."};
   // text buffer
   static char buf[32];
   // point at the appropriate region
@@ -128,18 +128,18 @@ void render_chan(u8 ch) {
   buf[9] = '\0';
   // ...and skip leading spaces:
   while(buf[pos] == ' ' && pos < 31) { pos++; }
-  if (pos == 31) { pos = 0; }
+  if(pos == 31) { pos = 0; }
   // render an anti-aliased string to the region.
-  region_string_aa( reg, buf + pos, 5, 5, 1);
+  region_string_aa(reg, buf + pos, 5, 5, 1);
 #endif
 
   // if channel is muted,
-  // highlight background, limit the foreground, 
+  // highlight background, limit the foreground,
   // write a big inverted M
   if(ctl_get_mute(ch)) {
     region_hl(reg, 2, 2);
     region_max(reg, 6);
-    region_string_aa( reg, "M", 50, 5, 0);
+    region_string_aa(reg, "M", 50, 5, 0);
   }
 
   // write label in small font

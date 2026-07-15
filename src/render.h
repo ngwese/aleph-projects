@@ -14,4 +14,4 @@ extern void render_chan(u8 ch);
 // update
 extern void render_update(void);
 
-#endif // h guard
+#endif  // h guard

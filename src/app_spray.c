@@ -41,14 +41,14 @@ u8 app_launch(eLaunchState state) {
 
   // wait for SD card (FAT already initialized in main)
   print_dbg("\r\n spray; waiting for SD card...");
-  while (!sd_mmc_spi_mem_check()) {
+  while(!sd_mmc_spi_mem_check()) {
     ;
   }
   print_dbg("\r\n spray; SD card ready");
 
   // load companion DSP module from /mod/spray.ldr
   dspOk = files_load_dsp(DEFAULT_LDR);
-  if (!dspOk) {
+  if(!dspOk) {
     print_dbg("\r\n spray; failed to load /mod/spray.ldr");
   } else {
     bfin_wait_ready();
@@ -70,11 +70,11 @@ u8 app_launch(eLaunchState state) {
   // set hardcoded default values (safe even if DSP failed to load)
   ctl_init();
 
-  if (state == eLaunchStateFirstRun) {
+  if(state == eLaunchStateFirstRun) {
     // this was the first run since firwmare was flashed.
     // do any necessary flash initialization here.
   } else {
-    if (state == eLaunchStateClean) {
+    if(state == eLaunchStateClean) {
       // use this condition to launch in a "default" or "clean" mode,
       // with known settings
     } else {

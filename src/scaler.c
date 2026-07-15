@@ -25,7 +25,7 @@
 // right-shift input by this many bits to get table index
 #define INTERP_SHIFT ((INPUT_BITS) - (TABLE_BITS))
 // mask the input with this to get the interpolation term.
-#define INTERP_MASK ((1 << (INTERP_SHIFT)) -1)
+#define INTERP_MASK ((1 << (INTERP_SHIFT)) - 1)
 
 //------------------
 //---- variables
@@ -57,7 +57,7 @@ static const s32 ampTableDb[512] = {
 static s32 scaler_lerp(const s32* tab, u32 input, bool print) {
   // index
   const u32 idx = input >> INTERP_SHIFT;
-  const u32 idx1 = (idx+1) & TABLE_MASK;
+  const u32 idx1 = (idx + 1) & TABLE_MASK;
   // multiplier
   const u32 fr = input & INTERP_MASK;
   // endpoints
@@ -85,7 +85,7 @@ static s32 scaler_lerp(const s32* tab, u32 input, bool print) {
     }
   */
 
-  // cheat a little. 
+  // cheat a little.
   // at the very top end of the range, idx1 will have wrapped to 0.
   // the interpolation result will not be what we had in mind.
   // in this case let's just return the max value.
@@ -93,7 +93,7 @@ static s32 scaler_lerp(const s32* tab, u32 input, bool print) {
     return a;
   } else {
     return res;
-  } 
+  }
 }
 
 //--------------------------

@@ -4,7 +4,7 @@
 #include "app.h"
 #include "types.h"
 
-// assign ui handlers  
+// assign ui handlers
 extern void assign_event_handlers(void);
 
-#endif 
+#endif
