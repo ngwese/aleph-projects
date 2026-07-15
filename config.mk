@@ -19,6 +19,7 @@ CSRCS += \
 	$(APP_DIR)/src/app_spray.c \
 	$(APP_DIR)/src/app_timers.c \
 	$(APP_DIR)/src/ctl.c \
+	$(APP_DIR)/src/files.c \
 	$(APP_DIR)/src/handler.c \
 	$(APP_DIR)/src/render.c \
 	$(APP_DIR)/src/scaler.c

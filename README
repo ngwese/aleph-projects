@@ -34,9 +34,17 @@ src/app_spray.c
 
 Main program file. app_init() and app_launch() are here, called from the AVR32 framework on startup.
 
-Here the DSP program is loaded via SPI. In this example the DSP is included in the code as a binary (as src/aleph-spray.ldr.inc) but DSP can be loaded via a file on the SD card (see Bees for how this works).
+At launch the app waits for an SD card, then loads the companion DSP from
+`/mod/spray.ldr` via SPI (see src/files.c). Build modules_block/spray and copy
+spray.ldr to that path on the card before booting.
 
 The event handlers are assigned at assign_event_handlers() and then app_launch() finishes, returning to the main loop. The AVR32 framework main loop simply checks the event hander continuously, so your program code fundamentally lives in these handlers, which is in the following file.
+
+
+src/files.c
+
+SD helpers: open /mod/<name>.ldr, read into RAM, and boot the Blackfin with
+bfin_load_buf().
 
 
 src/handler.c

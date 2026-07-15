@@ -20,50 +20,45 @@
 //--- app-specific
 #include "app_timers.h"
 #include "ctl.h"
+#include "files.h"
 #include "handler.h"
 #include "render.h"
-
-// byte array holding the blackfin LDR data.
-static const u8 ldrData[] = { 
-#include "aleph-spray.ldr.inc"
-};
-
-static const u32 ldrSize = 
-#include "aleph-spray.ldr_size.inc"
-  ;
 
 // this is called during hardware initialization.
 // allocate memory here.
 void app_init(void) {
-  print_dbg("\r\n spray; app_init...");  
+  print_dbg("\r\n spray; app_init...");
   render_init();
 }
 
-// this is called from the event queue to start the app 
+// this is called from the event queue to start the app
 // return >0 if there is an error doing firstrun init
 u8 app_launch(eLaunchState state) {
-  
+  u8 dspOk;
+
   print_dbg("\r\n launching app with state: ");
   print_dbg_ulong(state);
 
-  //=============================
-  /* load the DSP module!
-     
-     in this app, the .ldr file is included directly,
-     as a static const array of bytes.
-  */
-  print_dbg("\r\n spray; LDR size: 0x");
-  print_dbg_hex(ldrSize);
+  // wait for SD card (FAT already initialized in main)
+  print_dbg("\r\n spray; waiting for SD card...");
+  while (!sd_mmc_spi_mem_check()) {
+    ;
+  }
+  print_dbg("\r\n spray; SD card ready");
 
-  bfin_load_buf(ldrData, ldrSize);
-  bfin_wait_ready();
+  // load companion DSP module from /mod/spray.ldr
+  dspOk = files_load_dsp(DEFAULT_LDR);
+  if (!dspOk) {
+    print_dbg("\r\n spray; failed to load /mod/spray.ldr");
+  } else {
+    bfin_wait_ready();
 
-  // extra few ms...
-  delay_ms(10);
-  //==========================
+    // extra few ms...
+    delay_ms(10);
 
-  // enable audio
-  bfin_enable();
+    // enable audio
+    bfin_enable();
+  }
 
   // enable timers
   init_app_timers();
@@ -72,27 +67,26 @@ u8 app_launch(eLaunchState state) {
   render_startup();
   render_update();
 
-  // set hardcoded default values 
+  // set hardcoded default values (safe even if DSP failed to load)
   ctl_init();
 
-  if(state == eLaunchStateFirstRun) {
-	// this was the first run since firwmare was flashed.
-	// do any necessary flash initialization here.
+  if (state == eLaunchStateFirstRun) {
+    // this was the first run since firwmare was flashed.
+    // do any necessary flash initialization here.
   } else {
-	if(state == eLaunchStateClean) {
-	  // use this condition to launch in a "default" or "clean" mode,
-	  // with known settings
-	} else {
-	  // go ahead and load stored state from flash... 
-	}
+    if (state == eLaunchStateClean) {
+      // use this condition to launch in a "default" or "clean" mode,
+      // with known settings
+    } else {
+      // go ahead and load stored state from flash...
+    }
   }
-
 
   // set app event handlers
   assign_event_handlers();
 
   // tell the main loop that we launched successfully.
-  // if this was the first run, 
+  // if this was the first run,
   // main() should now write the firstrun pattern to flash and reboot.
   return 1;
 }
