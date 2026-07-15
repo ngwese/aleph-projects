@@ -43,21 +43,39 @@ static region regChan[] = {
   {.w = 62, .h = 30, .x = 64, .y = 32},
 };
 
-//-------------------------
-//---- static funcs
-
-//... nothing here.
+// full-screen scrolling region for startup diagnostics
+static region bootScrollRegion = {
+  .w = 128, .h = 64, .x = 0, .y = 0
+};
+static scroll bootScroll;
 
 //-------------------------------------------------
 //----- external functions
 
 // initialze renderer
 void render_init(void) {
-  // allocate memory for each region
+  region_alloc(&bootScrollRegion);
+  scroll_init(&bootScroll, &bootScrollRegion);
+
+  // allocate memory for each channel region
   region_alloc(&regChan[0]);
   region_alloc(&regChan[1]);
   region_alloc(&regChan[2]);
   region_alloc(&regChan[3]);
+}
+
+// render text to scrolling buffer during boot (immediate screen blit)
+void render_boot(const char* str) {
+  int i;
+  u8* p = bootScroll.reg->data;
+
+  // dim older lines so new text stands out
+  for(i = 0; i < bootScroll.reg->len; i++) {
+    if(*p > 0x4) { *p = 0x4; }
+    p++;
+  }
+  scroll_string_front(&bootScroll, (char*)str);
+  region_draw(bootScroll.reg);
 }
 
 // fill with initial graphics

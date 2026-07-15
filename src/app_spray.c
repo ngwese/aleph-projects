@@ -22,6 +22,10 @@
 #include "handler.h"
 #include "render.h"
 
+#ifndef VERSIONSTRING
+#define VERSIONSTRING "0.0.0"
+#endif
+
 // this is called during hardware initialization.
 // allocate memory here.
 void app_init(void) {
@@ -37,31 +41,39 @@ u8 app_launch(eLaunchState state) {
   print_dbg("\r\n launching app with state: ");
   print_dbg_ulong(state);
 
+  render_boot("SPRAY");
+  render_boot(VERSIONSTRING);
+
   // wait for SD card (FAT already initialized in main)
   print_dbg("\r\n spray; waiting for SD card...");
   while(!sd_mmc_spi_mem_check()) {
-    ;
+    render_boot("waiting for SD...");
   }
   print_dbg("\r\n spray; SD card ready");
 
   // load companion DSP module from /mod/spray.ldr
+  render_boot("loading /mod/spray.ldr");
   dspOk = files_load_dsp(DEFAULT_LDR);
   if(!dspOk) {
     print_dbg("\r\n spray; failed to load /mod/spray.ldr");
+    render_boot("DSP load failed");
   } else {
+    render_boot("waiting for DSP...");
     bfin_wait_ready();
 
     // extra few ms...
     delay_ms(10);
 
     // enable audio
+    render_boot("enabling audio");
     bfin_enable();
   }
 
   // enable timers
+  render_boot("enabling timers");
   init_app_timers();
 
-  // render initial screen
+  // render initial screen (replaces boot scroll)
   render_startup();
   render_update();
 

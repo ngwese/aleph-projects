@@ -17,6 +17,7 @@
 #include "memory.h"
 
 #include "files.h"
+#include "render.h"
 
 #define NAME_LEN 64
 
@@ -60,6 +61,7 @@ static void* open_dsp_file(const char* name, u32* size) {
   if(!fl_opendir(path, &dirstat)) {
     print_dbg("\r\n spray; cannot open ");
     print_dbg(DSP_PATH);
+    render_boot("cannot open /mod/");
     return NULL;
   }
 
@@ -76,6 +78,7 @@ static void* open_dsp_file(const char* name, u32* size) {
     print_dbg("\r\n spray; LDR not found: ");
     print_dbg(DSP_PATH);
     print_dbg(nameTry);
+    render_boot("LDR not found");
   }
 
   return fp;
@@ -96,6 +99,7 @@ u8 files_load_dsp(const char* name) {
     if(size > BFIN_LDR_MAX_BYTES) {
       print_dbg("\r\n spray; LDR too large: 0x");
       print_dbg_hex(size);
+      render_boot("LDR too large");
       fl_fclose(fp);
     } else {
       print_dbg("\r\n spray; loading LDR size: 0x");
@@ -104,10 +108,12 @@ u8 files_load_dsp(const char* name) {
       bfinLdrData = alloc_mem(size);
       if(bfinLdrData == NULL) {
 	print_dbg("\r\n spray; alloc_mem failed for LDR");
+	render_boot("alloc failed");
 	fl_fclose(fp);
       } else {
 	fake_fread(bfinLdrData, size, fp);
 	fl_fclose(fp);
+	render_boot("booting DSP...");
 	bfin_load_buf((const u8*)bfinLdrData, size);
 	free_mem(bfinLdrData);
 	ret = 1;
@@ -115,6 +121,7 @@ u8 files_load_dsp(const char* name) {
     }
   } else if(fp != NULL) {
     print_dbg("\r\n spray; LDR empty");
+    render_boot("LDR empty");
     fl_fclose(fp);
   }
 

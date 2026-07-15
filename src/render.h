@@ -6,6 +6,9 @@
 // init
 extern void render_init(void);
 
+// startup diagnostic line on OLED (immediate blit)
+extern void render_boot(const char* str);
+
 // startup state
 extern void render_startup(void);
 
