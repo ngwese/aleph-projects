@@ -12,6 +12,9 @@
 
 #define MODULE_BLOCKSIZE 16
 
+//! Pack/unpack SPORT 24-bit words to fract32 around module_process_block
+#define MODULE_AUDIO_CONVERT_24_32 1
+
 #define NUM_PARAMS eParamNumParams
 
 #endif  // h guard
