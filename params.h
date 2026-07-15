@@ -43,4 +43,4 @@ enum params {
 // this is only defined by the descriptor helper program.
 extern void fill_param_desc(ParamDesc *desc);
 
-#endif // header guard
+#endif  // header guard
