@@ -13,6 +13,7 @@
 
 #include <string.h>
 
+#include "audio_channels.h"
 #include "filter_1p.h"
 #include "fract_math.h"
 #include "module.h"
@@ -69,6 +70,16 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
   u16 frame;
   fract32 outBus;
 
+  fract32 *in0 = audio_in_channel(inChannels, 0);
+  fract32 *in1 = audio_in_channel(inChannels, 1);
+  fract32 *in2 = audio_in_channel(inChannels, 2);
+  fract32 *in3 = audio_in_channel(inChannels, 3);
+
+  fract32 *out0 = audio_out_channel(outChannels, 0);
+  fract32 *out1 = audio_out_channel(outChannels, 1);
+  fract32 *out2 = audio_out_channel(outChannels, 2);
+  fract32 *out3 = audio_out_channel(outChannels, 3);
+
   for(frame = 0; frame < MODULE_BLOCKSIZE; frame++) {
     // advance amp slews once per sample (same rate as frame mix)
     adcVal[0] = filter_1p_lo_next(&(adcSlew[0]));
@@ -77,15 +88,15 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
     adcVal[3] = filter_1p_lo_next(&(adcSlew[3]));
 
     outBus = 0;
-    outBus = add_fr1x32(outBus, mult_fr1x32x32((*inChannels)[0][frame], adcVal[0]));
-    outBus = add_fr1x32(outBus, mult_fr1x32x32((*inChannels)[1][frame], adcVal[1]));
-    outBus = add_fr1x32(outBus, mult_fr1x32x32((*inChannels)[2][frame], adcVal[2]));
-    outBus = add_fr1x32(outBus, mult_fr1x32x32((*inChannels)[3][frame], adcVal[3]));
+    outBus = add_fr1x32(outBus, mult_fr1x32x32(in0[frame], adcVal[0]));
+    outBus = add_fr1x32(outBus, mult_fr1x32x32(in1[frame], adcVal[1]));
+    outBus = add_fr1x32(outBus, mult_fr1x32x32(in2[frame], adcVal[2]));
+    outBus = add_fr1x32(outBus, mult_fr1x32x32(in3[frame], adcVal[3]));
 
-    (*outChannels)[0][frame] = outBus;
-    (*outChannels)[1][frame] = outBus;
-    (*outChannels)[2][frame] = outBus;
-    (*outChannels)[3][frame] = outBus;
+    out0[frame] = outBus;
+    out1[frame] = outBus;
+    out2[frame] = outBus;
+    out3[frame] = outBus;
   }
 }
 
