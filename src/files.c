@@ -106,17 +106,18 @@ u8 files_load_dsp(const char* name) {
       print_dbg_hex(size);
 
       bfinLdrData = alloc_mem(size);
+
       if(bfinLdrData == NULL) {
-	print_dbg("\r\n spray; alloc_mem failed for LDR");
-	render_boot("alloc failed");
-	fl_fclose(fp);
+        print_dbg("\r\n spray; alloc_mem failed for LDR");
+        render_boot("alloc failed");
+        fl_fclose(fp);
       } else {
-	fake_fread(bfinLdrData, size, fp);
-	fl_fclose(fp);
-	render_boot("booting DSP...");
-	bfin_load_buf((const u8*)bfinLdrData, size);
-	free_mem(bfinLdrData);
-	ret = 1;
+        fake_fread(bfinLdrData, size, fp);
+        fl_fclose(fp);
+        render_boot("booting DSP...");
+        bfin_load_buf((const u8*)bfinLdrData, size);
+        free_mem(bfinLdrData);
+        ret = 1;
       }
     }
   } else if(fp != NULL) {

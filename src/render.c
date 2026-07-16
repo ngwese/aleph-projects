@@ -45,8 +45,10 @@ static region regChan[] = {
 
 // full-screen scrolling region for startup diagnostics
 static region bootScrollRegion = {
-  .w = 128, .h = 64, .x = 0, .y = 0
-};
+  .w = 128,
+  .h = 64,
+  .x = 0,
+  .y = 0};
 static scroll bootScroll;
 
 //-------------------------------------------------
