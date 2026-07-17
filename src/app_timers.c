@@ -30,6 +30,9 @@ static softTimer_t screenTimer = {.next = NULL, .prev = NULL};
 // poll encoders
 static softTimer_t encTimer = {.next = NULL, .prev = NULL};
 
+// poll DSP xrun counters (deferred to main via AppCustom)
+static softTimer_t xrunTimer = {.next = NULL, .prev = NULL};
+
 
 //--------------------------
 //----- static functions
@@ -60,10 +63,19 @@ static void enc_timer_callback(void* obj) {
   }
 }
 
+// post AppCustom so main loop can SPI-read xrun counters
+static void xrun_timer_callback(void* obj) {
+  e.type = kEventAppCustom;
+  e.data = 0;
+  event_post(&e);
+}
+
 //----------------------------
 //---- external functions
 
 void init_app_timers(void) {
   timer_add(&screenTimer, 50, &screen_timer_callback, NULL);
   timer_add(&encTimer, 50, &enc_timer_callback, NULL);
+  /* ~2 Hz — low-rate UART diagnostics */
+  timer_add(&xrunTimer, 500, &xrun_timer_callback, NULL);
 }
