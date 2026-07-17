@@ -31,6 +31,7 @@
 // custom app sources
 #include "ctl.h"
 #include "handler.h"
+#include "render.h"
 
 
 //--------------------------------------
@@ -106,6 +107,7 @@ static void handle_AppCustom(s32 data) {
 
   (void)data;
   bfin_get_xruns(&cur);
+  render_xruns(cur.windowRx, cur.windowTx, cur.clashRx, cur.clashTx);
   if(cur.windowRx != last.windowRx || cur.windowTx != last.windowTx ||
      cur.clashRx != last.clashRx || cur.clashTx != last.clashTx) {
     print_dbg("\r\n xrun winRx=");

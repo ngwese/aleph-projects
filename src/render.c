@@ -17,10 +17,6 @@
 //--- aleph-specific headers
 // application framework
 #include "app.h"
-// fixed-point formatting (print_fix16)
-#include "fix.h"
-// extra drawing routines
-#include "region_extra.h"
 
 //--- app-specific headers
 #include "ctl.h"
@@ -35,13 +31,20 @@
    there are also methods for basic fill and text rendering into regions.
 */
 
-// one drawing region for each channel
+// Four-character level values stacked in the upper-left corner.
 static region regChan[] = {
-  {.w = 62, .h = 30, .x = 0, .y = 0},
-  {.w = 62, .h = 30, .x = 64, .y = 0},
-  {.w = 62, .h = 30, .x = 0, .y = 32},
-  {.w = 62, .h = 30, .x = 64, .y = 32},
+  {.w = 24, .h = 8, .x = 0, .y = 0},
+  {.w = 24, .h = 8, .x = 0, .y = 8},
+  {.w = 24, .h = 8, .x = 0, .y = 16},
+  {.w = 24, .h = 8, .x = 0, .y = 24},
 };
+
+// four compact xrun counters across the bottom
+static region regXruns = {
+  .w = 128,
+  .h = 8,
+  .x = 0,
+  .y = 56};
 
 // full-screen scrolling region for startup diagnostics
 static region bootScrollRegion = {
@@ -50,6 +53,30 @@ static region bootScrollRegion = {
   .x = 0,
   .y = 0};
 static scroll bootScroll;
+
+//-------------------------------------------------
+//----- static functions
+
+static void format_u32(char* buf, u32 val) {
+  char reverse[10];
+  u8 digits = 0;
+  u8 i;
+
+  if(val > 99999) {
+    memcpy(buf, ">99k", 5);
+    return;
+  }
+
+  do {
+    reverse[digits++] = '0' + (val % 10);
+    val /= 10;
+  } while(val);
+
+  for(i = 0; i < digits; i++) {
+    buf[i] = reverse[digits - i - 1];
+  }
+  buf[digits] = '\0';
+}
 
 //-------------------------------------------------
 //----- external functions
@@ -64,6 +91,7 @@ void render_init(void) {
   region_alloc(&regChan[1]);
   region_alloc(&regChan[2]);
   region_alloc(&regChan[3]);
+  region_alloc(&regXruns);
 }
 
 // render text to scrolling buffer during boot (immediate screen blit)
@@ -89,6 +117,8 @@ void render_startup(void) {
     // physically render the region data to the screen
     region_draw(&(regChan[i]));
   }
+  region_fill(&regXruns, 0x0);
+  region_draw(&regXruns);
 }
 
 // update dirty regions
@@ -101,6 +131,7 @@ void render_update(void) {
   region_draw(&(regChan[1]));
   region_draw(&(regChan[2]));
   region_draw(&(regChan[3]));
+  region_draw(&regXruns);
 
   app_resume();
 }
@@ -109,20 +140,18 @@ void render_update(void) {
 void render_chan(u8 ch) {
   // tmp decibel value
   s32 db;
-  // tmp position for left-justify
-  int pos = 0;
   // stupid way to show channel numbers
-  static const char num[4][3] = {"0.", "1.", "2.", "3."};
+  // static const char num[4][3] = {"0.", "1.", "2.", "3."};
   // text buffer
-  static char buf[32];
+  static char buf[5];
   // point at the appropriate region
   region* reg = &(regChan[ch]);
 
   // clear the region
   region_fill(reg, 1);
 
-  // build decibel value string
-  memset(buf, 32, '\0');
+  // build a compact integer decibel value string
+  memset(buf, 0, sizeof(buf));
   db = ctl_get_amp_db(ch);
   // print "-inf" if very small,
   // otherwise print the value
@@ -130,37 +159,51 @@ void render_chan(u8 ch) {
   if(db < (s32)0xffbf0000) {
     memcpy(buf, "-inf\0", 5);
   } else {
-    print_fix16(buf, db);
+    s32 dbInteger = db >> 16;
+    u32 magnitude;
+    u8 pos = 0;
+
+    if(dbInteger < 0) {
+      buf[pos++] = '-';
+      magnitude = (u32)(-dbInteger);
+    } else {
+      magnitude = (u32)dbInteger;
+    }
+    format_u32(buf + pos, magnitude);
   }
 
-#if 0
-  // use the small system font, or...
-  region_string( reg, buf, 0, 6, 0xf, 0, 0);
-#else
-  // ... use the large anti-aliased font.
-  // this means we have to truncate the string to make it fit.
-  // write an early termination symbol to lose some decimal points..
-  buf[9] = '\0';
-  // ...and skip leading spaces:
-  while(buf[pos] == ' ' && pos < 31) { pos++; }
-  if(pos == 31) { pos = 0; }
-  // render an anti-aliased string to the region.
-  region_string_aa(reg, buf + pos, 5, 5, 1);
-#endif
+  // use the small system font
+  region_string(reg, buf, 0, 0, 0xf, 0, 0);
 
   // if channel is muted,
   // highlight background, limit the foreground,
-  // write a big inverted M
+  // invert the value
   if(ctl_get_mute(ch)) {
     region_hl(reg, 2, 2);
     region_max(reg, 6);
-    region_string_aa(reg, "M", 50, 5, 0);
   }
 
   // write label in small font
-  region_string(reg, num[ch], 0, 0, 0xf, 1, 0);
+  // region_string(reg, num[ch], 0, 0, 0xf, 1, 0);
 
   // the render functions set the region's dirty flag,
   // so there's nothing left to do now,
   // except wait for the screen refresh timer to trigger a redraw.
+}
+
+void render_xruns(u32 windowRx, u32 windowTx, u32 clashRx, u32 clashTx) {
+  char buf[6];
+  u32 values[4];
+  u8 i;
+
+  values[0] = windowRx;
+  values[1] = windowTx;
+  values[2] = clashRx;
+  values[3] = clashTx;
+
+  region_fill(&regXruns, 0x0);
+  for(i = 0; i < 4; i++) {
+    format_u32(buf, values[i]);
+    region_string(&regXruns, buf, i * 32, 0, 0xf, 0, 0);
+  }
 }

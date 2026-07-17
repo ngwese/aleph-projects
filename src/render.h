@@ -15,6 +15,9 @@ extern void render_startup(void);
 // render a channel
 extern void render_chan(u8 ch);
 
+// render the four xrun counters across the bottom
+extern void render_xruns(u32 windowRx, u32 windowTx, u32 clashRx, u32 clashTx);
+
 // update
 extern void render_update(void);
 
