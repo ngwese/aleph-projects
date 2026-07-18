@@ -28,15 +28,25 @@ static void fake_fread(volatile u8 *dst, u32 len, void *fp) {
   }
 }
 
-static void strip_ext(char *str) {
-  int i = (int)strlen(str);
-  while(i > 0) {
-    --i;
-    if(str[i] == '.') {
-      str[i] = '\0';
-      return;
-    }
+/* strip a trailing suffix only when it matches (e.g. ".ldr").
+ * do not strip version dots in names like "spray-0.1.0". */
+static void strip_suffix(char *str, const char *ext) {
+  u32 nlen;
+  u32 elen;
+  if(str == NULL || ext == NULL) {
+    return;
   }
+  nlen = (u32)strlen(str);
+  elen = (u32)strlen(ext);
+  if(nlen > elen && strcmp(str + nlen - elen, ext) == 0) {
+    str[nlen - elen] = '\0';
+  }
+}
+
+static void strip_mod_ext(char *str) {
+  strip_suffix(str, ".ldr");
+  strip_suffix(str, ".dsc");
+  strip_suffix(str, ".lab");
 }
 
 static const u8 *unpickle_32(const u8 *src, u32 *dst) {
@@ -75,7 +85,7 @@ static void *open_mod_file(const char *name, const char *ext, u32 *size) {
   *size = 0;
   strncpy(nameTry, name, sizeof(nameTry) - 1);
   nameTry[sizeof(nameTry) - 1] = '\0';
-  strip_ext(nameTry);
+  strip_mod_ext(nameTry);
   strncat(nameTry, ext, sizeof(nameTry) - strlen(nameTry) - 1);
 
   strcpy(path, BETWEEN_MOD_PATH);
@@ -178,7 +188,7 @@ u8 module_load(const char *name) {
   }
   strncpy(stem, name, MODULE_NAME_LEN - 1);
   stem[MODULE_NAME_LEN - 1] = '\0';
-  strip_ext(stem);
+  strip_mod_ext(stem);
 
   delay_ms(10);
   app_pause();

@@ -12,18 +12,17 @@
 #include "lineio_fl.h"
 #include "render.h"
 
-static void strip_ext(char *str) {
-  int i;
+static void strip_txt_ext(char *str) {
+  u32 nlen;
+  u32 elen;
+  const char *ext = ".txt";
   if(str == NULL) {
     return;
   }
-  i = (int)strlen(str);
-  while(i > 0) {
-    --i;
-    if(str[i] == '.') {
-      str[i] = '\0';
-      return;
-    }
+  nlen = (u32)strlen(str);
+  elen = (u32)strlen(ext);
+  if(nlen > elen && strcmp(str + nlen - elen, ext) == 0) {
+    str[nlen - elen] = '\0';
   }
 }
 
@@ -31,7 +30,7 @@ static void make_path(char *path, const char *stem) {
   char s[BETWEEN_NAME_LEN];
   strncpy(s, stem != NULL ? stem : "", BETWEEN_NAME_LEN - 1);
   s[BETWEEN_NAME_LEN - 1] = '\0';
-  strip_ext(s);
+  strip_txt_ext(s);
   strcpy(path, BETWEEN_SETUP_PATH);
   strcat(path, s);
   strcat(path, ".txt");
