@@ -1,5 +1,5 @@
 /*
-  module.c
+  mx44_module.c
   aleph-bfin (block)
 
   mx44 — 4×4 matrix mixer for bfin_lib_block.
@@ -14,7 +14,7 @@
 #include "filter_1p.h"
 #include "fract_math.h"
 #include "module.h"
-#include "params.h"
+#include "mx44_params.h"
 
 ModuleData *gModuleData;
 

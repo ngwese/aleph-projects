@@ -11,7 +11,7 @@ version = $(maj).$(min).$(rev)
 ldr_name = $(module_name)-$(version).ldr
 
 # add sources from here/audio library.
-module_obj = module.o \
+module_obj = mx44_module.o \
 	$(audio)/filter_1p.o
 
 # -----  below here, probably dont need to customize.
@@ -28,10 +28,10 @@ CFLAGS += -D ARCH_BFIN=1
 desc_src = \
 	$(bfin_lib_srcdir)desc.c \
 	$(bfin_lib_srcdir)pickle.c \
-	params.c
+	mx44_params.c
 
 # this target generates the descriptor helper program
-$(module_name)_desc_build: $(desc_src) params.h module_custom.h
+$(module_name)_desc_build: $(desc_src) mx44_params.h module_custom.h
 	gcc $(desc_src) \
 	$(INC) \
 	-D NAME=\"$(module_name)\" \

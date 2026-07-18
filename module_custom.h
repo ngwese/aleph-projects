@@ -8,7 +8,7 @@
 #ifndef _ALEPH_MODULE_CUSTOM_H_
 #define _ALEPH_MODULE_CUSTOM_H_
 
-#include "params.h"
+#include "mx44_params.h"
 
 #define MODULE_BLOCKSIZE 16
 

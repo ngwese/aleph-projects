@@ -1,11 +1,11 @@
 /*
-  params.c — mx44 parameter descriptors (descriptor helper only).
+  mx44_params.c — mx44 parameter descriptors (descriptor helper only).
 */
 
 #include <string.h>
 
 #include "module.h"
-#include "params.h"
+#include "mx44_params.h"
 
 static void fill_amp(ParamDesc *d, const char *label) {
   strcpy(d->label, label);
