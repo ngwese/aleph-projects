@@ -1,6 +1,6 @@
 /*
 
-  params.c
+  spray_params.c
 
   defines the module parameter descriptor fields.
 
@@ -12,7 +12,7 @@
 #include <string.h>
 
 #include "module.h"
-#include "params.h"
+#include "spray_params.h"
 
 extern void fill_param_desc(ParamDesc *desc) {
 

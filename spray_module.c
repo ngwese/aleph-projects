@@ -1,5 +1,5 @@
 /*
-   module.c
+   spray_module.c
    aleph-bfin (block)
 
    "spray" — block-processed mix module for bfin_lib_block.
@@ -17,7 +17,7 @@
 #include "filter_1p.h"
 #include "fract_math.h"
 #include "module.h"
-#include "params.h"
+#include "spray_params.h"
 
 ModuleData *gModuleData;
 
