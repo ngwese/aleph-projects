@@ -124,7 +124,7 @@ static u8 load_ldr(const char *name) {
   return ret;
 }
 
-static u8 load_dsc(const char *name) {
+static u8 load_dsc(const char *name, u8 *out_truncated) {
   void *fp;
   u32 size = 0;
   u8 nbuf[4];
@@ -133,6 +133,9 @@ static u8 load_dsc(const char *name) {
   s32 nparams = -1;
   int i;
 
+  if(out_truncated != NULL) {
+    *out_truncated = 0;
+  }
   render_log("load dsc...");
   fp = open_mod_file(name, ".dsc", &size);
   if(fp == NULL) {
@@ -146,6 +149,9 @@ static u8 load_dsc(const char *name) {
     return 0;
   }
   if(nparams > BETWEEN_PARAMS_MAX) {
+    if(out_truncated != NULL) {
+      *out_truncated = 1;
+    }
     nparams = BETWEEN_PARAMS_MAX;
   }
 
@@ -165,6 +171,7 @@ static u8 load_dsc(const char *name) {
 
 u8 module_load(const char *name) {
   char stem[MODULE_NAME_LEN];
+  u8 truncated = 0;
 
   if(name == NULL) {
     return 0;
@@ -187,7 +194,7 @@ u8 module_load(const char *name) {
   bfin_wait_ready();
   delay_ms(10);
 
-  if(!load_dsc(stem)) {
+  if(!load_dsc(stem, &truncated)) {
     render_log("dsc fail");
     app_resume();
     return 0;
@@ -198,7 +205,11 @@ u8 module_load(const char *name) {
   bfin_get_module_version(&g_module.version);
   g_module.loaded = 1;
   bfin_enable();
-  render_log("module ok");
+  if(truncated) {
+    render_log("too many params");
+  } else {
+    render_log("module ok");
+  }
   app_resume();
   return 1;
 }
