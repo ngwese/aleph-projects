@@ -13,6 +13,7 @@
 #include "render.h"
 
 ModuleState g_module;
+ParamScaler g_scalers[BETWEEN_PARAMS_MAX];
 
 #define PARAM_DESC_PICKLE_BYTES (PARAM_LABEL_LEN + 4 + 4 + 4 + 4)
 
@@ -154,6 +155,7 @@ static u8 load_dsc(const char *name) {
     pdesc_unpickle(&desc, dbuf);
     g_module.desc[i] = desc;
     g_module.defaults[i] = (ParamValue)bfin_get_param((u8)i);
+    scaler_init(&g_scalers[i], &g_module.desc[i]);
   }
   fl_fclose(fp);
   return 1;

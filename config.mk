@@ -28,6 +28,19 @@ CSRCS += \
 	$(APP_DIR)/src/preset_file.c \
 	$(APP_DIR)/src/setup_file.c \
 	$(APP_DIR)/src/state.c \
+	$(APP_DIR)/src/scaler_tables.c \
+	$(APP_DIR)/src/scalers/param_scaler.c \
+	$(APP_DIR)/src/scalers/op_math.c \
+	$(APP_DIR)/src/scalers/scaler_amp.c \
+	$(APP_DIR)/src/scalers/scaler_bool.c \
+	$(APP_DIR)/src/scalers/scaler_fix.c \
+	$(APP_DIR)/src/scalers/scaler_fract.c \
+	$(APP_DIR)/src/scalers/scaler_integrator.c \
+	$(APP_DIR)/src/scalers/scaler_integrator_short.c \
+	$(APP_DIR)/src/scalers/scaler_note.c \
+	$(APP_DIR)/src/scalers/scaler_label.c \
+	$(APP_DIR)/src/scalers/scaler_short.c \
+	$(APP_DIR)/src/scalers/scaler_svf_fc.c \
 	$(APP_DIR)/src/lib/kvtext.c \
 	$(APP_DIR)/src/lib/morph2d.c \
 	$(APP_DIR)/src/lib/preset_io.c \
@@ -41,4 +54,5 @@ INC_PATH += \
 	$(APP_DIR)/src \
 	$(APP_DIR)/src/lib \
 	$(APP_DIR)/src/pages \
+	$(APP_DIR)/src/scalers \
 	$(APP_DIR)/../../../avr32-toolchain-linux/include

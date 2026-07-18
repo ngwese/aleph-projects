@@ -8,7 +8,9 @@
 #include "between_limits.h"
 #include "module_load.h"
 #include "morph2d.h"
+#include "param_scaler.h"
 #include "render.h"
+#include "scaler_tables.h"
 #include "state.h"
 
 static MorphSlot cur_slot;
@@ -45,6 +47,30 @@ static void fmt_s32(char *dst, s32 v) {
   dst[i] = '\0';
 }
 
+static u8 param_scaler_usable(u16 idx) {
+  ParamType t;
+  if(idx >= g_module.num_params) {
+    return 0;
+  }
+  t = g_module.desc[idx].type;
+  if(t >= eParamNumTypes) {
+    return 0;
+  }
+  return scaler_tables_ok(t);
+}
+
+static void fmt_param_value(char *dst, u16 idx, ParamValue raw) {
+  ParamScaler *sc;
+  io_t io;
+  if(param_scaler_usable(idx)) {
+    sc = &g_scalers[idx];
+    io = scaler_get_in(sc, (s32)raw);
+    scaler_get_str(dst, sc, io);
+  } else {
+    fmt_s32(dst, (s32)raw);
+  }
+}
+
 static void redraw_slot(MorphSlot slot) {
   char line[24];
   char num[16];
@@ -73,7 +99,7 @@ static void redraw_slot(MorphSlot slot) {
     line[2] = '\0';
     strncat(line, g_module.desc[idx].label, 8);
     strcat(line, ":");
-    fmt_s32(num, g_slots.values[slot][idx]);
+    fmt_param_value(num, idx, g_slots.values[slot][idx]);
     strncat(line, num, 10);
     render_line((u8)i, line);
   }
@@ -102,12 +128,9 @@ static void handle_enc0(s32 data) {
 
 static void handle_enc1(s32 data) { pages_next(data > 0 ? 1 : -1); }
 
-static void bump_param(s32 inc) {
+static void bump_param_raw(s32 inc) {
   ParamValue v;
   ParamDesc *d;
-  if(!g_slots.occupied[cur_slot] || g_slots.num_params == 0) {
-    return;
-  }
   d = &g_module.desc[param_sel];
   v = slots_get_value(&g_slots, cur_slot, (u16)param_sel);
   if(inc > 0) {
@@ -118,19 +141,45 @@ static void bump_param(s32 inc) {
     }
   } else {
     if(v > d->min - inc) {
-      v += inc; /* inc negative */
+      v += inc;
     } else {
       v = d->min;
     }
   }
   slots_set_value(&g_slots, cur_slot, (u16)param_sel, v);
+}
+
+static void bump_param_scaled(io_t delta) {
+  ParamScaler *sc = &g_scalers[param_sel];
+  ParamValue raw = slots_get_value(&g_slots, cur_slot, (u16)param_sel);
+  io_t io = scaler_get_in(sc, (s32)raw);
+  ParamValue next = (ParamValue)scaler_inc(sc, &io, delta);
+  slots_set_value(&g_slots, cur_slot, (u16)param_sel, next);
+}
+
+static void bump_param(io_t fine_or_coarse, u8 coarse) {
+  if(!g_slots.occupied[cur_slot] || g_slots.num_params == 0) {
+    return;
+  }
+  if(param_scaler_usable((u16)param_sel)) {
+    bump_param_scaled(fine_or_coarse);
+  } else {
+    bump_param_raw(coarse ? (fine_or_coarse > 0 ? 64 : -64)
+			  : (fine_or_coarse > 0 ? 1 : -1));
+  }
   state_apply();
   redraw_slot(cur_slot);
   render_update();
 }
 
-static void handle_enc2(s32 data) { bump_param(data > 0 ? 1 : -1); }
-static void handle_enc3(s32 data) { bump_param(data > 0 ? 64 : -64); }
+static void handle_enc2(s32 data) {
+  bump_param(data > 0 ? (io_t)1 : (io_t)-1, 0);
+}
+
+static void handle_enc3(s32 data) {
+  /* Bees-like coarse step in io_t domain */
+  bump_param(data > 0 ? (io_t)0x100 : (io_t)-0x100, 1);
+}
 
 static void handle_sw0(s32 data) {
   char stem[BETWEEN_NAME_LEN];

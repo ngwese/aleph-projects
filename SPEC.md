@@ -160,10 +160,10 @@ rules:
    - `version` — module `maj.min.rev` as reported by the module.
 4. after metadata, each line is `paramlabel:value`.
 5. labels must match the module’s `.dsc` parameter labels.
-6. values are human-readable forms appropriate to the parameter type where
-   practical (e.g. db for amp, hz or note-ish for note, `0`/`1` for bool).
-   an implementation may also accept raw native integers; the written form
-   should prefer the display form used in the ui.
+6. values are raw native `ParamValue` integers (`s32`) as used by the DSP.
+   the slot editor UI presents and edits them through Bees-compatible
+   ParamType scalers (e.g. dB for amp, note-ish for note); presets and morph
+   banks always store the raw integer form.
 7. only parameters present in the file are part of the preset. on load,
    unspecified parameters remain at module default (or are filled from the
    current effective state when “capture all” is used — see save).
@@ -523,12 +523,9 @@ naming and play control reservations.
 
 ## open questions
 
-1. **value syntax in preset files:** display units only, raw native only, or
-   both accepted? (recommendation: write display form; accept display form
-   primarily.)
-2. **bool/label morph:** highest-weight slot vs distance-to-corner snap?
+1. **bool/label morph:** highest-weight slot vs distance-to-corner snap?
    (recommendation: highest-weight slot.)
-3. **setup extension format:** stay flat `key:value` or allow nested
+2. **setup extension format:** stay flat `key:value` or allow nested
    sections later?
 
 ---

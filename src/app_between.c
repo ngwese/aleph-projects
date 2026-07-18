@@ -19,6 +19,7 @@
 #include "handler.h"
 #include "pages.h"
 #include "render.h"
+#include "scaler_tables.h"
 #include "state.h"
 
 #ifndef VERSIONSTRING
@@ -51,6 +52,9 @@ u8 app_launch(eLaunchState state) {
     render_log("dirs fail");
     print_dbg("\r\n between; failed to ensure data dirs");
   }
+
+  render_boot("scalers...");
+  scaler_tables_init();
 
   init_app_timers();
   pages_init();

@@ -3,6 +3,7 @@
 
 #include "module_common.h"
 #include "param_common.h"
+#include "param_scaler.h"
 #include "types.h"
 
 #include "between_limits.h"
@@ -17,6 +18,7 @@ typedef struct {
 } ModuleState;
 
 extern ModuleState g_module;
+extern ParamScaler g_scalers[BETWEEN_PARAMS_MAX];
 
 /* load .ldr + .dsc from /mod/, fill g_module, query defaults. return 1 ok. */
 u8 module_load(const char *name);
