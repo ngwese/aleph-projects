@@ -16,7 +16,7 @@ module_obj = module.o \
 
 # -----  below here, probably dont need to customize.
 
-all: $(module_name).ldr
+all: $(module_name).ldr $(module_name).dsc
 
 # this gets the core configuration and sources
 include ../../bfin_lib_block/bfin_lib_block.mk
@@ -31,11 +31,16 @@ desc_src = \
 	params.c
 
 # this target generates the descriptor helper program
-desc:
+$(module_name)_desc_build: $(desc_src) params.h module_custom.h
 	gcc $(desc_src) \
 	$(INC) \
 	-D NAME=\"$(module_name)\" \
 	-o $(module_name)_desc_build
+
+desc: $(module_name)_desc_build
+
+$(module_name).dsc: $(module_name)_desc_build
+	./$(module_name)_desc_build
 
 $(module_obj): %.o : %.c
 	$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
@@ -48,19 +53,17 @@ $(module_name): bfin_lib_target $(module_obj)
 	-lm -lbfdsp -lbffastfp
 
 clean: bfin_lib_clean
-	rm $(module_obj)
-	rm $(module_name).ldr
-	rm $(module_name)
+	rm -f $(module_obj)
+	rm -f $(module_name).ldr
+	rm -f $(module_name)
+	rm -f $(module_name).dsc
+	rm -f $(module_name)_desc_build
 
 # this generates the module and descriptor helper app,
-# runs the descrptor app to generate .dsc,
 # and makes copies with version number strings.
 # best used after "make clean"
-deploy: $(module_name).ldr
-	make desc
-	./$(module_name)_desc_build
+deploy: $(module_name).ldr $(module_name).dsc
 	cp $(module_name).ldr $(module_name)-$(maj).$(min).$(rev).ldr
 	cp $(module_name).dsc $(module_name)-$(maj).$(min).$(rev).dsc
 
-.PHONY: clean
-	deploy
+.PHONY: all clean deploy desc
