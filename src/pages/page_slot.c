@@ -8,6 +8,7 @@
 #include "between_limits.h"
 #include "module_load.h"
 #include "morph2d.h"
+#include "name_edit.h"
 #include "param_scaler.h"
 #include "render.h"
 #include "scaler_tables.h"
@@ -15,6 +16,7 @@
 
 static MorphSlot cur_slot;
 static s16 param_sel;
+static MorphSlot save_as_slot;
 
 static void fmt_s32(char *dst, s32 v) {
   char tmp[12];
@@ -195,6 +197,17 @@ static void handle_enc3(s32 data) {
   bump_param(data > 0 ? (io_t)0x100 : (io_t)-0x100, 1);
 }
 
+static void on_save_as_ok(const char *stem, void *ctx) {
+  MorphSlot slot = *(MorphSlot *)ctx;
+  if(state_save_preset(slot, stem)) {
+    render_log("save as");
+  } else {
+    render_log("save fail");
+  }
+  redraw_slot(slot);
+  render_update();
+}
+
 static void handle_sw0(s32 data) {
   char stem[BETWEEN_NAME_LEN];
   if(data <= 0) {
@@ -220,16 +233,6 @@ static void handle_sw0(s32 data) {
     return;
   }
   if(g_alt_mode) {
-    if(!state_unique_preset_stem(stem, sizeof(stem))) {
-      render_log("name fail");
-      return;
-    }
-    if(state_save_preset(cur_slot, stem)) {
-      render_log("save as");
-    } else {
-      render_log("save fail");
-    }
-  } else {
     if(g_slots.stem[cur_slot][0]) {
       strncpy(stem, g_slots.stem[cur_slot], BETWEEN_NAME_LEN - 1);
       stem[BETWEEN_NAME_LEN - 1] = '\0';
@@ -237,11 +240,21 @@ static void handle_sw0(s32 data) {
       render_log("name fail");
       return;
     }
-    if(state_save_preset(cur_slot, stem)) {
-      render_log("preset saved");
-    } else {
-      render_log("save fail");
-    }
+    save_as_slot = cur_slot;
+    name_edit_open(eNameEditPreset, stem, on_save_as_ok, &save_as_slot);
+    return;
+  }
+  if(g_slots.stem[cur_slot][0]) {
+    strncpy(stem, g_slots.stem[cur_slot], BETWEEN_NAME_LEN - 1);
+    stem[BETWEEN_NAME_LEN - 1] = '\0';
+  } else if(!state_unique_preset_stem(stem, sizeof(stem))) {
+    render_log("name fail");
+    return;
+  }
+  if(state_save_preset(cur_slot, stem)) {
+    render_log("preset saved");
+  } else {
+    render_log("save fail");
   }
   redraw_slot(cur_slot);
   render_update();

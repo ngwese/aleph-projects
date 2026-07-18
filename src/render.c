@@ -111,6 +111,87 @@ void render_line_at(u8 row, u8 x, const char *str) {
   regMain.dirty = 1;
 }
 
+void render_edit_string(u8 row, const char *str, u8 cursor) {
+  u8 y0;
+  u8 x = 2;
+  u8 i = 0;
+  u8 *dst;
+  u8 cols;
+  char ch;
+
+  if(row >= RENDER_CONTENT_ROWS || str == NULL) {
+    return;
+  }
+  y0 = (u8)(row * 8);
+  /* clear the row */
+  {
+    u8 y;
+    u8 px;
+    for(y = 0; y < 8; ++y) {
+      for(px = 0; px < 128; ++px) {
+	regMain.data[(u32)(y0 + y) * 128u + px] = 0;
+      }
+    }
+  }
+
+  while(x < 120) {
+    ch = str[i];
+    if(ch == '\0' && i != cursor) {
+      break;
+    }
+    dst = regMain.data + x + (u32)128u * (u32)y0;
+    if(i == cursor) {
+      /* inverse: black glyph on white cell (fixed width pad) */
+      (void)font_glyph_fixed(ch != '\0' ? ch : ' ', dst, 128, 0x0, 0xf);
+      cols = FONT_CHARW + 1;
+    } else if(ch != '\0') {
+      cols = (u8)(font_glyph(ch, dst, 128, 0xf, 0) + 1);
+    } else {
+      break;
+    }
+    x = (u8)(x + cols);
+    ++i;
+    if(ch == '\0') {
+      break;
+    }
+  }
+  regMain.dirty = 1;
+}
+
+void render_charset_row(u8 row, const char *chars, u8 sel) {
+  u8 y0;
+  u8 x = 2;
+  u8 i = 0;
+  u8 *dst;
+  char ch;
+
+  if(row >= RENDER_CONTENT_ROWS || chars == NULL) {
+    return;
+  }
+  y0 = (u8)(row * 8);
+  {
+    u8 y;
+    u8 px;
+    for(y = 0; y < 8; ++y) {
+      for(px = 0; px < 128; ++px) {
+	regMain.data[(u32)(y0 + y) * 128u + px] = 0;
+      }
+    }
+  }
+
+  while((ch = chars[i]) != '\0' && x < 120) {
+    dst = regMain.data + x + (u32)128u * (u32)y0;
+    if(i == sel) {
+      (void)font_glyph_fixed(ch, dst, 128, 0x0, 0xf);
+      x = (u8)(x + FONT_CHARW + 1);
+    } else {
+      x = (u8)(x + font_glyph(ch, dst, 128, 0xf, 0) + 1);
+    }
+    ++i;
+  }
+  regMain.dirty = 1;
+}
+
 void render_status_line(u8 row, const char *name) {
   u8 y;
   u8 x;

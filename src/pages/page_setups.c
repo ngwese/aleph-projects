@@ -7,6 +7,7 @@
 
 #include "between_limits.h"
 #include "dirlist.h"
+#include "name_edit.h"
 #include "render.h"
 #include "setup_file.h"
 #include "state.h"
@@ -21,6 +22,18 @@ static void do_scan(void) {
     sel = list.count ? (s16)list.count - 1 : 0;
   }
   scanned = 1;
+}
+
+static void on_save_as_ok(const char *stem, void *ctx) {
+  (void)ctx;
+  if(state_save_setup(stem)) {
+    render_log("setup saved");
+    do_scan();
+  } else {
+    render_log("save fail");
+  }
+  redraw_setups();
+  render_update();
 }
 
 static void redraw(void) {
@@ -42,7 +55,7 @@ static void redraw(void) {
     }
   }
   if(g_alt_mode) {
-    render_footer("delete", "-", "scan", "alt");
+    render_footer("delete", "save as", "scan", "alt");
   } else {
     render_footer("load", "save", "new", "alt");
   }
@@ -89,7 +102,18 @@ static void handle_sw0(s32 data) {
 
 static void handle_sw1(s32 data) {
   char stem[BETWEEN_NAME_LEN];
-  if(data <= 0 || g_alt_mode) {
+  if(data <= 0) {
+    return;
+  }
+  if(g_alt_mode) {
+    if(g_setup_name[0] != '\0') {
+      strncpy(stem, g_setup_name, BETWEEN_NAME_LEN - 1);
+      stem[BETWEEN_NAME_LEN - 1] = '\0';
+    } else if(!state_unique_setup_stem(stem, sizeof(stem))) {
+      render_log("name fail");
+      return;
+    }
+    name_edit_open(eNameEditSetup, stem, on_save_as_ok, NULL);
     return;
   }
   if(g_setup_name[0] != '\0') {

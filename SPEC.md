@@ -285,10 +285,12 @@ common conventions (align with bees):
   (`g_setup_name` / status line), creating that file if needed (module,
   slots, morph point, and play bindings). if no name is set yet, allocate a
   unique `sNNN` stem.
+- alt+sw1 **save as**: open the name-entry modal (header `setup name`)
+  prefilled with the current stem (or a unique `sNNN` if unset); OK writes
+  under the chosen name.
 - sw2 **new**: begin a new setup with a unique `sNNN` name and jump to the
   modules page for module selection.
 - alt+sw0 **delete** with confirm.
-- enc2/enc3: name edit when creating/renaming.
 
 ### modules page
 
@@ -376,8 +378,10 @@ when a preset is loaded, controls are:
 - sw2 **new**: capture this slot’s current values into a new uniquely
   named preset file and assign it to this slot.
 - sw3 alt
-- alt+sw0 **save as**: write to a new unique filename, leave original
-  untouched, assign new file to this slot.
+- alt+sw0 **save as**: open the name-entry modal (header `preset name`)
+  prefilled with the current stem (or a unique `pNNN` if unset); OK writes
+  under the chosen name and assigns it to this slot (original file left
+  untouched if the name differs).
 - alt+sw2 **capture eff**: overwrite this slot’s in-memory values with the
   current effective blend (useful for “bake” a morph position into a
   corner).

@@ -22,6 +22,11 @@ void render_line_at(u8 row, u8 x, const char *str);
 /* status row: 2px mid-grey bar, 1px gap, then name (or "none"). */
 void render_status_line(u8 row, const char *name);
 
+/* name entry: draw str on content row with inverse glyph at cursor. */
+void render_edit_string(u8 row, const char *str, u8 cursor);
+/* charset row: draw chars with inverse glyph at sel (0xff = none). */
+void render_charset_row(u8 row, const char *chars, u8 sel);
+
 /* edit-mode page header: mid-grey bar, title box(es), right indicator. */
 void render_header(const char *title, u8 dirty);
 /* slot page: capital letter box, optional preset-name box, indicator. */

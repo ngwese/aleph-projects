@@ -43,14 +43,12 @@ relevant: `apps/between/src/pages/page_play_maps.c`
 
 ## setup / preset name entry UX
 
-setups and presets still lean on fixed or auto stems (`setup0`, `pNNN`,
-save-as unique) instead of a usable rename/create name editor. SPEC calls
-for enc2/enc3 name edit when creating/renaming; that path is incomplete or
-missing.
+done: shared save-as name modal (`src/pages/name_edit.c`). Alt+Save on
+setups (alt+sw1) and slot (alt+sw0) opens it — hold Select for charset,
+ENC2 for cursor/palette, Clear / Cancel / OK.
 
-want a shared name-entry flow for setup and preset stems (cursor, charset,
-confirm/cancel) so save / save-as / new can take a chosen name instead of
-only generated ones.
+still open: wire the same modal into setups **new** and slots-grid **new**
+so create flows can choose a name instead of only auto stems.
 
-relevant: `apps/between/src/pages/page_setups.c`, `page_slots.c`,
-`page_slot.c`; SPEC setups / slots / slot page name-edit notes
+relevant: `apps/between/src/pages/name_edit.c`, `page_setups.c`,
+`page_slot.c`, `page_slots.c`
