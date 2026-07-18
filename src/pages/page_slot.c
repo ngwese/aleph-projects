@@ -59,21 +59,35 @@ static u8 param_scaler_usable(u16 idx) {
   return scaler_tables_ok(t);
 }
 
-static void fmt_param_value(char *dst, u16 idx, ParamValue raw) {
+static void fmt_param_value(char *dst, u16 dst_len, u16 idx, ParamValue raw) {
   ParamScaler *sc;
   io_t io;
+
+  if(dst == NULL || dst_len == 0) {
+    return;
+  }
+
   if(param_scaler_usable(idx)) {
     sc = &g_scalers[idx];
     io = scaler_get_in(sc, (s32)raw);
     scaler_get_str(dst, sc, io);
+    /* print_fix16 writes FIX_DIG_TOTAL chars and does not NUL-terminate. */
+    if(dst_len > FIX_DIG_TOTAL) {
+      dst[FIX_DIG_TOTAL] = '\0';
+    } else {
+      dst[dst_len - 1] = '\0';
+    }
   } else {
     fmt_s32(dst, (s32)raw);
   }
 }
 
+/* value column starts at horizontal midpoint (128/2). */
+#define SLOT_VAL_X 64
+
 static void redraw_slot(MorphSlot slot) {
   char line[24];
-  char num[16];
+  char num[FIX_DIG_TOTAL + 1];
   u16 i;
   u16 start;
 
@@ -99,9 +113,9 @@ static void redraw_slot(MorphSlot slot) {
     line[2] = '\0';
     strncat(line, g_module.desc[idx].label, 8);
     strcat(line, ":");
-    fmt_param_value(num, idx, g_slots.values[slot][idx]);
-    strncat(line, num, 10);
+    fmt_param_value(num, sizeof(num), idx, g_slots.values[slot][idx]);
     render_line((u8)i, line);
+    render_line_at((u8)i, SLOT_VAL_X, num);
   }
   render_footer("save", "reset", "new", "alt");
 }
