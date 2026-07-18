@@ -36,7 +36,7 @@ non-goals (v1):
 | **morph point** | an (x, y) position in the unit square, stored as `u16` values in `[0, 65535]`, that selects the blend among the four slots. |
 | **effective parameters** | the interpolated parameter set currently sent to the module. |
 | **setup** | a performance configuration: module identity, which presets occupy which slots, and the initial morph point. |
-| **play mode** | live performance: morph control and modulation dominate the front panel. |
+| **play mode** | live performance: morph control and mappable encoders/switches dominate the front panel. |
 | **edit mode** | configuration and tuning: module, presets, slots, and parameters are browsed and changed. |
 
 ---
@@ -213,6 +213,10 @@ future setup keys (follow-on; reserved names):
 - `cv.x`, `cv.y` — cv input mapping
 - `lfo.*` — lfo type / rate / depth
 - `foot.*` — footswitch targets
+- `play.enc0` … `play.enc3` — encoder map (target, optional slot, optional
+  param label)
+- `play.sw0` … `play.sw3` — switch map (snap corner, or param
+  set/momentary with slot scope, label, and value)
 
 ---
 
@@ -253,7 +257,7 @@ edit pages form a ring, navigated like bees (enc1 = page, enc0 = selection
 unless a page overrides). setups is the first page:
 
 ```text
-setups → modules → slots → slot a → slot b → slot c → slot d → setups
+setups → modules → slots → slot a → slot b → slot c → slot d → play → setups
 ```
 
 common conventions (align with bees):
@@ -277,7 +281,8 @@ common conventions (align with bees):
     module, replacing the current module.
   - load the referenced presets into the four slots, set the saved morph
     point, and apply the effective parameters.
-- sw1 **save**: write the current configuration to the selected / named setup.
+- sw1 **save**: write the current configuration to the selected / named
+  setup (module, slots, morph point, and play bindings).
 - sw2 **new**: begin a new setup and jump to the modules page for module
   selection.
 - alt+sw0 **delete** with confirm.
@@ -385,43 +390,161 @@ unsaved edits: mark the slot dirty (2x2 square in the header indicator).
 leaving the page keeps in-memory dirty state until save or reset; setup
 save should warn if dirty.
 
+### play page
+
+edit-mode page for configuring **play bindings** (encoder and switch maps).
+bindings are properties of the current setup: edited here in memory, written
+on setup **save**, restored on setup **load**. they are not stored in preset
+files.
+
+header: `play` (plus dirty indicator if maps differ from the last saved
+setup, if that distinction is tracked).
+
+body: a selectable list of the eight controls (`enc0`–`enc3`, `sw0`–`sw3`).
+each line shows a short summary of the current binding (e.g. `enc2: morph x`,
+`sw0: snap a`, `enc0: slot.b / amp`).
+
+controls:
+
+- enc0: select which control’s binding to edit
+- enc1: page navigation
+- enc2 / enc3: adjust the selected binding’s fields (target kind, slot,
+  param, set/momentary mode, value — field focus can be a sub-selection or
+  stepped with alt; exact field ux may be refined)
+- sw0 **reset**: restore the selected control to its [default map](#default-encoder-map)
+  / [default switch map](#default-switch-map)
+- sw1 **reset all**: restore all eight controls to defaults (confirm if
+  needed)
+- sw2: reserved (or **copy defaults** / clear — open)
+- sw3: alt
+
+if no module is loaded, param-target bindings cannot be chosen (morph and
+snap targets remain available). changing module invalidates bindings that
+refer to missing param labels (clear or leave unbound until fixed).
+
 ---
 
 ## play mode ux
 
-play remaps the front panel away from menu navigation.
+play remaps the front panel away from menu navigation. encoders and
+switches are **mappable** to internal play targets. all play bindings are
+owned by the **setup**: configure them on the edit-mode [play page](#play-page),
+persist them with setup save/load (see reserved `play.enc*` / `play.sw*`
+keys).
 
-### morph control (v1)
+encoder and switch indices match bees / hardware (`enc0`–`enc3`,
+`sw0`–`sw3`).
 
-primary interaction is positioning the morph point.
+### encoder targets
 
-proposed default mapping:
+each encoder may be mapped to one of:
 
-| control | function |
-|---------|----------|
-| enc0 | morph x |
-| enc1 | morph y |
-| enc2 | (reserved follow-on: mod depth x) |
-| enc3 | (reserved follow-on: mod depth y) |
+| target | behavior |
+|--------|----------|
+| morph x | drive the morph point’s x coordinate |
+| morph y | drive the morph point’s y coordinate |
+| slot param (absolute) | adjust **one** named parameter on **one** specified slot (a–d); updates that slot’s bank and reapplies the effective set |
+| all-slots param (absolute) | adjust the same named parameter on **all occupied** slots to the same absolute value (each bank gets the same raw/`io_t` result) |
+| all-slots param (relative) | **stretch goal:** vca-group style — nudge the same named parameter on all occupied slots by a shared relative delta (preserve per-slot offsets / ratios as far as the param type allows) |
+
+notes:
+
+- param targets use the module’s `.dsc` label (and bees-style scaler
+  stepping when editing, same as the slot page).
+- empty slots are skipped for all-slots targets.
+- discrete params (bool / label) on encoder maps: step through legal
+  values; relative all-slots for discrete is undefined until the stretch
+  goal is designed.
+- unmapped encoders do nothing.
+
+### default encoder map
+
+by default the **bottom** two encoders drive morph position:
+
+| control | default |
+|---------|---------|
+| enc0 | unmapped (reserved for user maps / follow-on) |
+| enc1 | unmapped (reserved for user maps / follow-on) |
+| enc2 | morph x |
+| enc3 | morph y |
+
+### switch targets
+
+each switch may be mapped to one of:
+
+| target | behavior |
+|--------|----------|
+| snap slot a–d | jump morph point to that corner (immediate) |
+| param set (one slot) | write a configured value into one named param on one specified slot |
+| param momentary (one slot) | while held, force that param on that slot to a configured value; on release, restore the pre-press slot value |
+| param set (all slots) | write a configured value into the same named param on all occupied slots |
+| param momentary (all slots) | while held, force that param on all occupied slots to a configured value; on release, restore each slot’s pre-press value |
+
+notes:
+
+- **set** is latching (press applies; no automatic restore).
+- **momentary** stores the previous bank value(s) on press and restores on
+  release; if the mapping is changed while held, restore still uses the
+  press-time snapshot.
+- snap and param maps are mutually exclusive per switch (one target each).
+- unmapped switches do nothing.
+
+### default switch map
+
+| control | default |
+|---------|---------|
 | sw0 | snap to slot a |
 | sw1 | snap to slot b |
 | sw2 | snap to slot c |
 | sw3 | snap to slot d |
 | mode | return to edit |
 
-snap is immediate (morph point jumps to that corner). optional later:
-momentary snap-while-held vs toggle (see footswitch follow-on).
-
 ### display
 
-play screen shows:
+play layout (128×64, bees-style footer cells for `sw0`–`sw3`):
 
-- setup name (if any) and module name
-- morph point as a simple 2d indicator (crosshair / block in a square)
-- slot names at corners (abbreviated)
-- optional: last changed parameter / value line
+```text
+┌────────────┬─────────────────────────┐
+│ morph      │ enc0 label   enc1 label │
+│  (square)  │ enc0 value   enc1 value │
+│            │ enc2 label   enc3 label │
+│            │ enc2 value   enc3 value │
+├──────┬─────┴──┬──────────┬───────────┤
+│ sw0  │  sw1   │   sw2    │   sw3     │
+└──────┴────────┴──────────┴───────────┘
+```
 
-keep it sparse; play is for performing, not editing.
+**morph position (left):** a square region above the switch labels. a light
+gray square frame marks the unit morph plane; the current morph point is a
+**3×3 white** block inside that frame (position scaled from `(x, y)` in
+`[0, 65535]`).
+
+**encoder readouts (right):** four compact bindings in a 2×2 grid (same
+column split idea as the slots page: left column enc0/enc2, right column
+enc1/enc3). each cell is a **label** line for what the encoder is mapped to,
+and the line below for its **current value** (scaled string when applicable;
+morph axes may show normalized or raw position). unmapped encoders show a
+blank or `-` label/value.
+
+**switch footer labels:**
+
+- snap-to-slot maps: label is just the slot letter (`A`, `B`, `C`, `D`).
+- param maps: label is the param name (truncated to fit the 32px-wide
+  footer cell). if the target is a **single slot**, paint a **dark gray
+  3-pixel right triangle** in the footer cell background in the corner that
+  matches that slot on the morph plane (a = top-left, b = top-right,
+  c = bottom-left, d = bottom-right). all-slots param maps omit the
+  triangle.
+- unmapped switches: blank or `-`.
+
+keep chrome minimal; play is for performing, not editing.
+
+### persistence
+
+encoder and switch maps (target kind, slot if any, param label if any,
+set/momentary value if any) are stored **only** in the setup file. loading a
+setup replaces the in-memory play bindings; saving a setup writes the
+current bindings from the play page. see reserved setup keys below.
 
 ---
 
@@ -477,23 +600,24 @@ naming and play control reservations.
 - map aleph cv inputs to x and y with attenuversion / bias.
 - combine with panel encoders (sum, or cv replaces encoder when connected).
 
-### front-panel snap in play
+### front-panel play maps
 
-- already sketched: sw0–sw3 snap to a–d.
-- extend with alt-hold for intermediate positions (edges / center) if
-  needed.
+- defaults and target kinds are specified under [play mode ux](#play-mode-ux).
+- binding configuration ui is the edit-mode [play page](#play-page).
+- relative all-slots encoder control (vca-group style) is a stretch goal.
 
 ### lfos on (x, y)
 
 - independent or linked lfos for x and y.
 - types: triangle, sine, square, random/s&h, wander.
-- rate, depth, phase; depth scalable in play via enc2/enc3.
+- rate, depth, phase; depth scalable from play via **mapped** encoders
+  (not hard-wired to enc2/enc3).
 - lfo output sums with manual / midi / cv position, then clamps to
   `[0, 65535]`.
 
 ### play-mode modulation scaling
 
-- enc2 / enc3 set modulation depth for x / y (lfo and/or cv).
+- map encoders to lfo/cv depth for x / y when those modulators exist.
 - display depth as percentage or bipolar attenuverter.
 
 ### selective parameter morph
@@ -527,6 +651,10 @@ naming and play control reservations.
    (recommendation: highest-weight slot.)
 2. **setup extension format:** stay flat `key:value` or allow nested
    sections later?
+3. **play map value syntax:** store encoder/switch map values as raw
+   `ParamValue` (like presets) or as display-oriented strings?
+4. **relative all-slots (vca group):** preserve linear offsets in raw
+   domain, or attempt gain-style ratios for amp params only?
 
 ---
 
@@ -536,12 +664,14 @@ naming and play control reservations.
 - [ ] create a preset file from current parameters; reload it into a slot.
 - [ ] select a slot on the slots page and load its preset through the modal
       preset selector.
-- [ ] assign four presets to a–d; morph with enc0/enc1 in play.
+- [ ] assign four presets to a–d; morph with enc2/enc3 in play (default map).
 - [ ] editing a parameter on a slot page changes sound immediately at the
       current morph point.
 - [ ] an empty slot page displays only `empty`.
 - [ ] save / reset / new behave as specified on the slot page.
-- [ ] snap switches in play jump to corner presets.
+- [ ] default snap switches in play jump to corner presets a–d.
+- [ ] play page in edit mode can change encoder/switch bindings; setup
+      save/load restores those bindings.
 - [ ] save and load a setup restoring module, four slots, and morph point;
       loading it replaces a different currently loaded module.
 - [ ] empty slots renormalize weights without crashing or silencing audio
