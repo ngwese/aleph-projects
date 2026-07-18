@@ -12,6 +12,8 @@
 #include "memory.h"
 #include "render.h"
 
+#include "fat_string.h"
+
 ModuleState g_module;
 ParamScaler g_scalers[BETWEEN_PARAMS_MAX];
 
@@ -81,7 +83,7 @@ static void *open_mod_file(const char *name, const char *ext, u32 *size) {
     return NULL;
   }
   while(fl_readdir(&dirstat, &dirent) == 0) {
-    if(strcmp(dirent.filename, nameTry) == 0) {
+    if(fatfs_compare_names(dirent.filename, nameTry)) {
       strncat(path, dirent.filename, sizeof(path) - strlen(path) - 1);
       fp = fl_fopen(path, "r");
       *size = dirent.size;
@@ -192,6 +194,7 @@ u8 module_load(const char *name) {
   }
 
   strncpy(g_module.name, stem, MODULE_NAME_LEN - 1);
+  g_module.name[MODULE_NAME_LEN - 1] = '\0';
   bfin_get_module_version(&g_module.version);
   g_module.loaded = 1;
   bfin_enable();

@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "compiler.h"
+#include "print_funcs.h"
 #include "app.h"
 #include "filesystem.h"
 
@@ -11,9 +12,28 @@
 #include "lineio_fl.h"
 #include "render.h"
 
+static void strip_ext(char *str) {
+  int i;
+  if(str == NULL) {
+    return;
+  }
+  i = (int)strlen(str);
+  while(i > 0) {
+    --i;
+    if(str[i] == '.') {
+      str[i] = '\0';
+      return;
+    }
+  }
+}
+
 static void make_path(char *path, const char *stem) {
+  char s[BETWEEN_NAME_LEN];
+  strncpy(s, stem != NULL ? stem : "", BETWEEN_NAME_LEN - 1);
+  s[BETWEEN_NAME_LEN - 1] = '\0';
+  strip_ext(s);
   strcpy(path, BETWEEN_SETUP_PATH);
-  strcat(path, stem);
+  strcat(path, s);
   strcat(path, ".txt");
 }
 
@@ -23,19 +43,22 @@ SetupIoStatus setup_file_load(const char *stem, SetupData *out) {
   void *fp;
   SetupIoStatus st;
 
-  render_log("read setup...");
   make_path(path, stem);
+  print_dbg("\r\n between; setup load ");
+  print_dbg(path);
   app_pause();
   fp = fl_fopen(path, "r");
   if(fp == NULL) {
     app_resume();
+    print_dbg(" open fail");
     return eSetupIoMalformed;
   }
-  render_log("parse setup...");
   lineio_fl_bind(&io, fp);
   st = setup_io_read(&io, out);
   fl_fclose(fp);
   app_resume();
+  print_dbg(" status=");
+  print_dbg_ulong((u32)st);
   return st;
 }
 
@@ -62,18 +85,16 @@ SetupIoStatus setup_file_save(const char *stem, const SetupData *data) {
 
 u8 setup_file_delete(const char *stem) {
   char path[BETWEEN_PATH_MAX];
-  void *fp;
+  int rc;
+  if(stem == NULL || stem[0] == '\0') {
+    return 0;
+  }
   render_log("delete setup...");
   make_path(path, stem);
   app_pause();
-  fp = fl_fopen(path, "w");
-  if(fp == NULL) {
-    app_resume();
-    return 0;
-  }
-  fl_fclose(fp);
+  rc = fl_remove(path);
   app_resume();
-  return 1;
+  return (u8)(rc == 0);
 }
 
 u8 setup_file_write_state(const char *stem) {

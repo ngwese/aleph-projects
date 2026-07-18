@@ -9,6 +9,7 @@
 #include "files_ensure.h"
 #include "module_load.h"
 #include "preset_file.h"
+#include "render.h"
 #include "setup_file.h"
 
 static ParamValue banks[MORPH2D_SLOTS][BETWEEN_PARAMS_MAX];
@@ -182,13 +183,27 @@ u8 state_unique_preset_stem(char *out, u32 out_size) {
 
 u8 state_load_setup(const char *stem) {
   SetupData data;
+  SetupIoStatus st;
   MorphSlot i;
 
-  if(setup_file_load(stem, &data) != eSetupIoOk) {
+  st = setup_file_load(stem, &data);
+  if(st != eSetupIoOk) {
+    if(st == eSetupIoMissingMeta) {
+      render_log("setup meta");
+    } else if(st == eSetupIoBadFormat) {
+      render_log("setup fmt");
+    } else {
+      render_log("setup io");
+    }
+    return 0;
+  }
+  if(data.module[0] == '\0') {
+    render_log("no module");
     return 0;
   }
   if(!g_module.loaded || strcmp(data.module, g_module.name) != 0) {
     if(!state_load_module(data.module, 0)) {
+      render_log("mod fail");
       return 0;
     }
   }
@@ -212,6 +227,10 @@ u8 state_save_setup(const char *stem) {
   SetupData data;
   MorphSlot i;
 
+  if(!g_module.loaded) {
+    render_log("no module");
+    return 0;
+  }
   if(!files_ensure_data_dirs()) {
     return 0;
   }
@@ -224,6 +243,10 @@ u8 state_save_setup(const char *stem) {
     }
   }
   slots_to_setup(&g_slots, &data);
+  /* always stamp the currently loaded module (source of truth) */
+  strncpy(data.module, g_module.name, MODULE_NAME_LEN - 1);
+  data.module[MODULE_NAME_LEN - 1] = '\0';
+  data.version = g_module.version;
   if(setup_file_save(stem, &data) != eSetupIoOk) {
     return 0;
   }

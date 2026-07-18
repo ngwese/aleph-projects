@@ -48,6 +48,7 @@ u16 dirlist_scan(DirList *list, const char *path, const char *ext) {
     return 0;
   }
   while(fl_readdir(&dirstat, &dirent) == 0) {
+    char full[64];
     char stem[BETWEEN_NAME_LEN];
     if(dirent.is_dir) {
       continue;
@@ -58,9 +59,12 @@ u16 dirlist_scan(DirList *list, const char *path, const char *ext) {
     if(list->count >= BETWEEN_DIR_MAX) {
       break;
     }
-    strncpy(stem, dirent.filename, BETWEEN_NAME_LEN - 1);
+    /* strip extension before truncating to BETWEEN_NAME_LEN */
+    strncpy(full, dirent.filename, sizeof(full) - 1);
+    full[sizeof(full) - 1] = '\0';
+    strip_ext(full);
+    strncpy(stem, full, BETWEEN_NAME_LEN - 1);
     stem[BETWEEN_NAME_LEN - 1] = '\0';
-    strip_ext(stem);
     strncpy(list->names[list->count], stem, BETWEEN_NAME_LEN - 1);
     list->names[list->count][BETWEEN_NAME_LEN - 1] = '\0';
     list->count++;

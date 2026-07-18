@@ -80,9 +80,8 @@ static void handle_sw0(s32 data) {
   } else {
     if(state_load_setup(list.names[sel])) {
       render_log("setup loaded");
-    } else {
-      render_log("load fail");
     }
+    /* on failure state_load_setup already logged a specific reason */
   }
   redraw();
   render_update();
