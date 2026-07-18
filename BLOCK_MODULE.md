@@ -12,7 +12,7 @@ opaque SPI boot image from the SD card and does not care about frame vs block.
   `bfin_load_buf`.
 - Then: `bfin_wait_ready()` → `bfin_enable()`.
 - Control uses hardcoded param indices that must match
-  `modules_block/spray/params.h` (`src/ctl.h`, `src/ctl.c`).
+  `modules_block/spray/spray_params.h` (`src/ctl.h`, `src/ctl.c`).
 
 There is no SD module picker and no Makefile dependency on the DSP module.
 Place `spray.ldr` on the card under `/mod/` (build from `modules_block/spray`).
@@ -59,7 +59,7 @@ No bintool re-embed step; the LDR is no longer compiled into flash.
 
 ## App-side code (only if the param surface changes)
 
-If the block module keeps the same `params.h` enum and meaning:
+If the block module keeps the same `spray_params.h` enum and meaning:
 
 - **No changes** to `ctl.h`, `ctl.c`, handlers, or render
 - SPI load/enable path unchanged
