@@ -8,12 +8,14 @@
 
 #include "files_ensure.h"
 #include "module_load.h"
+#include "play_maps.h"
 #include "preset_file.h"
 #include "render.h"
 #include "setup_file.h"
 
 static ParamValue banks[MORPH2D_SLOTS][BETWEEN_PARAMS_MAX];
 Slots g_slots;
+PlayMaps g_play_maps;
 char g_setup_name[BETWEEN_NAME_LEN];
 
 static void set_param_cb(u16 index, ParamValue value, void *ctx) {
@@ -25,6 +27,7 @@ void state_init(void) {
   ParamValue *ptrs[MORPH2D_SLOTS] = {banks[0], banks[1], banks[2], banks[3]};
   slots_init(&g_slots, BETWEEN_PARAMS_MAX, g_module.desc, ptrs, set_param_cb,
 	     NULL);
+  play_maps_set_defaults(&g_play_maps);
   g_setup_name[0] = '\0';
 }
 
@@ -42,6 +45,7 @@ u8 state_load_module(const char *name, u8 keep_slots) {
     slots_clear_all(&g_slots);
     slots_set_morph(&g_slots, 0, 0);
   }
+  play_maps_clear_invalid(&g_play_maps, g_module.desc, g_module.num_params);
   return 1;
 }
 
@@ -216,6 +220,8 @@ u8 state_load_setup(const char *stem) {
     }
   }
   slots_set_morph(&g_slots, data.x, data.y);
+  g_play_maps = data.maps;
+  play_maps_clear_invalid(&g_play_maps, g_module.desc, g_module.num_params);
   state_apply();
   strncpy(g_setup_name, stem, BETWEEN_NAME_LEN - 1);
   g_setup_name[BETWEEN_NAME_LEN - 1] = '\0';
@@ -247,6 +253,7 @@ u8 state_save_setup(const char *stem) {
   strncpy(data.module, g_module.name, MODULE_NAME_LEN - 1);
   data.module[MODULE_NAME_LEN - 1] = '\0';
   data.version = g_module.version;
+  data.maps = g_play_maps;
   if(setup_file_save(stem, &data) != eSetupIoOk) {
     return 0;
   }

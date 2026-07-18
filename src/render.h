@@ -1,6 +1,7 @@
 #ifndef BETWEEN_RENDER_H
 #define BETWEEN_RENDER_H
 
+#include "morph2d.h"
 #include "types.h"
 
 /* content rows below the page header; row above footer is the diagnostic log. */
@@ -34,5 +35,11 @@ void render_log(const char *str);
 void render_log_clear(void);
 /* call from the screen timer; clears log after RENDER_LOG_CLEAR_MS idle. */
 void render_log_tick(void);
+
+/* footer triangle for single-slot param targets (morph corner). */
+void render_footer_slot_tri(u8 cell, MorphSlot slot);
+
+/* play morph square: light-gray frame + 3×3 white cursor in content area. */
+void render_play_morph(u16 x, u16 y);
 
 #endif

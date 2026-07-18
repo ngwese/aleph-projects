@@ -20,6 +20,7 @@ CSRCS += \
 	$(APP_DIR)/src/pages/page_modules.c \
 	$(APP_DIR)/src/pages/page_slots.c \
 	$(APP_DIR)/src/pages/page_slot.c \
+	$(APP_DIR)/src/pages/page_play_maps.c \
 	$(APP_DIR)/src/pages/page_play.c \
 	$(APP_DIR)/src/module_load.c \
 	$(APP_DIR)/src/dirlist.c \
@@ -43,6 +44,7 @@ CSRCS += \
 	$(APP_DIR)/src/scalers/scaler_svf_fc.c \
 	$(APP_DIR)/src/lib/kvtext.c \
 	$(APP_DIR)/src/lib/morph2d.c \
+	$(APP_DIR)/src/lib/play_maps.c \
 	$(APP_DIR)/src/lib/preset_io.c \
 	$(APP_DIR)/src/lib/setup_io.c \
 	$(APP_DIR)/src/lib/slots.c

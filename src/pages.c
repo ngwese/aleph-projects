@@ -17,6 +17,7 @@ void pages_init(void) {
   page_modules_init();
   page_slots_init();
   page_slot_init();
+  page_play_maps_init();
   page_play_init();
 
   g_pages[ePageSetups] =
@@ -33,6 +34,8 @@ void pages_init(void) {
     (Page){.name = "slot c", .select_fn = select_slot_c, .redraw_fn = redraw_slot_c};
   g_pages[ePageSlotD] =
     (Page){.name = "slot d", .select_fn = select_slot_d, .redraw_fn = redraw_slot_d};
+  g_pages[ePagePlayMaps] =
+    (Page){.name = "play", .select_fn = select_play_maps, .redraw_fn = redraw_play_maps};
   g_pages[ePagePlay] =
     (Page){.name = "play", .select_fn = select_play, .redraw_fn = redraw_play};
 
@@ -63,11 +66,11 @@ void pages_next(s8 dir) {
     return;
   }
   next = g_page_idx + dir;
-  /* skip play in edit ring */
+  /* skip live play in edit ring; wrap at play maps */
   if(next < ePageSetups) {
-    next = ePageSlotD;
+    next = ePagePlayMaps;
   }
-  if(next > ePageSlotD) {
+  if(next > ePagePlayMaps) {
     next = ePageSetups;
   }
   pages_set((PageId)next);

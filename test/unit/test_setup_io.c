@@ -68,11 +68,59 @@ void test_unknown_keys_ignored(void) {
   TEST_ASSERT_EQUAL_INT(eSetupIoOk, setup_io_read(&io, &out));
   fclose(fp);
   TEST_ASSERT_EQUAL_STRING("a", out.slot_stem[0]);
+  /* missing play.* → defaults */
+  TEST_ASSERT_EQUAL_INT(ePlayEncMorphX, out.maps.enc[2].kind);
+  TEST_ASSERT_EQUAL_INT(ePlaySwSnapA, out.maps.sw[0].kind);
+}
+
+void test_play_maps_roundtrip(void) {
+  const char *path = "build/tmp_setup_play.txt";
+  SetupData in;
+  SetupData out;
+  LineIO io;
+  FILE *fp;
+
+  memset(&in, 0, sizeof(in));
+  in.format = SETUP_IO_FORMAT;
+  strcpy(in.module, "waves");
+  in.version.maj = 0;
+  in.version.min = 1;
+  in.version.rev = 0;
+  in.slot_occupied[0] = 1;
+  strcpy(in.slot_stem[0], "a");
+  play_maps_set_defaults(&in.maps);
+  in.maps.enc[0].kind = ePlayEncParamSlot;
+  in.maps.enc[0].slot = eMorphSlotB;
+  strcpy(in.maps.enc[0].label, "amp");
+  in.maps.sw[1].kind = ePlaySwSetAll;
+  strcpy(in.maps.sw[1].label, "gate");
+  in.maps.sw[1].value = 1;
+
+  fp = fopen(path, "w");
+  TEST_ASSERT_NOT_NULL(fp);
+  host_lineio_init(&io, fp);
+  TEST_ASSERT_EQUAL_INT(eSetupIoOk, setup_io_write(&io, &in));
+  fclose(fp);
+
+  fp = fopen(path, "r");
+  host_lineio_init(&io, fp);
+  TEST_ASSERT_EQUAL_INT(eSetupIoOk, setup_io_read(&io, &out));
+  fclose(fp);
+
+  TEST_ASSERT_EQUAL_INT(ePlayEncParamSlot, out.maps.enc[0].kind);
+  TEST_ASSERT_EQUAL_INT(eMorphSlotB, out.maps.enc[0].slot);
+  TEST_ASSERT_EQUAL_STRING("amp", out.maps.enc[0].label);
+  TEST_ASSERT_EQUAL_INT(ePlayEncMorphX, out.maps.enc[2].kind);
+  TEST_ASSERT_EQUAL_INT(ePlaySwSetAll, out.maps.sw[1].kind);
+  TEST_ASSERT_EQUAL_STRING("gate", out.maps.sw[1].label);
+  TEST_ASSERT_EQUAL_INT(1, out.maps.sw[1].value);
+  TEST_ASSERT_EQUAL_INT(ePlaySwSnapA, out.maps.sw[0].kind);
 }
 
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_setup_roundtrip);
   RUN_TEST(test_unknown_keys_ignored);
+  RUN_TEST(test_play_maps_roundtrip);
   return UNITY_END();
 }

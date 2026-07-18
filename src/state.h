@@ -2,11 +2,13 @@
 #define BETWEEN_STATE_H
 
 #include "slots.h"
+#include "play_maps.h"
 #include "types.h"
 
 #include "between_limits.h"
 
 extern Slots g_slots;
+extern PlayMaps g_play_maps;
 /* stem of the last loaded/saved setup; empty if none. */
 extern char g_setup_name[BETWEEN_NAME_LEN];
 

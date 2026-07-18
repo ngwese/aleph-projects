@@ -241,6 +241,103 @@ void render_footer(const char *a, const char *b, const char *c, const char *d) {
   }
 }
 
+void render_footer_slot_tri(u8 cell, MorphSlot slot) {
+  u8 px[3];
+  u8 py[3];
+  u8 i;
+  if(cell >= 4 || slot >= MORPH2D_SLOTS) {
+    return;
+  }
+  /* 3-pixel right triangle in morph-plane corner of the footer cell */
+  switch(slot) {
+  case eMorphSlotA: /* top-left */
+    px[0] = 0;
+    py[0] = 0;
+    px[1] = 1;
+    py[1] = 0;
+    px[2] = 0;
+    py[2] = 1;
+    break;
+  case eMorphSlotB: /* top-right */
+    px[0] = 31;
+    py[0] = 0;
+    px[1] = 30;
+    py[1] = 0;
+    px[2] = 31;
+    py[2] = 1;
+    break;
+  case eMorphSlotC: /* bottom-left */
+    px[0] = 0;
+    py[0] = 7;
+    px[1] = 1;
+    py[1] = 7;
+    px[2] = 0;
+    py[2] = 6;
+    break;
+  case eMorphSlotD: /* bottom-right */
+  default:
+    px[0] = 31;
+    py[0] = 7;
+    px[1] = 30;
+    py[1] = 7;
+    px[2] = 31;
+    py[2] = 6;
+    break;
+  }
+  for(i = 0; i < 3; ++i) {
+    regFoot[cell].data[(u32)py[i] * 32u + (u32)px[i]] = HEAD_GREY;
+  }
+  regFoot[cell].dirty = 1;
+}
+
+/* morph plane: ~36px square on the left of the content region */
+#define PLAY_MORPH_OX 2
+#define PLAY_MORPH_OY 2
+#define PLAY_MORPH_SZ 36
+
+void render_play_morph(u16 mx, u16 my) {
+  u8 x;
+  u8 y;
+  u8 cx;
+  u8 cy;
+  u8 ix;
+  u8 iy;
+  u16 inner = (u16)(PLAY_MORPH_SZ - 2);
+
+  /* light-gray frame */
+  for(x = 0; x < PLAY_MORPH_SZ; ++x) {
+    regMain.data[(u32)PLAY_MORPH_OY * 128u + (u32)(PLAY_MORPH_OX + x)] =
+      HEAD_GREY;
+    regMain.data[(u32)(PLAY_MORPH_OY + PLAY_MORPH_SZ - 1) * 128u +
+		 (u32)(PLAY_MORPH_OX + x)] = HEAD_GREY;
+  }
+  for(y = 0; y < PLAY_MORPH_SZ; ++y) {
+    regMain.data[(u32)(PLAY_MORPH_OY + y) * 128u + (u32)PLAY_MORPH_OX] =
+      HEAD_GREY;
+    regMain.data[(u32)(PLAY_MORPH_OY + y) * 128u +
+		 (u32)(PLAY_MORPH_OX + PLAY_MORPH_SZ - 1)] = HEAD_GREY;
+  }
+
+  /* 3×3 white cursor; map morph into inner (frame inset by 1) */
+  if(inner > 2) {
+    cx = (u8)(PLAY_MORPH_OX + 1 + ((u32)mx * (inner - 2)) / MORPH2D_ONE);
+    cy = (u8)(PLAY_MORPH_OY + 1 + ((u32)my * (inner - 2)) / MORPH2D_ONE);
+  } else {
+    cx = (u8)(PLAY_MORPH_OX + 1);
+    cy = (u8)(PLAY_MORPH_OY + 1);
+  }
+  for(iy = 0; iy < 3; ++iy) {
+    for(ix = 0; ix < 3; ++ix) {
+      x = (u8)(cx + ix);
+      y = (u8)(cy + iy);
+      if(x < 128 && y < 40) {
+	regMain.data[(u32)y * 128u + (u32)x] = HEAD_WHITE;
+      }
+    }
+  }
+  regMain.dirty = 1;
+}
+
 void render_log(const char *str) {
   region_fill(&regLog, 0);
   log_buf[0] = '\0';

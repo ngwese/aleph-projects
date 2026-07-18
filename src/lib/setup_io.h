@@ -6,6 +6,7 @@
 #include "lineio.h"
 #include "module_common.h"
 #include "morph2d.h"
+#include "play_maps.h"
 #include "types.h"
 
 #define SETUP_IO_FORMAT 1
@@ -28,6 +29,7 @@ typedef struct {
   u8 slot_occupied[MORPH2D_SLOTS];
   u16 x; /* 0..MORPH2D_ONE */
   u16 y;
+  PlayMaps maps;
 } SetupData;
 
 SetupIoStatus setup_io_read(LineIO *io, SetupData *out);

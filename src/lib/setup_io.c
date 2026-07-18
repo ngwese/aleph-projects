@@ -101,6 +101,8 @@ SetupIoStatus setup_io_read(LineIO *io, SetupData *out) {
     return eSetupIoMalformed;
   }
   memset(out, 0, sizeof(*out));
+  /* optional play.* keys: missing → defaults */
+  play_maps_set_defaults(&out->maps);
 
   while(io->read_line(line, SETUP_IO_LINE_MAX, io->ctx)) {
     KvLineKind kind = kvtext_parse_line(line, &pair);
@@ -150,6 +152,26 @@ SetupIoStatus setup_io_read(LineIO *io, SetupData *out) {
       if(!parse_u16_morph(pair.val, &out->y)) {
 	return eSetupIoMalformed;
       }
+      continue;
+    }
+    if(strncmp(pair.key, "play.enc", 8) == 0 && pair.key[8] >= '0' &&
+       pair.key[8] <= '3' && pair.key[9] == '\0') {
+      PlayEncMap enc;
+      u8 idx = (u8)(pair.key[8] - '0');
+      if(!play_maps_parse_enc(pair.val, &enc)) {
+	return eSetupIoMalformed;
+      }
+      out->maps.enc[idx] = enc;
+      continue;
+    }
+    if(strncmp(pair.key, "play.sw", 7) == 0 && pair.key[7] >= '0' &&
+       pair.key[7] <= '3' && pair.key[8] == '\0') {
+      PlaySwMap sw;
+      u8 idx = (u8)(pair.key[7] - '0');
+      if(!play_maps_parse_sw(pair.val, &sw)) {
+	return eSetupIoMalformed;
+      }
+      out->maps.sw[idx] = sw;
       continue;
     }
     /* unknown keys ignored for forward compatibility */
@@ -215,6 +237,32 @@ SetupIoStatus setup_io_write(LineIO *io, const SetupData *data) {
   format_u16(num, sizeof(num), data->y);
   if(!write_kv(io, "y", num)) {
     return eSetupIoWriteFail;
+  }
+  if(!io->write_line("\n", io->ctx)) {
+    return eSetupIoWriteFail;
+  }
+  {
+    static const char *enc_keys[PLAY_MAPS_ENC_COUNT] = {
+      "play.enc0", "play.enc1", "play.enc2", "play.enc3"};
+    static const char *sw_keys[PLAY_MAPS_SW_COUNT] = {
+      "play.sw0", "play.sw1", "play.sw2", "play.sw3"};
+    char val[SETUP_IO_LINE_MAX];
+    for(i = 0; i < PLAY_MAPS_ENC_COUNT; ++i) {
+      if(!play_maps_format_enc(val, sizeof(val), &data->maps.enc[i])) {
+	return eSetupIoWriteFail;
+      }
+      if(!write_kv(io, enc_keys[i], val)) {
+	return eSetupIoWriteFail;
+      }
+    }
+    for(i = 0; i < PLAY_MAPS_SW_COUNT; ++i) {
+      if(!play_maps_format_sw(val, sizeof(val), &data->maps.sw[i])) {
+	return eSetupIoWriteFail;
+      }
+      if(!write_kv(io, sw_keys[i], val)) {
+	return eSetupIoWriteFail;
+      }
+    }
   }
   return eSetupIoOk;
 }
