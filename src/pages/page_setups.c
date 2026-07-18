@@ -92,12 +92,13 @@ static void handle_sw1(s32 data) {
   if(data <= 0 || g_alt_mode) {
     return;
   }
-  if(list.count > 0) {
-    strncpy(stem, list.names[sel], BETWEEN_NAME_LEN - 1);
-  } else {
-    strcpy(stem, "setup0");
+  if(g_setup_name[0] != '\0') {
+    strncpy(stem, g_setup_name, BETWEEN_NAME_LEN - 1);
+    stem[BETWEEN_NAME_LEN - 1] = '\0';
+  } else if(!state_unique_setup_stem(stem, sizeof(stem))) {
+    render_log("name fail");
+    return;
   }
-  stem[BETWEEN_NAME_LEN - 1] = '\0';
   if(state_save_setup(stem)) {
     render_log("setup saved");
     do_scan();
@@ -119,8 +120,13 @@ static void handle_sw2(s32 data) {
     render_update();
     return;
   }
+  if(!state_unique_setup_stem(g_setup_name, sizeof(g_setup_name))) {
+    render_log("name fail");
+    redraw();
+    render_update();
+    return;
+  }
   g_new_setup_flow = 1;
-  g_setup_name[0] = '\0';
   pages_set(ePageModules);
 }
 

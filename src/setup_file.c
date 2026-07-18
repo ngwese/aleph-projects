@@ -97,6 +97,24 @@ u8 setup_file_delete(const char *stem) {
   return (u8)(rc == 0);
 }
 
+u8 setup_file_exists(const char *stem) {
+  char path[BETWEEN_PATH_MAX];
+  void *fp;
+  if(stem == NULL || stem[0] == '\0') {
+    return 0;
+  }
+  make_path(path, stem);
+  app_pause();
+  fp = fl_fopen(path, "r");
+  if(fp == NULL) {
+    app_resume();
+    return 0;
+  }
+  fl_fclose(fp);
+  app_resume();
+  return 1;
+}
+
 u8 setup_file_write_state(const char *stem) {
   void *fp;
   LineIO io;

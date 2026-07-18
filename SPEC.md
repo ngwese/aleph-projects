@@ -281,10 +281,12 @@ common conventions (align with bees):
     module, replacing the current module.
   - load the referenced presets into the four slots, set the saved morph
     point, and apply the effective parameters.
-- sw1 **save**: write the current configuration to the selected / named
-  setup (module, slots, morph point, and play bindings).
-- sw2 **new**: begin a new setup and jump to the modules page for module
-  selection.
+- sw1 **save**: write the current configuration to the current setup name
+  (`g_setup_name` / status line), creating that file if needed (module,
+  slots, morph point, and play bindings). if no name is set yet, allocate a
+  unique `sNNN` stem.
+- sw2 **new**: begin a new setup with a unique `sNNN` name and jump to the
+  modules page for module selection.
 - alt+sw0 **delete** with confirm.
 - enc2/enc3: name edit when creating/renaming.
 

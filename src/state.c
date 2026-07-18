@@ -185,6 +185,30 @@ u8 state_unique_preset_stem(char *out, u32 out_size) {
   return 0;
 }
 
+u8 state_unique_setup_stem(char *out, u32 out_size) {
+  u16 n;
+  char cand[BETWEEN_NAME_LEN];
+
+  if(out == NULL || out_size < 5) {
+    return 0;
+  }
+
+  for(n = 0; n < 1000; ++n) {
+    cand[0] = 's';
+    cand[1] = (char)('0' + (n / 100) % 10);
+    cand[2] = (char)('0' + (n / 10) % 10);
+    cand[3] = (char)('0' + (n % 10));
+    cand[4] = '\0';
+    if(setup_file_exists(cand)) {
+      continue;
+    }
+    strncpy(out, cand, out_size - 1);
+    out[out_size - 1] = '\0';
+    return 1;
+  }
+  return 0;
+}
+
 u8 state_load_setup(const char *stem) {
   SetupData data;
   SetupIoStatus st;

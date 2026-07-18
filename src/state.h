@@ -27,6 +27,9 @@ u8 state_new_preset(MorphSlot slot, const char *stem, u8 from_eff);
 /* write a unique pNNN stem into out (not on disk or in any slot). */
 u8 state_unique_preset_stem(char *out, u32 out_size);
 
+/* write a unique sNNN stem into out (not already on disk). */
+u8 state_unique_setup_stem(char *out, u32 out_size);
+
 u8 state_load_setup(const char *stem);
 u8 state_save_setup(const char *stem);
 
