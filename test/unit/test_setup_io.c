@@ -1,0 +1,78 @@
+#include "unity.h"
+
+#include "setup_io.h"
+#include "test_lineio_host.h"
+
+#include <stdio.h>
+#include <string.h>
+
+void setUp(void) {}
+void tearDown(void) {}
+
+void test_setup_roundtrip(void) {
+  const char *path = "build/tmp_setup.txt";
+  SetupData in;
+  SetupData out;
+  LineIO io;
+  FILE *fp;
+
+  memset(&in, 0, sizeof(in));
+  in.format = SETUP_IO_FORMAT;
+  strcpy(in.module, "waves");
+  in.version.maj = 0;
+  in.version.min = 4;
+  in.version.rev = 5;
+  strcpy(in.slot_stem[0], "soft-pad");
+  in.slot_occupied[0] = 1;
+  strcpy(in.slot_stem[1], "bright-pad");
+  in.slot_occupied[1] = 1;
+  in.slot_occupied[2] = 0;
+  strcpy(in.slot_stem[3], "soft-pad");
+  in.slot_occupied[3] = 1;
+  in.x = (u16)((0.35 * MORPH2D_ONE) + 0.5);
+  in.y = (u16)((0.60 * MORPH2D_ONE) + 0.5);
+
+  fp = fopen(path, "w");
+  TEST_ASSERT_NOT_NULL(fp);
+  host_lineio_init(&io, fp);
+  TEST_ASSERT_EQUAL_INT(eSetupIoOk, setup_io_write(&io, &in));
+  fclose(fp);
+
+  fp = fopen(path, "r");
+  host_lineio_init(&io, fp);
+  TEST_ASSERT_EQUAL_INT(eSetupIoOk, setup_io_read(&io, &out));
+  fclose(fp);
+
+  TEST_ASSERT_EQUAL_STRING("waves", out.module);
+  TEST_ASSERT_EQUAL_STRING("soft-pad", out.slot_stem[0]);
+  TEST_ASSERT_EQUAL_STRING("bright-pad", out.slot_stem[1]);
+  TEST_ASSERT_FALSE(out.slot_occupied[2]);
+  TEST_ASSERT_TRUE(out.slot_occupied[3]);
+  TEST_ASSERT_EQUAL_UINT16(in.x, out.x);
+  TEST_ASSERT_EQUAL_UINT16(in.y, out.y);
+}
+
+void test_unknown_keys_ignored(void) {
+  const char *path = "build/tmp_setup_extra.txt";
+  SetupData out;
+  LineIO io;
+  FILE *fp = fopen(path, "w");
+  TEST_ASSERT_NOT_NULL(fp);
+  fputs("format: 1\nmodule: waves\nversion: 0.1.0\n"
+        "midi.x: 1\nslot.a: a\nx: 0\ny: 0\n",
+        fp);
+  fclose(fp);
+
+  fp = fopen(path, "r");
+  host_lineio_init(&io, fp);
+  TEST_ASSERT_EQUAL_INT(eSetupIoOk, setup_io_read(&io, &out));
+  fclose(fp);
+  TEST_ASSERT_EQUAL_STRING("a", out.slot_stem[0]);
+}
+
+int main(void) {
+  UNITY_BEGIN();
+  RUN_TEST(test_setup_roundtrip);
+  RUN_TEST(test_unknown_keys_ignored);
+  return UNITY_END();
+}
