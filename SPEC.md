@@ -382,9 +382,11 @@ when a preset is loaded, controls are:
   prefilled with the current stem (or a unique `pNNN` if unset); OK writes
   under the chosen name and assigns it to this slot (original file left
   untouched if the name differs).
-- alt+sw2 **capture eff**: overwrite this slot’s in-memory values with the
+- alt+sw1 **capture eff**: overwrite this slot’s in-memory values with the
   current effective blend (useful for “bake” a morph position into a
   corner).
+- alt+sw2 **focus**: snap the morph point to this slot’s corner so live
+  edits match the values on this page exactly.
 
 generated preset names use the form `pNNN` and skip any stem already
 present on disk for the module or assigned to a slot in memory.
@@ -392,9 +394,11 @@ present on disk for the module or assigned to a slot in memory.
 slot’s in-memory values, recomputes the effective set for the current
 morph point, and sends parameters to the module immediately.
 
-unsaved edits: mark the slot dirty (2x2 square in the header indicator).
-leaving the page keeps in-memory dirty state until save or reset; setup
-save should warn if dirty.
+unsaved edits: show a light-grey `*` after the preset-name box in the
+header (1px black spacer). the upper-right header indicator always shows
+the current morph position (mid-grey outline, white 3×3 cursor). leaving
+the page keeps in-memory dirty state until save or reset; setup save
+should warn if dirty.
 
 ### play page
 

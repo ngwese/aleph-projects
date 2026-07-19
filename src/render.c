@@ -4,8 +4,10 @@
 
 #include "app.h"
 #include "font.h"
+#include "morph2d.h"
 #include "region.h"
 #include "screen.h"
+#include "state.h"
 
 static region bootScrollRegion = {.w = 128, .h = 64, .x = 0, .y = 0};
 static scroll bootScroll;
@@ -245,21 +247,42 @@ static u8 head_draw_text_box(u8 x, const char *text, u8 x_max) {
   return (u8)(x + bar_w);
 }
 
-static void head_draw_indicator(u8 dirty) {
+static void head_draw_morph_indicator(void) {
   u8 ix;
   u8 iy;
+  u8 cx;
+  u8 cy;
+  u16 inner = (u16)(HEAD_IND_W - 2);
 
-  head_fill_col(HEAD_IND_X, HEAD_IND_W, HEAD_WHITE);
-  if(dirty) {
-    for(iy = 3; iy < 5; ++iy) {
-      for(ix = 3; ix < 5; ++ix) {
-	head_put_px((u8)(HEAD_IND_X + ix), iy, HEAD_BLACK);
-      }
+  /* mid-grey outline, black fill (matches play morph style, 8×8) */
+  head_fill_col(HEAD_IND_X, HEAD_IND_W, HEAD_BLACK);
+  for(ix = 0; ix < HEAD_IND_W; ++ix) {
+    head_put_px((u8)(HEAD_IND_X + ix), 0, HEAD_GREY);
+    head_put_px((u8)(HEAD_IND_X + ix), (u8)(HEAD_IND_W - 1), HEAD_GREY);
+  }
+  for(iy = 0; iy < HEAD_IND_W; ++iy) {
+    head_put_px(HEAD_IND_X, iy, HEAD_GREY);
+    head_put_px((u8)(HEAD_IND_X + HEAD_IND_W - 1), iy, HEAD_GREY);
+  }
+
+  /* 3×3 white cursor mapped into the inner (outline inset by 1) */
+  if(inner > 2) {
+    cx = (u8)(HEAD_IND_X + 1 +
+	      ((u32)g_slots.x * (inner - 2)) / MORPH2D_ONE);
+    cy = (u8)(1 + ((u32)g_slots.y * (inner - 2)) / MORPH2D_ONE);
+  } else {
+    cx = (u8)(HEAD_IND_X + 1);
+    cy = 1;
+  }
+  for(iy = 0; iy < 3; ++iy) {
+    for(ix = 0; ix < 3; ++ix) {
+      head_put_px((u8)(cx + ix), (u8)(cy + iy), HEAD_WHITE);
     }
   }
 }
 
 void render_header(const char *title, u8 dirty) {
+  (void)dirty;
   if(title == NULL) {
     title = "";
   }
@@ -267,7 +290,7 @@ void render_header(const char *title, u8 dirty) {
   region_fill(&regHead, HEAD_BLACK);
   head_fill_col(0, HEAD_BAR_W, HEAD_GREY);
   (void)head_draw_text_box(HEAD_TEXT_X, title, (u8)(HEAD_IND_X - HEAD_GAP_W));
-  head_draw_indicator(dirty);
+  head_draw_morph_indicator();
   regHead.dirty = 1;
 }
 
@@ -285,10 +308,15 @@ void render_header_slot(char slot_letter, const char *preset, u8 dirty) {
   x = head_draw_text_box(HEAD_TEXT_X, slot, x_max);
   if(preset != NULL && preset[0] != '\0' && (u16)x + HEAD_GAP_W < x_max) {
     x = (u8)(x + HEAD_GAP_W);
-    (void)head_draw_text_box(x, preset, x_max);
+    x = head_draw_text_box(x, preset, x_max);
+  }
+  /* dirty: 1px black spacer then light-grey "*" after the name box */
+  if(dirty && (u16)x + HEAD_GAP_W < x_max) {
+    x = (u8)(x + HEAD_GAP_W);
+    font_string_region_clip(&regHead, "*", x, 0, HEAD_GREY, HEAD_BLACK);
   }
 
-  head_draw_indicator(dirty);
+  head_draw_morph_indicator();
   regHead.dirty = 1;
 }
 

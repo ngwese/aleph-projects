@@ -27,9 +27,11 @@ void render_edit_string(u8 row, const char *str, u8 cursor);
 /* charset row: draw chars with inverse glyph at sel (0xff = none). */
 void render_charset_row(u8 row, const char *chars, u8 sel);
 
-/* edit-mode page header: mid-grey bar, title box(es), right indicator. */
+/* edit-mode page header: mid-grey bar, title box(es), morph-position
+ * indicator (mid-grey outline, white 3×3 cursor). dirty is unused here. */
 void render_header(const char *title, u8 dirty);
-/* slot page: capital letter box, optional preset-name box, indicator. */
+/* slot page: capital letter box, optional preset-name box, light-grey "*"
+ * after the name when dirty, morph-position indicator. */
 void render_header_slot(char slot_letter, const char *preset, u8 dirty);
 void render_header_clear(void);
 

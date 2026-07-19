@@ -119,7 +119,11 @@ static void redraw_slot(MorphSlot slot) {
     render_line((u8)i, line);
     render_line_at((u8)i, SLOT_VAL_X, num);
   }
-  render_footer("save", "reset", "new", "alt");
+  if(g_alt_mode) {
+    render_footer("save as", "capture", "focus", "alt");
+  } else {
+    render_footer("save", "reset", "new", "alt");
+  }
 }
 
 void redraw_slot_a(void) { redraw_slot(eMorphSlotA); }
@@ -261,7 +265,17 @@ static void handle_sw0(s32 data) {
 }
 
 static void handle_sw1(s32 data) {
-  if(data <= 0 || !g_slots.occupied[cur_slot] || !g_slots.stem[cur_slot][0]) {
+  if(data <= 0 || !g_slots.occupied[cur_slot]) {
+    return;
+  }
+  if(g_alt_mode) {
+    slots_capture_effective(&g_slots, cur_slot);
+    render_log("captured");
+    redraw_slot(cur_slot);
+    render_update();
+    return;
+  }
+  if(!g_slots.stem[cur_slot][0]) {
     return;
   }
   if(state_load_preset(cur_slot, g_slots.stem[cur_slot])) {
@@ -282,18 +296,21 @@ static void handle_sw2(s32 data) {
     return;
   }
   if(g_alt_mode) {
-    slots_capture_effective(&g_slots, cur_slot);
-    render_log("captured");
+    slots_snap_to(&g_slots, cur_slot);
+    state_apply();
+    render_log("focus");
+    redraw_slot(cur_slot);
+    render_update();
+    return;
+  }
+  if(!state_unique_preset_stem(stem, sizeof(stem))) {
+    render_log("name fail");
+    return;
+  }
+  if(state_new_preset(cur_slot, stem, 0)) {
+    render_log("preset new");
   } else {
-    if(!state_unique_preset_stem(stem, sizeof(stem))) {
-      render_log("name fail");
-      return;
-    }
-    if(state_new_preset(cur_slot, stem, 0)) {
-      render_log("preset new");
-    } else {
-      render_log("new fail");
-    }
+    render_log("new fail");
   }
   redraw_slot(cur_slot);
   render_update();
