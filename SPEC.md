@@ -518,7 +518,9 @@ notes:
 play layout (128×64, bees-style footer cells for `sw0`–`sw3`):
 
 ```text
-┌────────────┬─────────────────────────┐
+┌──────────────────────────────────────┐
+│ ▌ setup name              [M][morph] │  ← header (edit-style)
+├────────────┬─────────────────────────┤
 │ morph      │ enc0 label   enc1 label │
 │  (square)  │ enc0 value   enc1 value │
 │            │ enc2 label   enc3 label │
@@ -527,6 +529,10 @@ play layout (128×64, bees-style footer cells for `sw0`–`sw3`):
 │ sw0  │  sw1   │   sw2    │   sw3     │
 └──────┴────────┴──────────┴───────────┘
 ```
+
+**header:** same chrome as edit mode — 2px mid-grey bar, gap, then the
+current setup name in a white text box (or `none` if unset). upper-right
+morph-position indicator and optional MIDI `M` as on other pages.
 
 **morph position (left):** a square region above the switch labels. a light
 gray square frame marks the unit morph plane; the current morph point is a

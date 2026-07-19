@@ -203,7 +203,7 @@ static void redraw(void) {
   u8 i;
 
   render_clear();
-  render_header_clear();
+  render_header(g_setup_name[0] ? g_setup_name : "none", 0);
   render_play_morph(g_slots.x, g_slots.y);
 
   /* 2×2 encoder grid: left enc0/enc2, right enc1/enc3 */
