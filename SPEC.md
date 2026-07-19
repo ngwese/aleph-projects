@@ -361,7 +361,9 @@ separate preset-name box. if the slot is empty, only the letter box is shown.
 body: scrolling parameter list from the module `.dsc`, showing each
 parameter’s **slot-stored value** (not the effective blend). beside or
 under the list, a compact readout of the effective value can help, but is
-optional for v1.
+optional for v1. the selected parameter index (and thus list scroll) is
+**shared across slots a–d** so comparing the same control on different
+corners keeps the cursor in place when switching pages.
 
 if no preset is loaded in the slot, the page displays only:
 

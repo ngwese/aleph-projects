@@ -15,8 +15,22 @@
 #include "state.h"
 
 static MorphSlot cur_slot;
+/* shared across slot A–D pages so selection/scroll survive page changes */
 static s16 param_sel;
 static MorphSlot save_as_slot;
+
+static void clamp_param_sel(void) {
+  if(g_slots.num_params == 0) {
+    param_sel = 0;
+    return;
+  }
+  if(param_sel < 0) {
+    param_sel = 0;
+  }
+  if(param_sel >= (s16)g_slots.num_params) {
+    param_sel = (s16)g_slots.num_params - 1;
+  }
+}
 
 static void fmt_s32(char *dst, s32 v) {
   char tmp[12];
@@ -136,12 +150,7 @@ static void handle_enc0(s32 data) {
     return;
   }
   param_sel += (data > 0) ? 1 : -1;
-  if(param_sel < 0) {
-    param_sel = 0;
-  }
-  if(param_sel >= (s16)g_slots.num_params) {
-    param_sel = (s16)g_slots.num_params - 1;
-  }
+  clamp_param_sel();
   redraw_slot(cur_slot);
   render_update();
 }
@@ -324,7 +333,7 @@ static void handle_sw3(s32 data) {
 
 static void select_slot(MorphSlot slot) {
   cur_slot = slot;
-  param_sel = 0;
+  clamp_param_sel();
   app_event_handlers[kEventEncoder0] = handle_enc0;
   app_event_handlers[kEventEncoder1] = handle_enc1;
   app_event_handlers[kEventEncoder2] = handle_enc2;
