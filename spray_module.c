@@ -45,25 +45,25 @@ void module_init(void) {
   filter_1p_lo_init(&(adcSlew[3]), 0);
 
   // CV params recorded for SPI sync / apps/mix compatibility; set_param is no-op
-  param_setup(eParam_cv0, 0);
   param_setup(eParam_cv1, 0);
   param_setup(eParam_cv2, 0);
   param_setup(eParam_cv3, 0);
+  param_setup(eParam_cv4, 0);
 
   // amp = 1/4 (-12dB)
-  param_setup(eParam_adc0, PARAM_AMP_MAX >> 2);
   param_setup(eParam_adc1, PARAM_AMP_MAX >> 2);
   param_setup(eParam_adc2, PARAM_AMP_MAX >> 2);
   param_setup(eParam_adc3, PARAM_AMP_MAX >> 2);
+  param_setup(eParam_adc4, PARAM_AMP_MAX >> 2);
 
-  param_setup(eParam_adcSlew0, PARAM_SLEW_DEFAULT);
   param_setup(eParam_adcSlew1, PARAM_SLEW_DEFAULT);
   param_setup(eParam_adcSlew2, PARAM_SLEW_DEFAULT);
   param_setup(eParam_adcSlew3, PARAM_SLEW_DEFAULT);
-  param_setup(eParam_cvSlew0, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_adcSlew4, PARAM_SLEW_DEFAULT);
   param_setup(eParam_cvSlew1, PARAM_SLEW_DEFAULT);
   param_setup(eParam_cvSlew2, PARAM_SLEW_DEFAULT);
   param_setup(eParam_cvSlew3, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_cvSlew4, PARAM_SLEW_DEFAULT);
 }
 
 void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
@@ -103,39 +103,39 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
 void module_set_param(u32 idx, ParamValue v) {
   switch(idx) {
   // CV — no-op (kept for param-index compatibility with apps/mix)
-  case eParam_cv0 :
   case eParam_cv1 :
   case eParam_cv2 :
   case eParam_cv3 :
-  case eParam_cvSlew0 :
+  case eParam_cv4 :
   case eParam_cvSlew1 :
   case eParam_cvSlew2 :
   case eParam_cvSlew3 :
+  case eParam_cvSlew4 :
     break;
 
-  case eParam_adc0 :
+  case eParam_adc1 :
     filter_1p_lo_in(&(adcSlew[0]), v);
     break;
-  case eParam_adc1 :
+  case eParam_adc2 :
     filter_1p_lo_in(&(adcSlew[1]), v);
     break;
-  case eParam_adc2 :
+  case eParam_adc3 :
     filter_1p_lo_in(&(adcSlew[2]), v);
     break;
-  case eParam_adc3 :
+  case eParam_adc4 :
     filter_1p_lo_in(&(adcSlew[3]), v);
     break;
 
-  case eParam_adcSlew0 :
+  case eParam_adcSlew1 :
     filter_1p_lo_set_slew(&(adcSlew[0]), v);
     break;
-  case eParam_adcSlew1 :
+  case eParam_adcSlew2 :
     filter_1p_lo_set_slew(&(adcSlew[1]), v);
     break;
-  case eParam_adcSlew2 :
+  case eParam_adcSlew3 :
     filter_1p_lo_set_slew(&(adcSlew[2]), v);
     break;
-  case eParam_adcSlew3 :
+  case eParam_adcSlew4 :
     filter_1p_lo_set_slew(&(adcSlew[3]), v);
     break;
 
