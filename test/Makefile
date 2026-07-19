@@ -16,6 +16,7 @@ BUILD_DIR = build
 CC = gcc
 CFLAGS = -g -Wall -Wextra -Wstrict-prototypes -std=c99
 CPPFLAGS = -DTEST \
+	-I$(BETWEEN_ROOT)/src \
 	-I$(LIB_DIR) \
 	-I$(COMMON_DIR) \
 	-I$(LIBAVR32_SRC) \

@@ -3,6 +3,7 @@
 #ifndef BETWEEN_SLOTS_H
 #define BETWEEN_SLOTS_H
 
+#include "between_limits.h"
 #include "module_common.h"
 #include "morph2d.h"
 #include "param_common.h"
@@ -26,6 +27,9 @@ typedef struct {
   ModuleVersion version;
   u16 x;
   u16 y;
+  /* send order for slots_apply only (descriptor index order elsewhere) */
+  u16 apply_order[BETWEEN_PARAMS_MAX];
+  u16 apply_order_len;
   slots_set_param_fn set_param;
   void *set_param_ctx;
 } Slots;

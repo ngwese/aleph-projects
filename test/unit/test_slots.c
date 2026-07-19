@@ -8,17 +8,22 @@
 
 static ParamValue applied[NPARAMS];
 static u16 apply_count;
+static u16 apply_order_log[NPARAMS];
 
 static void mock_set(u16 index, ParamValue value, void *ctx) {
   (void)ctx;
   if (index < NPARAMS) {
     applied[index] = value;
+    if (apply_count < NPARAMS) {
+      apply_order_log[apply_count] = index;
+    }
     apply_count++;
   }
 }
 
 void setUp(void) {
   memset(applied, 0, sizeof(applied));
+  memset(apply_order_log, 0, sizeof(apply_order_log));
   apply_count = 0;
 }
 
@@ -107,10 +112,52 @@ void test_empty_slots_no_apply(void) {
   TEST_ASSERT_EQUAL_UINT16(0, apply_count);
 }
 
+/* Descriptor order: amp, integrator, amp, integrator-short.
+ * Apply send order must put integrators first (stable within groups). */
+void test_apply_order_integrators_first(void) {
+  ParamDesc desc[NPARAMS];
+  ParamValue bank_a[NPARAMS];
+  ParamValue *banks[MORPH2D_SLOTS] = {bank_a, NULL, NULL, NULL};
+  Slots s;
+  u16 i;
+
+  memset(desc, 0, sizeof(desc));
+  desc[0].type = eParamTypeAmp;
+  desc[1].type = eParamTypeIntegrator;
+  desc[2].type = eParamTypeAmp;
+  desc[3].type = eParamTypeIntegratorShort;
+  for (i = 0; i < NPARAMS; ++i) {
+    bank_a[i] = (ParamValue)(i + 1);
+  }
+
+  slots_init(&s, NPARAMS, desc, banks, mock_set, NULL);
+  slots_set_num_params(&s, NPARAMS);
+  TEST_ASSERT_EQUAL_UINT16(NPARAMS, s.apply_order_len);
+  TEST_ASSERT_EQUAL_UINT16(1, s.apply_order[0]); /* integrator */
+  TEST_ASSERT_EQUAL_UINT16(3, s.apply_order[1]); /* integrator short */
+  TEST_ASSERT_EQUAL_UINT16(0, s.apply_order[2]); /* amp */
+  TEST_ASSERT_EQUAL_UINT16(2, s.apply_order[3]); /* amp */
+
+  slots_assign_stem(&s, eMorphSlotA, "a");
+  slots_snap_to(&s, eMorphSlotA);
+  slots_apply(&s);
+
+  TEST_ASSERT_EQUAL_UINT16(NPARAMS, apply_count);
+  TEST_ASSERT_EQUAL_UINT16(1, apply_order_log[0]);
+  TEST_ASSERT_EQUAL_UINT16(3, apply_order_log[1]);
+  TEST_ASSERT_EQUAL_UINT16(0, apply_order_log[2]);
+  TEST_ASSERT_EQUAL_UINT16(2, apply_order_log[3]);
+  TEST_ASSERT_EQUAL_INT32(1, applied[0]);
+  TEST_ASSERT_EQUAL_INT32(2, applied[1]);
+  TEST_ASSERT_EQUAL_INT32(3, applied[2]);
+  TEST_ASSERT_EQUAL_INT32(4, applied[3]);
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_morph_apply_corners);
   RUN_TEST(test_live_edit_and_discrete);
   RUN_TEST(test_empty_slots_no_apply);
+  RUN_TEST(test_apply_order_integrators_first);
   return UNITY_END();
 }

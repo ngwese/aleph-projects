@@ -63,13 +63,12 @@ relevant: `apps/between/src/render.c` — `head_draw_morph_indicator`
 
 ## send slew params before other params on apply
 
-determine if slew parameters can be identified (by name, type, or module
-descriptor) and sent first when applying an effective parameter set, so
-slew rates are in place before other values change and morph/apply feels
-more consistent.
+done: `slots_apply` sends via a type-priority schedule built at module
+load (`k_slots_apply_type_order` — integrators first). UI lists and
+`slots_capture_effective` remain descriptor-index order.
 
-relevant: `apps/between/src/state.c` (apply path), module `ParamDesc` /
-scaler types
+relevant: `apps/between/src/lib/slots.c` — `slots_rebuild_apply_order`,
+`slots_apply`
 
 ## mx44 output base-width filter
 

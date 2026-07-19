@@ -235,6 +235,12 @@ notes:
 - no slew is applied by between itself beyond writing the blended values;
   modules may still have their own integrator/slew parameters, which are
   themselves morphable like any other fix/integrator param.
+- when **sending** the effective set to the module (`slots_apply`), between
+  uses a **type-priority schedule** built at module load: integrator /
+  integrator-short params are written first, then all other types in
+  descriptor index order. this affects SPI send order only — UI parameter
+  lists, capture into slot banks, and preset storage stay in descriptor
+  index order.
 - extremely nonlinear perceptual mappings (amp, note) will not feel
   perceptually linear in the middle of the square; that is accepted for v1.
   a later option could morph in “display/control” space instead.

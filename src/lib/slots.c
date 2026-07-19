@@ -2,6 +2,60 @@
 
 #include <string.h>
 
+/* Earlier entries are sent first. Types omitted here are appended
+ * afterward in ascending parameter index order (stable). */
+static const ParamType k_slots_apply_type_order[] = {
+  eParamTypeIntegrator,
+  eParamTypeIntegratorShort,
+};
+
+static void slots_rebuild_apply_order(Slots *s) {
+  u16 n;
+  u16 i;
+  u16 t;
+  u16 out;
+  u8 placed[BETWEEN_PARAMS_MAX];
+
+  if(s == NULL) {
+    return;
+  }
+  n = s->num_params;
+  if(n > BETWEEN_PARAMS_MAX) {
+    n = BETWEEN_PARAMS_MAX;
+  }
+  if(n == 0 || s->desc == NULL) {
+    for(i = 0; i < n; ++i) {
+      s->apply_order[i] = i;
+    }
+    s->apply_order_len = n;
+    return;
+  }
+
+  memset(placed, 0, sizeof(placed));
+  out = 0;
+
+  for(t = 0; t < (u16)(sizeof(k_slots_apply_type_order) /
+			sizeof(k_slots_apply_type_order[0]));
+      ++t) {
+    ParamType want = k_slots_apply_type_order[t];
+    for(i = 0; i < n; ++i) {
+      if(!placed[i] && s->desc[i].type == want) {
+	s->apply_order[out++] = i;
+	placed[i] = 1;
+      }
+    }
+  }
+
+  for(i = 0; i < n; ++i) {
+    if(!placed[i]) {
+      s->apply_order[out++] = i;
+      placed[i] = 1;
+    }
+  }
+
+  s->apply_order_len = out;
+}
+
 u8 slots_param_is_discrete(ParamType type) {
   return (u8)(type == eParamTypeBool || type == eParamTypeLabel);
 }
@@ -68,7 +122,11 @@ void slots_set_num_params(Slots *s, u16 n) {
   if(n > s->max_params) {
     n = s->max_params;
   }
+  if(n > BETWEEN_PARAMS_MAX) {
+    n = BETWEEN_PARAMS_MAX;
+  }
   s->num_params = n;
+  slots_rebuild_apply_order(s);
 }
 
 void slots_fill_defaults(Slots *s, const ParamValue *defaults) {
@@ -184,8 +242,9 @@ void slots_apply(Slots *s) {
   }
 
   morph2d_weights(s->x, s->y, s->occupied, w);
-  for(i = 0; i < s->num_params; ++i) {
-    s->set_param(i, effective_at(s, i, w), s->set_param_ctx);
+  for(i = 0; i < s->apply_order_len; ++i) {
+    u16 idx = s->apply_order[i];
+    s->set_param(idx, effective_at(s, idx, w), s->set_param_ctx);
   }
 }
 
