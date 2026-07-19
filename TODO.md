@@ -52,3 +52,28 @@ so create flows can choose a name instead of only auto stems.
 
 relevant: `apps/between/src/pages/name_edit.c`, `page_setups.c`,
 `page_slot.c`, `page_slots.c`
+
+## header morph cursor size
+
+the header morph-position indicator uses a 3×3 white cursor. consider
+making it a single pixel or 2×2 so it reads more proportional to the
+large morph view on the play screen.
+
+relevant: `apps/between/src/render.c` — `head_draw_morph_indicator`
+
+## send slew params before other params on apply
+
+determine if slew parameters can be identified (by name, type, or module
+descriptor) and sent first when applying an effective parameter set, so
+slew rates are in place before other values change and morph/apply feels
+more consistent.
+
+relevant: `apps/between/src/state.c` (apply path), module `ParamDesc` /
+scaler types
+
+## mx44 output base-width filter
+
+implement a base width filter and add it on the outputs of the mx44
+module (post-mix / pre-DAC path).
+
+relevant: `modules_block/mx44/`
