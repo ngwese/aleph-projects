@@ -71,6 +71,8 @@ void test_unknown_keys_ignored(void) {
   /* missing play.* → defaults */
   TEST_ASSERT_EQUAL_INT(ePlayEncMorphX, out.maps.enc[2].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwSnapA, out.maps.sw[0].kind);
+  TEST_ASSERT_EQUAL_INT(ePlaySwNone, out.maps.fs[0].kind);
+  TEST_ASSERT_EQUAL_INT(ePlaySwNone, out.maps.fs[1].kind);
 }
 
 void test_play_maps_roundtrip(void) {
@@ -95,6 +97,10 @@ void test_play_maps_roundtrip(void) {
   in.maps.sw[1].kind = ePlaySwSetAll;
   strcpy(in.maps.sw[1].label, "gate");
   in.maps.sw[1].value = 1;
+  in.maps.fs[0].kind = ePlaySwSnapB;
+  in.maps.fs[1].kind = ePlaySwMomAll;
+  strcpy(in.maps.fs[1].label, "amp");
+  in.maps.fs[1].value = 42;
 
   fp = fopen(path, "w");
   TEST_ASSERT_NOT_NULL(fp);
@@ -115,6 +121,10 @@ void test_play_maps_roundtrip(void) {
   TEST_ASSERT_EQUAL_STRING("gate", out.maps.sw[1].label);
   TEST_ASSERT_EQUAL_INT(1, out.maps.sw[1].value);
   TEST_ASSERT_EQUAL_INT(ePlaySwSnapA, out.maps.sw[0].kind);
+  TEST_ASSERT_EQUAL_INT(ePlaySwSnapB, out.maps.fs[0].kind);
+  TEST_ASSERT_EQUAL_INT(ePlaySwMomAll, out.maps.fs[1].kind);
+  TEST_ASSERT_EQUAL_STRING("amp", out.maps.fs[1].label);
+  TEST_ASSERT_EQUAL_INT(42, out.maps.fs[1].value);
 }
 
 int main(void) {

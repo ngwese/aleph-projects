@@ -9,6 +9,9 @@
 
 #define PLAY_MAPS_ENC_COUNT 4
 #define PLAY_MAPS_SW_COUNT 4
+#define PLAY_MAPS_FS_COUNT 2
+/* panel sw0–3 then footswitches fs0–1 (logical index for play apply). */
+#define PLAY_MAPS_SW_TOTAL (PLAY_MAPS_SW_COUNT + PLAY_MAPS_FS_COUNT)
 
 typedef enum {
   ePlayEncNone = 0,
@@ -46,7 +49,12 @@ typedef struct {
 typedef struct {
   PlayEncMap enc[PLAY_MAPS_ENC_COUNT];
   PlaySwMap sw[PLAY_MAPS_SW_COUNT];
+  PlaySwMap fs[PLAY_MAPS_FS_COUNT]; /* footswitches; same targets as sw */
 } PlayMaps;
+
+/* panel 0..3 or footswitch 4..5 → map; NULL if out of range. */
+PlaySwMap *play_maps_sw_total_at(PlayMaps *m, u8 idx);
+const PlaySwMap *play_maps_sw_total_at_const(const PlayMaps *m, u8 idx);
 
 void play_maps_set_defaults(PlayMaps *m);
 
@@ -61,7 +69,7 @@ u8 play_maps_parse_sw(const char *val, PlaySwMap *out);
 u8 play_maps_format_enc(char *buf, u32 buf_size, const PlayEncMap *m);
 u8 play_maps_format_sw(char *buf, u32 buf_size, const PlaySwMap *m);
 
-/* short UI summary, e.g. "morph x", "slot.b/amp", "snap a". */
+/* short UI summary, e.g. "morph.x", "slot.b/amp", "snap.a". */
 void play_maps_summary_enc(char *buf, u32 buf_size, const PlayEncMap *m);
 void play_maps_summary_sw(char *buf, u32 buf_size, const PlaySwMap *m);
 
@@ -74,8 +82,9 @@ u8 play_maps_sw_single_slot(const PlaySwMap *m, MorphSlot *out_slot);
 /* snap kind → slot; 1 if kind is snap. */
 u8 play_maps_sw_snap_slot(PlaySwKind kind, MorphSlot *out);
 
-/* restore one control (0..3 enc, 4..7 sw) or all to defaults. */
+/* restore one control to defaults. */
 void play_maps_reset_enc(PlayMaps *m, u8 idx);
 void play_maps_reset_sw(PlayMaps *m, u8 idx);
+void play_maps_reset_fs(PlayMaps *m, u8 idx);
 
 #endif

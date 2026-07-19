@@ -1,6 +1,8 @@
 #include "pages.h"
 
+#include "app.h"
 #include "encoders.h"
+#include "events.h"
 
 #include "render.h"
 
@@ -11,6 +13,8 @@ u8 g_alt_mode = 0;
 u8 g_new_setup_flow = 0;
 
 static s8 last_edit_page = ePageSetups;
+
+static void handle_sw_noop(s32 data) { (void)data; }
 
 void pages_init(void) {
   page_setups_init();
@@ -56,6 +60,11 @@ void pages_set(PageId id) {
   set_enc_thresh(2, 0);
   set_enc_thresh(3, 4);
   g_pages[id].select_fn();
+  /* footswitches only mapped in live play; clear when leaving */
+  if(id != ePagePlay) {
+    app_event_handlers[kEventSwitch6] = handle_sw_noop;
+    app_event_handlers[kEventSwitch7] = handle_sw_noop;
+  }
   g_pages[id].redraw_fn();
   render_update();
 }

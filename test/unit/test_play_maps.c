@@ -18,6 +18,8 @@ void test_defaults(void) {
   TEST_ASSERT_EQUAL_INT(ePlaySwSnapB, m.sw[1].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwSnapC, m.sw[2].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwSnapD, m.sw[3].kind);
+  TEST_ASSERT_EQUAL_INT(ePlaySwNone, m.fs[0].kind);
+  TEST_ASSERT_EQUAL_INT(ePlaySwNone, m.fs[1].kind);
 }
 
 void test_enc_roundtrip(void) {
@@ -97,15 +99,25 @@ void test_clear_invalid(void) {
   strcpy(m.sw[0].label, "gate");
   m.sw[1].kind = ePlaySwMomAll;
   strcpy(m.sw[1].label, "gone");
+  m.fs[0].kind = ePlaySwSetAll;
+  strcpy(m.fs[0].label, "amp");
+  m.fs[1].kind = ePlaySwMomSlot;
+  m.fs[1].slot = eMorphSlotA;
+  strcpy(m.fs[1].label, "missing");
 
   play_maps_clear_invalid(&m, desc, 2);
   TEST_ASSERT_EQUAL_INT(ePlayEncParamSlot, m.enc[0].kind);
   TEST_ASSERT_EQUAL_INT(ePlayEncNone, m.enc[1].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwSetSlot, m.sw[0].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwNone, m.sw[1].kind);
+  TEST_ASSERT_EQUAL_INT(ePlaySwSetAll, m.fs[0].kind);
+  TEST_ASSERT_EQUAL_INT(ePlaySwNone, m.fs[1].kind);
   /* snaps and morph defaults untouched */
   TEST_ASSERT_EQUAL_INT(ePlayEncMorphX, m.enc[2].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwSnapC, m.sw[2].kind);
+  TEST_ASSERT_EQUAL_PTR(&m.sw[0], play_maps_sw_total_at(&m, 0));
+  TEST_ASSERT_EQUAL_PTR(&m.fs[0], play_maps_sw_total_at(&m, 4));
+  TEST_ASSERT_EQUAL_PTR(&m.fs[1], play_maps_sw_total_at(&m, 5));
 }
 
 void test_footer_and_snap(void) {

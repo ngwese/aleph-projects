@@ -20,6 +20,15 @@ void render_line(u8 row, const char *str);
 void render_line_inv(u8 row, const char *str);
 /* draw str at pixel x within a content row (fg white on black). */
 void render_line_at(u8 row, u8 x, const char *str);
+/* draw str at pixel (x, y) in the content region (fg on black). */
+void render_string_xy(u8 x, u8 y, const char *str, u8 fg);
+
+/* play morph square geometry (content-region pixels). */
+#define RENDER_PLAY_MORPH_OX 2
+#define RENDER_PLAY_MORPH_OY 2
+#define RENDER_PLAY_MORPH_SZ 36
+#define RENDER_PLAY_GREY 0x5
+
 /* status row: 2px mid-grey bar, 1px gap, then name (or "none"). */
 void render_status_line(u8 row, const char *name);
 

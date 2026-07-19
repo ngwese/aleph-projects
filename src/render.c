@@ -123,6 +123,14 @@ void render_line_at(u8 row, u8 x, const char *str) {
   regMain.dirty = 1;
 }
 
+void render_string_xy(u8 x, u8 y, const char *str, u8 fg) {
+  if(str == NULL || x >= 128 || y >= 40) {
+    return;
+  }
+  font_string_region_clip(&regMain, str, x, y, fg, 0);
+  regMain.dirty = 1;
+}
+
 void render_edit_string(u8 row, const char *str, u8 cursor) {
   u8 y0;
   u8 x = 2;
@@ -458,10 +466,6 @@ void render_footer_slot_tri(u8 cell, MorphSlot slot) {
 }
 
 /* morph plane: ~36px square on the left of the content region */
-#define PLAY_MORPH_OX 2
-#define PLAY_MORPH_OY 2
-#define PLAY_MORPH_SZ 36
-
 void render_play_morph(u16 mx, u16 my) {
   u8 x;
   u8 y;
@@ -469,29 +473,32 @@ void render_play_morph(u16 mx, u16 my) {
   u8 cy;
   u8 ix;
   u8 iy;
-  u16 inner = (u16)(PLAY_MORPH_SZ - 2);
+  u16 inner = (u16)(RENDER_PLAY_MORPH_SZ - 2);
 
   /* light-gray frame */
-  for(x = 0; x < PLAY_MORPH_SZ; ++x) {
-    regMain.data[(u32)PLAY_MORPH_OY * 128u + (u32)(PLAY_MORPH_OX + x)] =
-      HEAD_GREY;
-    regMain.data[(u32)(PLAY_MORPH_OY + PLAY_MORPH_SZ - 1) * 128u +
-		 (u32)(PLAY_MORPH_OX + x)] = HEAD_GREY;
+  for(x = 0; x < RENDER_PLAY_MORPH_SZ; ++x) {
+    regMain.data[(u32)RENDER_PLAY_MORPH_OY * 128u +
+		 (u32)(RENDER_PLAY_MORPH_OX + x)] = HEAD_GREY;
+    regMain.data[(u32)(RENDER_PLAY_MORPH_OY + RENDER_PLAY_MORPH_SZ - 1) * 128u +
+		 (u32)(RENDER_PLAY_MORPH_OX + x)] = HEAD_GREY;
   }
-  for(y = 0; y < PLAY_MORPH_SZ; ++y) {
-    regMain.data[(u32)(PLAY_MORPH_OY + y) * 128u + (u32)PLAY_MORPH_OX] =
+  for(y = 0; y < RENDER_PLAY_MORPH_SZ; ++y) {
+    regMain.data[(u32)(RENDER_PLAY_MORPH_OY + y) * 128u +
+		 (u32)RENDER_PLAY_MORPH_OX] = HEAD_GREY;
+    regMain.data[(u32)(RENDER_PLAY_MORPH_OY + y) * 128u +
+		 (u32)(RENDER_PLAY_MORPH_OX + RENDER_PLAY_MORPH_SZ - 1)] =
       HEAD_GREY;
-    regMain.data[(u32)(PLAY_MORPH_OY + y) * 128u +
-		 (u32)(PLAY_MORPH_OX + PLAY_MORPH_SZ - 1)] = HEAD_GREY;
   }
 
   /* 3×3 white cursor; map morph into inner (frame inset by 1) */
   if(inner > 2) {
-    cx = (u8)(PLAY_MORPH_OX + 1 + ((u32)mx * (inner - 2)) / MORPH2D_ONE);
-    cy = (u8)(PLAY_MORPH_OY + 1 + ((u32)my * (inner - 2)) / MORPH2D_ONE);
+    cx = (u8)(RENDER_PLAY_MORPH_OX + 1 +
+	      ((u32)mx * (inner - 2)) / MORPH2D_ONE);
+    cy = (u8)(RENDER_PLAY_MORPH_OY + 1 +
+	      ((u32)my * (inner - 2)) / MORPH2D_ONE);
   } else {
-    cx = (u8)(PLAY_MORPH_OX + 1);
-    cy = (u8)(PLAY_MORPH_OY + 1);
+    cx = (u8)(RENDER_PLAY_MORPH_OX + 1);
+    cy = (u8)(RENDER_PLAY_MORPH_OY + 1);
   }
   for(iy = 0; iy < 3; ++iy) {
     for(ix = 0; ix < 3; ++ix) {

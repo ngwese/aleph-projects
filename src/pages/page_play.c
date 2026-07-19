@@ -13,7 +13,11 @@
 #include "scaler_tables.h"
 #include "state.h"
 
-#define PLAY_ENC_COL 64
+#define PLAY_ENC_MARGIN 8
+#define PLAY_ENC_ROW_GAP 3
+#define PLAY_ENC_LINE_H 8
+#define PLAY_CONTENT_H 40
+#define PLAY_CONTENT_W 128
 
 static struct {
   u8 active;
@@ -118,10 +122,10 @@ static void enc_label(char *dst, u32 dst_len, const PlayEncMap *m) {
     strncpy(dst, "-", dst_len - 1);
     break;
   case ePlayEncMorphX:
-    strncpy(dst, "morph x", dst_len - 1);
+    strncpy(dst, "morph.x", dst_len - 1);
     break;
   case ePlayEncMorphY:
-    strncpy(dst, "morph y", dst_len - 1);
+    strncpy(dst, "morph.y", dst_len - 1);
     break;
   case ePlayEncParamSlot:
   case ePlayEncParamAll:
@@ -201,31 +205,57 @@ static void redraw(void) {
   char foot[4][8];
   MorphSlot tri;
   u8 i;
+  u8 area_l;
+  u8 area_r;
+  u8 area_w;
+  u8 col_w;
+  u8 col0_x;
+  u8 col1_x;
+  u8 block_h;
+  u8 y0;
+  u8 y_lab_top;
+  u8 y_val_top;
+  u8 y_lab_bot;
+  u8 y_val_bot;
 
   render_clear();
   render_header(g_setup_name[0] ? g_setup_name : "none", 0);
   render_play_morph(g_slots.x, g_slots.y);
 
-  /* 2×2 encoder grid: left enc0/enc2, right enc1/enc3 */
+  /* 2×2 encoder grid between morph and right edge, with side margins */
+  area_l = (u8)(RENDER_PLAY_MORPH_OX + RENDER_PLAY_MORPH_SZ + PLAY_ENC_MARGIN);
+  area_r = (u8)(PLAY_CONTENT_W - PLAY_ENC_MARGIN);
+  area_w = (u8)(area_r - area_l);
+  col_w = (u8)(area_w / 2);
+  col0_x = area_l;
+  col1_x = (u8)(area_l + col_w);
+
+  block_h = (u8)(PLAY_ENC_LINE_H * 4 + PLAY_ENC_ROW_GAP);
+  y0 = (u8)((PLAY_CONTENT_H - block_h) / 2);
+  y_lab_top = y0;
+  y_val_top = (u8)(y0 + PLAY_ENC_LINE_H);
+  y_lab_bot = (u8)(y_val_top + PLAY_ENC_LINE_H + PLAY_ENC_ROW_GAP);
+  y_val_bot = (u8)(y_lab_bot + PLAY_ENC_LINE_H);
+
   enc_label(lab, sizeof(lab), &g_play_maps.enc[0]);
-  render_line_at(0, PLAY_ENC_COL, lab);
+  render_string_xy(col0_x, y_lab_top, lab, RENDER_PLAY_GREY);
   enc_value_str(val, sizeof(val), &g_play_maps.enc[0]);
-  render_line_at(1, PLAY_ENC_COL, val);
+  render_string_xy(col0_x, y_val_top, val, 0xf);
 
   enc_label(lab, sizeof(lab), &g_play_maps.enc[1]);
-  render_line_at(0, (u8)(PLAY_ENC_COL + 32), lab);
+  render_string_xy(col1_x, y_lab_top, lab, RENDER_PLAY_GREY);
   enc_value_str(val, sizeof(val), &g_play_maps.enc[1]);
-  render_line_at(1, (u8)(PLAY_ENC_COL + 32), val);
+  render_string_xy(col1_x, y_val_top, val, 0xf);
 
   enc_label(lab, sizeof(lab), &g_play_maps.enc[2]);
-  render_line_at(2, PLAY_ENC_COL, lab);
+  render_string_xy(col0_x, y_lab_bot, lab, RENDER_PLAY_GREY);
   enc_value_str(val, sizeof(val), &g_play_maps.enc[2]);
-  render_line_at(3, PLAY_ENC_COL, val);
+  render_string_xy(col0_x, y_val_bot, val, 0xf);
 
   enc_label(lab, sizeof(lab), &g_play_maps.enc[3]);
-  render_line_at(2, (u8)(PLAY_ENC_COL + 32), lab);
+  render_string_xy(col1_x, y_lab_bot, lab, RENDER_PLAY_GREY);
   enc_value_str(val, sizeof(val), &g_play_maps.enc[3]);
-  render_line_at(3, (u8)(PLAY_ENC_COL + 32), val);
+  render_string_xy(col1_x, y_val_bot, val, 0xf);
 
   for(i = 0; i < 4; ++i) {
     play_maps_footer_sw(foot[i], sizeof(foot[i]), &g_play_maps.sw[i]);
@@ -398,8 +428,8 @@ static void mom_release(u8 sw) {
   if(!mom.active || mom.sw != sw) {
     return;
   }
-  m = &g_play_maps.sw[sw];
-  idx = module_find_param(m->label);
+  m = play_maps_sw_total_at_const(&g_play_maps, sw);
+  idx = (m != NULL) ? module_find_param(m->label) : -1;
   mom.active = 0;
   if(idx < 0) {
     return;
@@ -413,8 +443,12 @@ static void mom_release(u8 sw) {
 }
 
 static void apply_sw(u8 i, s32 data) {
-  const PlaySwMap *m = &g_play_maps.sw[i];
+  const PlaySwMap *m = play_maps_sw_total_at_const(&g_play_maps, i);
   MorphSlot snap;
+
+  if(m == NULL) {
+    return;
+  }
 
   if(data > 0) {
     if(play_maps_sw_snap_slot(m->kind, &snap)) {
@@ -465,6 +499,8 @@ static void handle_sw0(s32 data) { apply_sw(0, data); }
 static void handle_sw1(s32 data) { apply_sw(1, data); }
 static void handle_sw2(s32 data) { apply_sw(2, data); }
 static void handle_sw3(s32 data) { apply_sw(3, data); }
+static void handle_fs0(s32 data) { apply_sw(4, data); }
+static void handle_fs1(s32 data) { apply_sw(5, data); }
 
 void select_play(void) {
   mom.active = 0;
@@ -476,6 +512,8 @@ void select_play(void) {
   app_event_handlers[kEventSwitch1] = handle_sw1;
   app_event_handlers[kEventSwitch2] = handle_sw2;
   app_event_handlers[kEventSwitch3] = handle_sw3;
+  app_event_handlers[kEventSwitch6] = handle_fs0;
+  app_event_handlers[kEventSwitch7] = handle_fs1;
   redraw();
   render_update();
 }

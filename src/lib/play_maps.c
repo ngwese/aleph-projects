@@ -117,6 +117,27 @@ void play_maps_set_defaults(PlayMaps *m) {
   m->sw[1].kind = ePlaySwSnapB;
   m->sw[2].kind = ePlaySwSnapC;
   m->sw[3].kind = ePlaySwSnapD;
+  /* fs0/fs1 remain ePlaySwNone */
+}
+
+PlaySwMap *play_maps_sw_total_at(PlayMaps *m, u8 idx) {
+  if(m == NULL || idx >= PLAY_MAPS_SW_TOTAL) {
+    return NULL;
+  }
+  if(idx < PLAY_MAPS_SW_COUNT) {
+    return &m->sw[idx];
+  }
+  return &m->fs[idx - PLAY_MAPS_SW_COUNT];
+}
+
+const PlaySwMap *play_maps_sw_total_at_const(const PlayMaps *m, u8 idx) {
+  if(m == NULL || idx >= PLAY_MAPS_SW_TOTAL) {
+    return NULL;
+  }
+  if(idx < PLAY_MAPS_SW_COUNT) {
+    return &m->sw[idx];
+  }
+  return &m->fs[idx - PLAY_MAPS_SW_COUNT];
 }
 
 void play_maps_clear_invalid(PlayMaps *m, const ParamDesc *desc,
@@ -140,6 +161,15 @@ void play_maps_clear_invalid(PlayMaps *m, const ParamDesc *desc,
       if(!label_known(m->sw[i].label, desc, num_params)) {
 	memset(&m->sw[i], 0, sizeof(m->sw[i]));
 	m->sw[i].kind = ePlaySwNone;
+      }
+    }
+  }
+  for(i = 0; i < PLAY_MAPS_FS_COUNT; ++i) {
+    if(m->fs[i].kind == ePlaySwSetSlot || m->fs[i].kind == ePlaySwMomSlot ||
+       m->fs[i].kind == ePlaySwSetAll || m->fs[i].kind == ePlaySwMomAll) {
+      if(!label_known(m->fs[i].label, desc, num_params)) {
+	memset(&m->fs[i], 0, sizeof(m->fs[i]));
+	m->fs[i].kind = ePlaySwNone;
       }
     }
   }
@@ -377,10 +407,10 @@ void play_maps_summary_enc(char *buf, u32 buf_size, const PlayEncMap *m) {
     strncpy(buf, "-", buf_size - 1);
     break;
   case ePlayEncMorphX:
-    strncpy(buf, "morph x", buf_size - 1);
+    strncpy(buf, "morph.x", buf_size - 1);
     break;
   case ePlayEncMorphY:
-    strncpy(buf, "morph y", buf_size - 1);
+    strncpy(buf, "morph.y", buf_size - 1);
     break;
   case ePlayEncParamAll:
     strncpy(buf, "all/", buf_size - 1);
@@ -425,7 +455,7 @@ void play_maps_summary_sw(char *buf, u32 buf_size, const PlaySwMap *m) {
   case ePlaySwSnapC:
   case ePlaySwSnapD:
     {
-      char s[8] = "snap ?";
+      char s[8] = "snap.?";
       s[5] = (char)('a' + (m->kind - ePlaySwSnapA));
       strncpy(buf, s, buf_size - 1);
     }
@@ -525,4 +555,13 @@ void play_maps_reset_sw(PlayMaps *m, u8 idx) {
   }
   play_maps_set_defaults(&d);
   m->sw[idx] = d.sw[idx];
+}
+
+void play_maps_reset_fs(PlayMaps *m, u8 idx) {
+  PlayMaps d;
+  if(m == NULL || idx >= PLAY_MAPS_FS_COUNT) {
+    return;
+  }
+  play_maps_set_defaults(&d);
+  m->fs[idx] = d.fs[idx];
 }

@@ -174,6 +174,16 @@ SetupIoStatus setup_io_read(LineIO *io, SetupData *out) {
       out->maps.sw[idx] = sw;
       continue;
     }
+    if(strncmp(pair.key, "play.fs", 7) == 0 && pair.key[7] >= '0' &&
+       pair.key[7] <= '1' && pair.key[8] == '\0') {
+      PlaySwMap sw;
+      u8 idx = (u8)(pair.key[7] - '0');
+      if(!play_maps_parse_sw(pair.val, &sw)) {
+	return eSetupIoMalformed;
+      }
+      out->maps.fs[idx] = sw;
+      continue;
+    }
     /* unknown keys ignored for forward compatibility */
   }
 
@@ -246,6 +256,7 @@ SetupIoStatus setup_io_write(LineIO *io, const SetupData *data) {
       "play.enc0", "play.enc1", "play.enc2", "play.enc3"};
     static const char *sw_keys[PLAY_MAPS_SW_COUNT] = {
       "play.sw0", "play.sw1", "play.sw2", "play.sw3"};
+    static const char *fs_keys[PLAY_MAPS_FS_COUNT] = {"play.fs0", "play.fs1"};
     char val[SETUP_IO_LINE_MAX];
     for(i = 0; i < PLAY_MAPS_ENC_COUNT; ++i) {
       if(!play_maps_format_enc(val, sizeof(val), &data->maps.enc[i])) {
@@ -260,6 +271,14 @@ SetupIoStatus setup_io_write(LineIO *io, const SetupData *data) {
 	return eSetupIoWriteFail;
       }
       if(!write_kv(io, sw_keys[i], val)) {
+	return eSetupIoWriteFail;
+      }
+    }
+    for(i = 0; i < PLAY_MAPS_FS_COUNT; ++i) {
+      if(!play_maps_format_sw(val, sizeof(val), &data->maps.fs[i])) {
+	return eSetupIoWriteFail;
+      }
+      if(!write_kv(io, fs_keys[i], val)) {
 	return eSetupIoWriteFail;
       }
     }

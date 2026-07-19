@@ -30,14 +30,9 @@ relevant: `apps/between/src/pages/page_play.c` — `nudge_axis`
 
 ## play maps parameter selection UX
 
-editing play bindings is awkward:
-
-- hard to reach every param (encoder selection may be too coarse / wrong
-  step when cycling labels)
-- slot vs all-slots is tangled with param pick; separate param selection
-  from slot binding
-- consider a switch that cycles slot a–d vs all, instead of folding scope
-  into the kind/field ring
+done: softkeys select slot / param / value; enc2/enc3 fine/coarse adjust the
+focused field; reset / rst all under alt; set/mom value shown on its own row;
+`edit: <field>` status; space after `encN:` / `swN:`.
 
 relevant: `apps/between/src/pages/page_play_maps.c`
 
@@ -76,3 +71,14 @@ implement a base width filter and add it on the outputs of the mx44
 module (post-mix / pre-DAC path).
 
 relevant: `modules_block/mx44/`
+
+## queued morph apply (sample-and-hold)
+
+allow morph changes from the panel or MIDI to be **queued** and applied
+only when a separate event fires. that gives sample-and-hold behavior:
+drive the morph point continuously (e.g. footswitch / continuous
+controller) while a sequencer or other trigger decides *when* the
+pending position is committed to the live blend.
+
+relevant: play morph path (`page_play.c`, MIDI morph handlers),
+`slots_apply` / morph2d update timing

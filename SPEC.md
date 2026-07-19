@@ -203,7 +203,10 @@ rules:
    slot.
 3. `x`, `y` — initial morph point as `u16` integers in `[0, 65535]`
    (full scale = unit square corners).
-4. loading a setup: if needed, replace the current module with the setup’s
+4. `play.enc0` … `play.enc3` — encoder maps; `play.sw0` … `play.sw3` —
+   panel switch maps; `play.fs0`, `play.fs1` — footswitch maps (same value
+   syntax as panel switches). omitted keys use defaults.
+5. loading a setup: if needed, replace the current module with the setup’s
    module, load each referenced preset into its slot, set the morph point,
    and apply the effective parameters.
 
@@ -211,11 +214,6 @@ future setup keys (follow-on; reserved names):
 
 - `cv.x`, `cv.y` — cv input mapping
 - `lfo.*` — lfo type / rate / depth
-- `foot.*` — footswitch targets
-- `play.enc0` … `play.enc3` — encoder map (target, optional slot, optional
-  param label)
-- `play.sw0` … `play.sw3` — switch map (snap corner, or param
-  set/momentary with slot scope, label, and value)
 
 morph MIDI (channel 16, CC14 / CC15) is fixed in [midi](#midi); it is not
 stored as setup keys unless learn/reassign returns later.
@@ -425,23 +423,36 @@ files.
 header: `play` (plus dirty indicator if maps differ from the last saved
 setup, if that distinction is tracked).
 
-body: a selectable list of the eight controls (`enc0`–`enc3`, `sw0`–`sw3`).
-each line shows a short summary of the current binding (e.g. `enc2: morph x`,
-`sw0: snap a`, `enc0: slot.b / amp`).
+body: a selectable list of the ten controls (`enc0`–`enc3`, `sw0`–`sw3`,
+`fs0`–`fs1`). each line shows a short summary of the current binding with a
+space after the colon (e.g. `enc2: morph.x`, `sw0: snap.a`,
+`fs0: set.all/in1`). when the selected control is a set/momentary switch map,
+the line under the list shows `edit: <field>`, and the bottom content row shows
+`value:` with the stored binding value at the same column as slot-page param
+values (`x=64`).
+
+field focus starts at **kind** when a control is selected. softkeys jump to
+slot / param / value when those fields apply to the current binding; encoders
+adjust the focused field.
 
 controls:
 
-- enc0: select which control’s binding to edit
+- enc0: select which control’s binding to edit (resets field focus to kind)
 - enc1: page navigation
-- enc2 / enc3: adjust the selected binding’s fields (target kind, slot,
-  param, set/momentary mode, value — field focus can be a sub-selection or
-  stepped with alt; exact field ux may be refined)
-- sw0 **reset**: restore the selected control to its [default map](#default-encoder-map)
-  / [default switch map](#default-switch-map)
-- sw1 **reset all**: restore all eight controls to defaults (confirm if
-  needed)
-- sw2: reserved (or **copy defaults** / clear — open)
+- enc2: fine adjust of the focused field (kind / slot / param / value)
+- enc3: coarse adjust of the focused field (bees-style; value uses scaler
+  coarse step)
+- sw0 **slot**: focus the slot field (when the binding has one)
+- sw1 **param**: focus the param field (when the binding has one)
+- sw2 **value**: focus the value field (set/momentary switch maps only)
 - sw3: alt
+- alt+sw0 **reset**: restore the selected control to its
+  [default map](#default-encoder-map) / [default switch map](#default-switch-map)
+- alt+sw1 **rst all**: restore all ten controls to defaults
+
+set/momentary switch bindings always carry a stored param value (seeded from
+the module default when the binding kind is first chosen; persisted in the
+setup `play.sw*` value). that value is what play mode applies on press.
 
 if no module is loaded, param-target bindings cannot be chosen (morph and
 snap targets remain available). changing module invalidates bindings that
@@ -454,11 +465,13 @@ refer to missing param labels (clear or leave unbound until fixed).
 play remaps the front panel away from menu navigation. encoders and
 switches are **mappable** to internal play targets. all play bindings are
 owned by the **setup**: configure them on the edit-mode [play page](#play-page),
-persist them with setup save/load (see reserved `play.enc*` / `play.sw*`
-keys).
+persist them with setup save/load (see `play.enc*` / `play.sw*` /
+`play.fs*` keys).
 
 encoder and switch indices match bees / hardware (`enc0`–`enc3`,
-`sw0`–`sw3`).
+`sw0`–`sw3`). footswitches are `fs0` / `fs1` (hardware `Switch6` /
+`Switch7`); they use the same target kinds as panel switches and are
+configured as `play.fs0` / `play.fs1`.
 
 ### encoder targets
 
@@ -522,6 +535,8 @@ notes:
 | sw1 | snap to slot b |
 | sw2 | snap to slot c |
 | sw3 | snap to slot d |
+| fs0 | unmapped |
+| fs1 | unmapped |
 | mode | return to edit |
 
 ### display
@@ -550,12 +565,14 @@ gray square frame marks the unit morph plane; the current morph point is a
 **3×3 white** block inside that frame (position scaled from `(x, y)` in
 `[0, 65535]`).
 
-**encoder readouts (right):** four compact bindings in a 2×2 grid (same
-column split idea as the slots page: left column enc0/enc2, right column
-enc1/enc3). each cell is a **label** line for what the encoder is mapped to,
-and the line below for its **current value** (scaled string when applicable;
-morph axes may show normalized or raw position). unmapped encoders show a
-blank or `-` label/value.
+**encoder readouts (right):** four compact bindings in a 2×2 grid (left
+column enc0/enc2, right column enc1/enc3) spanning the width between the
+morph square and the screen edge with an **8px** margin on each side. the
+block is centered vertically in the content area with a **3px** gap between
+the top and bottom cell rows. labels draw in mid-grey; values in white.
+each cell is a label line plus the current value below (scaled string when
+applicable; morph axes may show normalized or raw position). unmapped
+encoders show a blank or `-` label/value.
 
 **switch footer labels:**
 
@@ -702,9 +719,10 @@ naming and play control reservations.
 
 ### footswitch
 
-- go-to-position: press jumps morph point to a stored (x, y) or corner.
-- toggle: press swaps between a stored position and the pre-press position.
-- two footswitches → two independent targets, or a/b bank.
+in play mode, `fs0` / `fs1` share the same target kinds and apply path as
+panel switches (snap, param set, param momentary). configure them on the
+edit-mode play page; persist as `play.fs0` / `play.fs1`. defaults are
+unmapped.
 
 ### cv control of (x, y)
 
