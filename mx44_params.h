@@ -11,55 +11,55 @@
 #define PARAM_SLEW_DEFAULT 0x7ffecccc
 
 /*
-  order matches SPEC.md suggested enum grouping:
-  in0..in3, in0Slew..in3Slew,
-  inX-0..inX-3 + inXMixSlew per input,
-  out0..out3, out0Slew..out3Slew
+  order matches SPEC.md suggested enum grouping (1-based labels):
+  in1..in4, in1Slew..in4Slew,
+  inX-1..inX-4 + inXMixSlew per input,
+  out1..out4, out1Slew..out4Slew
 */
 enum params {
-  eParam_in0,
   eParam_in1,
   eParam_in2,
   eParam_in3,
+  eParam_in4,
 
-  eParam_in0Slew,
   eParam_in1Slew,
   eParam_in2Slew,
   eParam_in3Slew,
+  eParam_in4Slew,
 
-  eParam_in0_0,
-  eParam_in0_1,
-  eParam_in0_2,
-  eParam_in0_3,
-  eParam_in0MixSlew,
-
-  eParam_in1_0,
   eParam_in1_1,
   eParam_in1_2,
   eParam_in1_3,
+  eParam_in1_4,
   eParam_in1MixSlew,
 
-  eParam_in2_0,
   eParam_in2_1,
   eParam_in2_2,
   eParam_in2_3,
+  eParam_in2_4,
   eParam_in2MixSlew,
 
-  eParam_in3_0,
   eParam_in3_1,
   eParam_in3_2,
   eParam_in3_3,
+  eParam_in3_4,
   eParam_in3MixSlew,
 
-  eParam_out0,
+  eParam_in4_1,
+  eParam_in4_2,
+  eParam_in4_3,
+  eParam_in4_4,
+  eParam_in4MixSlew,
+
   eParam_out1,
   eParam_out2,
   eParam_out3,
+  eParam_out4,
 
-  eParam_out0Slew,
   eParam_out1Slew,
   eParam_out2Slew,
   eParam_out3Slew,
+  eParam_out4Slew,
 
   eParamNumParams
 };

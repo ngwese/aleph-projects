@@ -4,7 +4,8 @@
 
   mx44 — 4×4 matrix mixer for bfin_lib_block.
 
-  adc[X] * in[X] → bus; bus * in[X]-Y summed into out mix Y; * out[Y] → dac[Y].
+  adc[i] * in[i+1] → bus; bus * in[i+1]-[j+1] summed into out mix j;
+  * out[j+1] → dac[j]. parameter labels are 1-based; arrays stay 0-based.
   each amplitude has a 1-pole slew; matrix sends from input X share inXMixSlew.
 */
 
@@ -23,7 +24,7 @@ static ParamData mParamData[eParamNumParams];
 
 static filter_1p_lo inSlew[4];
 static filter_1p_lo outSlew[4];
-static filter_1p_lo mixSlew[4][4]; /* [in][out] */
+static filter_1p_lo mixSlew[4][4]; /* [in][out], 0-based */
 
 static fract32 inVal[4];
 static fract32 outVal[4];
@@ -59,49 +60,49 @@ void module_init(void) {
   }
 
   /* identity matrix at unity; input/output levels unity; default slews */
-  param_setup(eParam_in0, PARAM_AMP_MAX);
   param_setup(eParam_in1, PARAM_AMP_MAX);
   param_setup(eParam_in2, PARAM_AMP_MAX);
   param_setup(eParam_in3, PARAM_AMP_MAX);
+  param_setup(eParam_in4, PARAM_AMP_MAX);
 
-  param_setup(eParam_in0Slew, PARAM_SLEW_MIN);
   param_setup(eParam_in1Slew, PARAM_SLEW_MIN);
   param_setup(eParam_in2Slew, PARAM_SLEW_MIN);
   param_setup(eParam_in3Slew, PARAM_SLEW_MIN);
+  param_setup(eParam_in4Slew, PARAM_SLEW_MIN);
 
-  param_setup(eParam_in0_0, PARAM_AMP_MAX);
-  param_setup(eParam_in0_1, 0);
-  param_setup(eParam_in0_2, 0);
-  param_setup(eParam_in0_3, 0);
-  param_setup(eParam_in0MixSlew, PARAM_SLEW_DEFAULT);
-
-  param_setup(eParam_in1_0, 0);
   param_setup(eParam_in1_1, PARAM_AMP_MAX);
   param_setup(eParam_in1_2, 0);
   param_setup(eParam_in1_3, 0);
+  param_setup(eParam_in1_4, 0);
   param_setup(eParam_in1MixSlew, PARAM_SLEW_DEFAULT);
 
-  param_setup(eParam_in2_0, 0);
   param_setup(eParam_in2_1, 0);
   param_setup(eParam_in2_2, PARAM_AMP_MAX);
   param_setup(eParam_in2_3, 0);
+  param_setup(eParam_in2_4, 0);
   param_setup(eParam_in2MixSlew, PARAM_SLEW_DEFAULT);
 
-  param_setup(eParam_in3_0, 0);
   param_setup(eParam_in3_1, 0);
   param_setup(eParam_in3_2, 0);
   param_setup(eParam_in3_3, PARAM_AMP_MAX);
+  param_setup(eParam_in3_4, 0);
   param_setup(eParam_in3MixSlew, PARAM_SLEW_DEFAULT);
 
-  param_setup(eParam_out0, PARAM_AMP_MAX);
+  param_setup(eParam_in4_1, 0);
+  param_setup(eParam_in4_2, 0);
+  param_setup(eParam_in4_3, 0);
+  param_setup(eParam_in4_4, PARAM_AMP_MAX);
+  param_setup(eParam_in4MixSlew, PARAM_SLEW_DEFAULT);
+
   param_setup(eParam_out1, PARAM_AMP_MAX);
   param_setup(eParam_out2, PARAM_AMP_MAX);
   param_setup(eParam_out3, PARAM_AMP_MAX);
+  param_setup(eParam_out4, PARAM_AMP_MAX);
 
-  param_setup(eParam_out0Slew, PARAM_SLEW_MIN);
   param_setup(eParam_out1Slew, PARAM_SLEW_MIN);
   param_setup(eParam_out2Slew, PARAM_SLEW_MIN);
   param_setup(eParam_out3Slew, PARAM_SLEW_MIN);
+  param_setup(eParam_out4Slew, PARAM_SLEW_MIN);
 }
 
 void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
@@ -146,119 +147,119 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
 
 void module_set_param(u32 idx, ParamValue v) {
   switch(idx) {
-  case eParam_in0 :
+  case eParam_in1 :
     filter_1p_lo_in(&(inSlew[0]), v);
     break;
-  case eParam_in1 :
+  case eParam_in2 :
     filter_1p_lo_in(&(inSlew[1]), v);
     break;
-  case eParam_in2 :
+  case eParam_in3 :
     filter_1p_lo_in(&(inSlew[2]), v);
     break;
-  case eParam_in3 :
+  case eParam_in4 :
     filter_1p_lo_in(&(inSlew[3]), v);
     break;
 
-  case eParam_in0Slew :
+  case eParam_in1Slew :
     filter_1p_lo_set_slew(&(inSlew[0]), v);
     break;
-  case eParam_in1Slew :
+  case eParam_in2Slew :
     filter_1p_lo_set_slew(&(inSlew[1]), v);
     break;
-  case eParam_in2Slew :
+  case eParam_in3Slew :
     filter_1p_lo_set_slew(&(inSlew[2]), v);
     break;
-  case eParam_in3Slew :
+  case eParam_in4Slew :
     filter_1p_lo_set_slew(&(inSlew[3]), v);
     break;
 
-  case eParam_in0_0 :
+  case eParam_in1_1 :
     filter_1p_lo_in(&(mixSlew[0][0]), v);
     break;
-  case eParam_in0_1 :
+  case eParam_in1_2 :
     filter_1p_lo_in(&(mixSlew[0][1]), v);
     break;
-  case eParam_in0_2 :
+  case eParam_in1_3 :
     filter_1p_lo_in(&(mixSlew[0][2]), v);
     break;
-  case eParam_in0_3 :
+  case eParam_in1_4 :
     filter_1p_lo_in(&(mixSlew[0][3]), v);
     break;
-  case eParam_in0MixSlew :
+  case eParam_in1MixSlew :
     set_mix_slew(0, v);
     break;
 
-  case eParam_in1_0 :
+  case eParam_in2_1 :
     filter_1p_lo_in(&(mixSlew[1][0]), v);
     break;
-  case eParam_in1_1 :
+  case eParam_in2_2 :
     filter_1p_lo_in(&(mixSlew[1][1]), v);
     break;
-  case eParam_in1_2 :
+  case eParam_in2_3 :
     filter_1p_lo_in(&(mixSlew[1][2]), v);
     break;
-  case eParam_in1_3 :
+  case eParam_in2_4 :
     filter_1p_lo_in(&(mixSlew[1][3]), v);
     break;
-  case eParam_in1MixSlew :
+  case eParam_in2MixSlew :
     set_mix_slew(1, v);
     break;
 
-  case eParam_in2_0 :
+  case eParam_in3_1 :
     filter_1p_lo_in(&(mixSlew[2][0]), v);
     break;
-  case eParam_in2_1 :
+  case eParam_in3_2 :
     filter_1p_lo_in(&(mixSlew[2][1]), v);
     break;
-  case eParam_in2_2 :
+  case eParam_in3_3 :
     filter_1p_lo_in(&(mixSlew[2][2]), v);
     break;
-  case eParam_in2_3 :
+  case eParam_in3_4 :
     filter_1p_lo_in(&(mixSlew[2][3]), v);
     break;
-  case eParam_in2MixSlew :
+  case eParam_in3MixSlew :
     set_mix_slew(2, v);
     break;
 
-  case eParam_in3_0 :
+  case eParam_in4_1 :
     filter_1p_lo_in(&(mixSlew[3][0]), v);
     break;
-  case eParam_in3_1 :
+  case eParam_in4_2 :
     filter_1p_lo_in(&(mixSlew[3][1]), v);
     break;
-  case eParam_in3_2 :
+  case eParam_in4_3 :
     filter_1p_lo_in(&(mixSlew[3][2]), v);
     break;
-  case eParam_in3_3 :
+  case eParam_in4_4 :
     filter_1p_lo_in(&(mixSlew[3][3]), v);
     break;
-  case eParam_in3MixSlew :
+  case eParam_in4MixSlew :
     set_mix_slew(3, v);
     break;
 
-  case eParam_out0 :
+  case eParam_out1 :
     filter_1p_lo_in(&(outSlew[0]), v);
     break;
-  case eParam_out1 :
+  case eParam_out2 :
     filter_1p_lo_in(&(outSlew[1]), v);
     break;
-  case eParam_out2 :
+  case eParam_out3 :
     filter_1p_lo_in(&(outSlew[2]), v);
     break;
-  case eParam_out3 :
+  case eParam_out4 :
     filter_1p_lo_in(&(outSlew[3]), v);
     break;
 
-  case eParam_out0Slew :
+  case eParam_out1Slew :
     filter_1p_lo_set_slew(&(outSlew[0]), v);
     break;
-  case eParam_out1Slew :
+  case eParam_out2Slew :
     filter_1p_lo_set_slew(&(outSlew[1]), v);
     break;
-  case eParam_out2Slew :
+  case eParam_out3Slew :
     filter_1p_lo_set_slew(&(outSlew[2]), v);
     break;
-  case eParam_out3Slew :
+  case eParam_out4Slew :
     filter_1p_lo_set_slew(&(outSlew[3]), v);
     break;
 
