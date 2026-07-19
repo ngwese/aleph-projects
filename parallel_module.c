@@ -142,40 +142,27 @@ void module_init(void) {
   /* SPEC: in* = unity; send* / fb* / ret* = 0; delays / SVF as lines */
   param_setup(eParam_timescale, PARAM_TIMESCALE_DEFAULT);
 
-  param_setup(eParam_in0, PARAM_AMP_MAX);
   param_setup(eParam_in1, PARAM_AMP_MAX);
-  param_setup(eParam_in0Slew, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_in2, PARAM_AMP_MAX);
   param_setup(eParam_in1Slew, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_in2Slew, PARAM_SLEW_DEFAULT);
 
-  param_setup(eParam_send0_0, 0);
-  param_setup(eParam_send0_1, 0);
-  param_setup(eParam_send0Slew, PARAM_SLEW_DEFAULT);
-  param_setup(eParam_send1_0, 0);
   param_setup(eParam_send1_1, 0);
+  param_setup(eParam_send1_2, 0);
   param_setup(eParam_send1Slew, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_send2_1, 0);
+  param_setup(eParam_send2_2, 0);
+  param_setup(eParam_send2Slew, PARAM_SLEW_DEFAULT);
 
-  param_setup(eParam_fb0, 0);
-  param_setup(eParam_fb0Slew, PARAM_SLEW_DEFAULT);
   param_setup(eParam_fb1, 0);
   param_setup(eParam_fb1Slew, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_fb2, 0);
+  param_setup(eParam_fb2Slew, PARAM_SLEW_DEFAULT);
 
-  param_setup(eParam_delay0, PARAM_DELAY_DEFAULT);
   param_setup(eParam_delay1, PARAM_DELAY_DEFAULT);
-  param_setup(eParam_fade0, PARAM_FADE_DEFAULT);
+  param_setup(eParam_delay2, PARAM_DELAY_DEFAULT);
   param_setup(eParam_fade1, PARAM_FADE_DEFAULT);
-
-  param_setup(eParam_cut0, PARAM_CUT_DEFAULT);
-  param_setup(eParam_rq0, PARAM_RQ_DEFAULT);
-  param_setup(eParam_low0, PARAM_AMP_6);
-  param_setup(eParam_high0, 0);
-  param_setup(eParam_band0, 0);
-  param_setup(eParam_notch0, 0);
-  param_setup(eParam_fdry0, PARAM_AMP_6);
-  param_setup(eParam_fwet0, PARAM_AMP_6);
-  param_setup(eParam_cut0Slew, PARAM_SLEW_DEFAULT);
-  param_setup(eParam_rq0Slew, PARAM_SLEW_DEFAULT);
-  param_setup(eParam_fdry0Slew, PARAM_SLEW_DEFAULT);
-  param_setup(eParam_fwet0Slew, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_fade2, PARAM_FADE_DEFAULT);
 
   param_setup(eParam_cut1, PARAM_CUT_DEFAULT);
   param_setup(eParam_rq1, PARAM_RQ_DEFAULT);
@@ -190,18 +177,31 @@ void module_init(void) {
   param_setup(eParam_fdry1Slew, PARAM_SLEW_DEFAULT);
   param_setup(eParam_fwet1Slew, PARAM_SLEW_DEFAULT);
 
-  param_setup(eParam_ret0_0, 0);
-  param_setup(eParam_ret0_1, 0);
-  param_setup(eParam_ret0Slew, PARAM_SLEW_DEFAULT);
-  param_setup(eParam_ret1_0, 0);
+  param_setup(eParam_cut2, PARAM_CUT_DEFAULT);
+  param_setup(eParam_rq2, PARAM_RQ_DEFAULT);
+  param_setup(eParam_low2, PARAM_AMP_6);
+  param_setup(eParam_high2, 0);
+  param_setup(eParam_band2, 0);
+  param_setup(eParam_notch2, 0);
+  param_setup(eParam_fdry2, PARAM_AMP_6);
+  param_setup(eParam_fwet2, PARAM_AMP_6);
+  param_setup(eParam_cut2Slew, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_rq2Slew, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_fdry2Slew, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_fwet2Slew, PARAM_SLEW_DEFAULT);
+
   param_setup(eParam_ret1_1, 0);
+  param_setup(eParam_ret1_2, 0);
   param_setup(eParam_ret1Slew, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_ret2_1, 0);
+  param_setup(eParam_ret2_2, 0);
+  param_setup(eParam_ret2Slew, PARAM_SLEW_DEFAULT);
 }
 
 void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
   u16 frame;
   u8 s;
-  fract32 dry0, dry1;
+  fract32 dry1, dry2;
   fract32 send_in;
   fract32 tap;
   fract32 svfOut;
@@ -221,8 +221,8 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
   outCh[3] = audio_out_channel(outChannels, 3);
 
   for (frame = 0; frame < MODULE_BLOCKSIZE; frame++) {
-    dry0 = mult_fr1x32x32(inCh[0][frame], filter_1p_lo_next(&(inSlew[0])));
-    dry1 = mult_fr1x32x32(inCh[1][frame], filter_1p_lo_next(&(inSlew[1])));
+    dry1 = mult_fr1x32x32(inCh[0][frame], filter_1p_lo_next(&(inSlew[0])));
+    dry2 = mult_fr1x32x32(inCh[1][frame], filter_1p_lo_next(&(inSlew[1])));
 
     for (s = 0; s < PARALLEL_N_DELAYS; s++) {
       /* fade integrator (lines) */
@@ -232,8 +232,8 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
       }
 
       send_in = add_fr1x32(
-          mult_fr1x32x32(dry0, filter_1p_lo_next(&(sendSlew[s][0]))),
-          mult_fr1x32x32(dry1, filter_1p_lo_next(&(sendSlew[s][1]))));
+          mult_fr1x32x32(dry1, filter_1p_lo_next(&(sendSlew[s][0]))),
+          mult_fr1x32x32(dry2, filter_1p_lo_next(&(sendSlew[s][1]))));
       send_in = add_fr1x32(
           send_in,
           mult_fr1x32x32(fbSig[s], filter_1p_lo_next(&(fbSlew[s]))));
@@ -259,8 +259,8 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
         mult_fr1x32x32(inCh[2][frame], filter_1p_lo_next(&(retSlew[0][1]))),
         mult_fr1x32x32(inCh[3][frame], filter_1p_lo_next(&(retSlew[1][1]))));
 
-    outCh[0][frame] = add_fr1x32(dry0, ret0);
-    outCh[1][frame] = add_fr1x32(dry1, ret1);
+    outCh[0][frame] = add_fr1x32(dry1, ret0);
+    outCh[1][frame] = add_fr1x32(dry2, ret1);
   }
 }
 
@@ -271,165 +271,165 @@ void module_set_param(u32 idx, ParamValue v) {
     globalTimescale = (s16)(v >> 6);
     break;
 
-  case eParam_in0:
+  case eParam_in1:
     filter_1p_lo_in(&(inSlew[0]), v);
     break;
-  case eParam_in1:
+  case eParam_in2:
     filter_1p_lo_in(&(inSlew[1]), v);
     break;
-  case eParam_in0Slew:
+  case eParam_in1Slew:
     filter_1p_lo_set_slew(&(inSlew[0]), v);
     break;
-  case eParam_in1Slew:
+  case eParam_in2Slew:
     filter_1p_lo_set_slew(&(inSlew[1]), v);
     break;
 
-  case eParam_send0_0:
+  case eParam_send1_1:
     filter_1p_lo_in(&(sendSlew[0][0]), v);
     break;
-  case eParam_send0_1:
+  case eParam_send1_2:
     filter_1p_lo_in(&(sendSlew[0][1]), v);
     break;
-  case eParam_send0Slew:
+  case eParam_send1Slew:
     set_send_slew(0, v);
     break;
-  case eParam_send1_0:
+  case eParam_send2_1:
     filter_1p_lo_in(&(sendSlew[1][0]), v);
     break;
-  case eParam_send1_1:
+  case eParam_send2_2:
     filter_1p_lo_in(&(sendSlew[1][1]), v);
     break;
-  case eParam_send1Slew:
+  case eParam_send2Slew:
     set_send_slew(1, v);
     break;
 
-  case eParam_fb0:
+  case eParam_fb1:
     filter_1p_lo_in(&(fbSlew[0]), v);
     break;
-  case eParam_fb0Slew:
+  case eParam_fb1Slew:
     filter_1p_lo_set_slew(&(fbSlew[0]), v);
     break;
-  case eParam_fb1:
+  case eParam_fb2:
     filter_1p_lo_in(&(fbSlew[1]), v);
     break;
-  case eParam_fb1Slew:
+  case eParam_fb2Slew:
     filter_1p_lo_set_slew(&(fbSlew[1]), v);
     break;
 
-  case eParam_delay0:
+  case eParam_delay1:
     if (start_fade_rd(0)) {
       delayFadeN_set_delay_ms(&(delay[0]), calc_ms(trunc_fr1x32(v)),
                               fadeTargetRd[0]);
     }
     break;
-  case eParam_delay1:
+  case eParam_delay2:
     if (start_fade_rd(1)) {
       delayFadeN_set_delay_ms(&(delay[1]), calc_ms(trunc_fr1x32(v)),
                               fadeTargetRd[1]);
     }
     break;
 
-  case eParam_fade0:
+  case eParam_fade1:
     if (v > PARAM_FADE_MIN) {
       filter_ramp_set_inc(&(lpFadeRd[0]), v);
     }
     break;
-  case eParam_fade1:
+  case eParam_fade2:
     if (v > PARAM_FADE_MIN) {
       filter_ramp_set_inc(&(lpFadeRd[1]), v);
     }
     break;
 
-  case eParam_cut0:
+  case eParam_cut1:
     filter_1p_lo_in(&(cutSlew[0]), v);
     break;
-  case eParam_rq0:
+  case eParam_rq1:
     filter_1p_lo_in(&(rqSlew[0]), v);
     break;
-  case eParam_low0:
+  case eParam_low1:
     filter_svf_set_low(&(svf[0]), v);
     break;
-  case eParam_high0:
+  case eParam_high1:
     filter_svf_set_high(&(svf[0]), v);
     break;
-  case eParam_band0:
+  case eParam_band1:
     filter_svf_set_band(&(svf[0]), v);
     break;
-  case eParam_notch0:
+  case eParam_notch1:
     filter_svf_set_notch(&(svf[0]), v);
     break;
-  case eParam_fdry0:
+  case eParam_fdry1:
     filter_1p_lo_in(&(fdrySlew[0]), v);
     break;
-  case eParam_fwet0:
+  case eParam_fwet1:
     filter_1p_lo_in(&(fwetSlew[0]), v);
     break;
-  case eParam_cut0Slew:
+  case eParam_cut1Slew:
     filter_1p_lo_set_slew(&(cutSlew[0]), v);
     break;
-  case eParam_rq0Slew:
+  case eParam_rq1Slew:
     filter_1p_lo_set_slew(&(rqSlew[0]), v);
     break;
-  case eParam_fdry0Slew:
+  case eParam_fdry1Slew:
     filter_1p_lo_set_slew(&(fdrySlew[0]), v);
     break;
-  case eParam_fwet0Slew:
+  case eParam_fwet1Slew:
     filter_1p_lo_set_slew(&(fwetSlew[0]), v);
     break;
 
-  case eParam_cut1:
+  case eParam_cut2:
     filter_1p_lo_in(&(cutSlew[1]), v);
     break;
-  case eParam_rq1:
+  case eParam_rq2:
     filter_1p_lo_in(&(rqSlew[1]), v);
     break;
-  case eParam_low1:
+  case eParam_low2:
     filter_svf_set_low(&(svf[1]), v);
     break;
-  case eParam_high1:
+  case eParam_high2:
     filter_svf_set_high(&(svf[1]), v);
     break;
-  case eParam_band1:
+  case eParam_band2:
     filter_svf_set_band(&(svf[1]), v);
     break;
-  case eParam_notch1:
+  case eParam_notch2:
     filter_svf_set_notch(&(svf[1]), v);
     break;
-  case eParam_fdry1:
+  case eParam_fdry2:
     filter_1p_lo_in(&(fdrySlew[1]), v);
     break;
-  case eParam_fwet1:
+  case eParam_fwet2:
     filter_1p_lo_in(&(fwetSlew[1]), v);
     break;
-  case eParam_cut1Slew:
+  case eParam_cut2Slew:
     filter_1p_lo_set_slew(&(cutSlew[1]), v);
     break;
-  case eParam_rq1Slew:
+  case eParam_rq2Slew:
     filter_1p_lo_set_slew(&(rqSlew[1]), v);
     break;
-  case eParam_fdry1Slew:
+  case eParam_fdry2Slew:
     filter_1p_lo_set_slew(&(fdrySlew[1]), v);
     break;
-  case eParam_fwet1Slew:
+  case eParam_fwet2Slew:
     filter_1p_lo_set_slew(&(fwetSlew[1]), v);
     break;
 
-  case eParam_ret0_0:
+  case eParam_ret1_1:
     filter_1p_lo_in(&(retSlew[0][0]), v);
     break;
-  case eParam_ret0_1:
+  case eParam_ret1_2:
     filter_1p_lo_in(&(retSlew[0][1]), v);
     break;
-  case eParam_ret0Slew:
+  case eParam_ret1Slew:
     set_ret_slew(0, v);
     break;
-  case eParam_ret1_0:
+  case eParam_ret2_1:
     filter_1p_lo_in(&(retSlew[1][0]), v);
     break;
-  case eParam_ret1_1:
+  case eParam_ret2_2:
     filter_1p_lo_in(&(retSlew[1][1]), v);
     break;
-  case eParam_ret1Slew:
+  case eParam_ret2Slew:
     set_ret_slew(1, v);
     break;
 

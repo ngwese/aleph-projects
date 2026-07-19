@@ -23,35 +23,35 @@ mono output is the post-fade mono dry path plus a mix of the two returns.
 amplitude controls use 1-pole slewing (`filter_1p`) unless noted.
 delay time / fade / timescale and SVF controls follow
 [`modules/lines`](../../modules/lines/).
-indices are **0-based** in parameter names.
+parameter labels are **1-based**; ADC/DAC hardware indices stay 0-based.
 
 ---
 
 ## topology
 
 ```text
-adc0 ──►[in0]──┬── dry0 ──────────────────────────────────┬──► dac0
+adc0 ──►[in1]──┬── dry1 ──────────────────────────────────┬──► dac0
                │                                          │
-               ├──[send0-0]──►┐                           │
-               │              ├──► sum ──► delay0 ──┬─────► dac2  (send 0)
+               ├──[send1-1]──►┐                           │
+               │              ├──► sum ──► delay1 ──┬─────► dac2  (send 1)
                │              │   (delayFadeN,      │
                │              │    replace-write)   │
-               │   [fb0]◄──[SVF0]◄──────────────────┘
-               │
-               ├──[send1-0]──►┐
-               │              ├──► sum ──► delay1 ──┬─────► dac3  (send 1)
                │   [fb1]◄──[SVF1]◄──────────────────┘
                │
-adc1 ──►[in1]──┼── dry1 ──────────────────────────────────┬──► dac1
+               ├──[send2-1]──►┐
+               │              ├──► sum ──► delay2 ──┬─────► dac3  (send 2)
+               │   [fb2]◄──[SVF2]◄──────────────────┘
+               │
+adc1 ──►[in2]──┼── dry2 ──────────────────────────────────┬──► dac1
                │                                          │
-               ├──[send0-1]──► (into send0 sum)           │
-               └──[send1-1]──► (into send1 sum)           │
+               ├──[send1-2]──► (into send1 sum)           │
+               └──[send2-2]──► (into send2 sum)           │
                                                           │
-adc2 (ret0) ──►[ret0-0]───────────────────────────────────┤
-            └─►[ret0-1]───────────────────────────────────┤
+adc2 (ret1) ──►[ret1-1]───────────────────────────────────┤
+            └─►[ret1-2]───────────────────────────────────┤
                                                           │
-adc3 (ret1) ──►[ret1-0]───────────────────────────────────┤
-            └─►[ret1-1]───────────────────────────────────┘
+adc3 (ret2) ──►[ret2-1]───────────────────────────────────┤
+            └─►[ret2-2]───────────────────────────────────┘
 ```
 
 `SVF*` = lines-style filter: `filter_svf_next` mixed with the dry tap via
@@ -60,38 +60,37 @@ feedback** into the delay write uses this; the hardware send is the **raw**
 delay tap.
 
 ```text
-for each mono M in {0,1}:
+for each mono M in {1,2}:
   inM              — input level (slew: inMSlew)
-  dryM = adcM * inM
-  dacM = dryM + Σ_R retR-M * adc(2+R)
+  dryM = adc(M-1) * inM
+  dac(M-1) = dryM + Σ_R retR-M * adc(1+R)
 
-for each send S in {0,1}:
-  sendS-0, sendS-1 — levels from dry0 / dry1 into send bus S
-  delayS           — delayFadeN; replace-write; tap → dac(2+S)
+for each send S in {1,2}:
+  sendS-1, sendS-2 — levels from dry1 / dry2 into send bus S
+  delayS           — delayFadeN; replace-write; tap → dac(1+S)
   SVFS             — cut/rq/band mixes + fwet/fdry on tap (feedback only)
   fbS              — level of filtered feedback into send bus S
 ```
 
-signal equation (per sample / frame), after slewed gains:
+signal equation (per sample / frame), after slewed gains. arrays below are
+**0-based** hardware indices; param `in(k+1)` controls mono `k`:
 
 ```text
-dry[M]       = adc[M] * in[M]                         // M = 0,1
+dry[k]       = adc[k] * in[k+1]                       // k = 0,1
 
-delay_out[S] = delayFadeN_next(line[S], send_in[S])   // replace-write
-svf_out[S]   = filter_svf_next(&svf[S], delay_out[S])
-fb_sig[S]    = delay_out[S] * fdry[S]
-             + svf_out[S]   * fwet[S]
+delay_out[s] = delayFadeN_next(line[s], send_in[s])   // replace-write
+svf_out[s]   = filter_svf_next(&svf[s], delay_out[s])
+fb_sig[s]    = delay_out[s] * fdry[s+1]
+             + svf_out[s]   * fwet[s+1]
 
-send_in[S]   = dry[0] * send[S]-0
-             + dry[1] * send[S]-1
-             + fb_sig[S] * fb[S]                      // S = 0,1
-             // note: send_in uses previous sample's delay_out/fb_sig
-             // (or compute delay_out from prior write; same as lines order)
+send_in[s]   = dry[0] * send[s+1]-1
+             + dry[1] * send[s+1]-2
+             + fb_sig[s] * fb[s+1]                    // s = 0,1
 
-dac[2+S]     = delay_out[S]                           // raw tap → send
-dac[M]       = dry[M]
-             + adc[2] * ret0-M
-             + adc[3] * ret1-M                        // M = 0,1
+dac[2+s]     = delay_out[s]                           // raw tap → send
+dac[k]       = dry[k]
+             + adc[2] * ret1-(k+1)
+             + adc[3] * ret2-(k+1)                    // k = 0,1
 ```
 
 processing order per send (match lines): mix `send_in` → `delayFadeN_next` →
@@ -123,7 +122,7 @@ cap `delay*` descriptor max at **20 s** (still `eParamTypeFix`; use a
 parallel-specific max rather than lines’ full `PARAM_SECONDS_MAX` if that
 implies a longer range than the buffer).
 
-**included delay params:** `timescale`, `delay0`/`delay1`, `fade0`/`fade1`.
+**included delay params:** `timescale`, `delay1`/`delay2`, `fade1`/`fade2`.
 
 **not included:** `loop*`, `pos_*`, `run_*`, `rMul*`/`rDiv*`, `pre*`,
 `write*`, CV outs, lines’ full mix matrices.
@@ -133,12 +132,12 @@ implies a longer range than the buffer).
 ## feedback SVF (from lines)
 
 one `filter_svf` per send, controls mirrored from lines’ per-line filter
-surface (labels may use `0`/`1` for send index):
+surface (labels use `1`/`2` for send index):
 
 | name | type (lines) | role |
 |------|--------------|------|
-| `cut0`/`cut1` | `eParamTypeSvfFreq` | cutoff coefficient (`filter_svf_set_coeff`) |
-| `rq0`/`rq1` | fix | reciprocal Q (`filter_svf_set_rq`) |
+| `cut1`/`cut2` | `eParamTypeSvfFreq` | cutoff coefficient (`filter_svf_set_coeff`) |
+| `rq1`/`rq2` | fix | reciprocal Q (`filter_svf_set_rq`) |
 | `low*` / `high*` / `band*` / `notch*` | amp | SVF output mixes |
 | `fwet*` / `fdry*` | amp | blend filtered vs dry tap into `fb_sig` |
 | `cut*Slew` / `rq*Slew` | integrator | slews for cut / rq |
@@ -154,21 +153,21 @@ high/band/notch = 0, fwet/fdry ≈ −6 dB, slews = lines defaults).
 | group | count | labels | type (bees) |
 |-------|------:|--------|-------------|
 | timescale | 1 | `timescale` | fix |
-| mono input levels | 2 | `in0`, `in1` | amp |
-| mono input slews | 2 | `in0Slew`, `in1Slew` | integrator |
-| send levels | 4 | `send0-0`…`send1-1` | amp |
-| send level slews | 2 | `send0Slew`, `send1Slew` | integrator |
-| feedback levels | 2 | `fb0`, `fb1` | amp |
-| feedback slews | 2 | `fb0Slew`, `fb1Slew` | integrator |
-| delay times | 2 | `delay0`, `delay1` | fix (≤ 20 s) |
-| delay fades | 2 | `fade0`, `fade1` | fix (lines) |
-| SVF cut / rq | 4 | `cut0`, `rq0`, `cut1`, `rq1` | svfFreq / fix |
-| SVF cut / rq slews | 4 | `cut0Slew`, `rq0Slew`, … | integrator |
+| mono input levels | 2 | `in1`, `in2` | amp |
+| mono input slews | 2 | `in1Slew`, `in2Slew` | integrator |
+| send levels | 4 | `send1-1`…`send2-2` | amp |
+| send level slews | 2 | `send1Slew`, `send2Slew` | integrator |
+| feedback levels | 2 | `fb1`, `fb2` | amp |
+| feedback slews | 2 | `fb1Slew`, `fb2Slew` | integrator |
+| delay times | 2 | `delay1`, `delay2` | fix (≤ 20 s) |
+| delay fades | 2 | `fade1`, `fade2` | fix (lines) |
+| SVF cut / rq | 4 | `cut1`, `rq1`, `cut2`, `rq2` | svfFreq / fix |
+| SVF cut / rq slews | 4 | `cut1Slew`, `rq1Slew`, … | integrator |
 | SVF band mixes | 8 | `low*`, `high*`, `band*`, `notch*` | amp |
-| SVF dry/wet | 4 | `fdry0`, `fwet0`, `fdry1`, `fwet1` | amp |
+| SVF dry/wet | 4 | `fdry1`, `fwet1`, `fdry2`, `fwet2` | amp |
 | SVF dry/wet slews | 4 | `fdry*Slew`, `fwet*Slew` | integrator |
-| return levels | 4 | `ret0-0`…`ret1-1` | amp |
-| return level slews | 2 | `ret0Slew`, `ret1Slew` | integrator |
+| return levels | 4 | `ret1-1`…`ret2-2` | amp |
+| return level slews | 2 | `ret1Slew`, `ret2Slew` | integrator |
 | **total** | **49** | | |
 
 `sendS-*` share `sendSSlew`; `retR-*` share `retRSlew`. `fb*` unrestricted.
@@ -187,45 +186,45 @@ filtered feedback.
 | name | src | dst | description |
 |------|-----|-----|-------------|
 | `timescale` | — | `del*` | global delay time scaler (`calc_ms`) |
-| `in0` | `adc0` | `dry0` | mono 0 input level |
-| `in1` | `adc1` | `dry1` | mono 1 input level |
-| `in0Slew` | — | `in0` | slew for `in0` |
+| `in1` | `adc0` | `dry1` | mono 0 input level |
+| `in2` | `adc1` | `dry2` | mono 1 input level |
 | `in1Slew` | — | `in1` | slew for `in1` |
-| `send0-0` | `dry0` | `send0` | send 0 from mono 0 |
-| `send0-1` | `dry1` | `send0` | send 0 from mono 1 |
-| `send0Slew` | — | `send0-*` | shared slew for send 0 levels |
-| `send1-0` | `dry0` | `send1` | send 1 from mono 0 |
+| `in2Slew` | — | `in2` | slew for `in2` |
 | `send1-1` | `dry1` | `send1` | send 1 from mono 1 |
+| `send1-2` | `dry2` | `send1` | send 1 from mono 2 |
 | `send1Slew` | — | `send1-*` | shared slew for send 1 levels |
-| `fb0` | `fb0` | `send0` | feedback level (filtered path) into send 0 |
-| `fb0Slew` | — | `fb0` | slew for `fb0` |
-| `fb1` | `fb1` | `send1` | feedback level into send 1 |
+| `send2-1` | `dry1` | `send2` | send 2 from mono 1 |
+| `send2-2` | `dry2` | `send2` | send 2 from mono 2 |
+| `send2Slew` | — | `send2-*` | shared slew for send 2 levels |
+| `fb1` | `fb1` | `send1` | feedback level (filtered path) into send 1 |
 | `fb1Slew` | — | `fb1` | slew for `fb1` |
-| `delay0` | — | `del0` | delay 0 time (max 20 s) |
+| `fb2` | `fb2` | `send2` | feedback level into send 2 |
+| `fb2Slew` | — | `fb2` | slew for `fb2` |
 | `delay1` | — | `del1` | delay 1 time (max 20 s) |
-| `fade0` | — | `del0` | delay 0 read-tap crossfade rate |
+| `delay2` | — | `del2` | delay 2 time (max 20 s) |
 | `fade1` | — | `del1` | delay 1 read-tap crossfade rate |
-| `cut0` | — | `svf0` | SVF 0 cutoff |
-| `rq0` | — | `svf0` | SVF 0 reciprocal Q |
-| `low0` | `svf0` | `fb0` | SVF 0 lowpass mix |
-| `high0` | `svf0` | `fb0` | SVF 0 highpass mix |
-| `band0` | `svf0` | `fb0` | SVF 0 bandpass mix |
-| `notch0` | `svf0` | `fb0` | SVF 0 notch mix |
-| `fdry0` | `del0` | `fb0` | dry tap into feedback blend |
-| `fwet0` | `svf0` | `fb0` | filtered into feedback blend |
-| `cut0Slew` | — | `cut0` | slew for `cut0` |
-| `rq0Slew` | — | `rq0` | slew for `rq0` |
-| `fdry0Slew` | — | `fdry0` | slew for `fdry0` |
-| `fwet0Slew` | — | `fwet0` | slew for `fwet0` |
-| `cut1` … `fwet1Slew` | (same as `*0` for send 1) | | |
-| `ret0-0` | `adc2` | `dac0` | return 0 → mono out 0 |
-| `ret0-1` | `adc2` | `dac1` | return 0 → mono out 1 |
-| `ret0Slew` | — | `ret0-*` | shared slew for return 0 |
-| `ret1-0` | `adc3` | `dac0` | return 1 → mono out 0 |
-| `ret1-1` | `adc3` | `dac1` | return 1 → mono out 1 |
+| `fade2` | — | `del2` | delay 2 read-tap crossfade rate |
+| `cut1` | — | `svf1` | SVF 1 cutoff |
+| `rq1` | — | `svf1` | SVF 1 reciprocal Q |
+| `low1` | `svf1` | `fb1` | SVF 1 lowpass mix |
+| `high1` | `svf1` | `fb1` | SVF 1 highpass mix |
+| `band1` | `svf1` | `fb1` | SVF 1 bandpass mix |
+| `notch1` | `svf1` | `fb1` | SVF 1 notch mix |
+| `fdry1` | `del1` | `fb1` | dry tap into feedback blend |
+| `fwet1` | `svf1` | `fb1` | filtered into feedback blend |
+| `cut1Slew` | — | `cut1` | slew for `cut1` |
+| `rq1Slew` | — | `rq1` | slew for `rq1` |
+| `fdry1Slew` | — | `fdry1` | slew for `fdry1` |
+| `fwet1Slew` | — | `fwet1` | slew for `fwet1` |
+| `cut2` … `fwet2Slew` | (same as `*1` for send 2) | | |
+| `ret1-1` | `adc2` | `dac0` | return 1 → mono out 1 |
+| `ret1-2` | `adc2` | `dac1` | return 1 → mono out 2 |
 | `ret1Slew` | — | `ret1-*` | shared slew for return 1 |
+| `ret2-1` | `adc3` | `dac0` | return 2 → mono out 1 |
+| `ret2-2` | `adc3` | `dac1` | return 2 → mono out 2 |
+| `ret2Slew` | — | `ret2-*` | shared slew for return 2 |
 
-(send-1 SVF rows omitted in the table for brevity; mirror `*0` → `*1`.)
+(send-2 SVF rows omitted in the table for brevity; mirror `*1` → `*2`.)
 
 ---
 
@@ -247,17 +246,17 @@ filtered feedback.
 
 ```text
 timescale
-in0, in1, in0Slew, in1Slew
-send0-0, send0-1, send0Slew
-send1-0, send1-1, send1Slew
-fb0, fb0Slew, fb1, fb1Slew
-delay0, delay1, fade0, fade1
-cut0, rq0, low0, high0, band0, notch0, fdry0, fwet0
-cut0Slew, rq0Slew, fdry0Slew, fwet0Slew
+in1, in2, in1Slew, in2Slew
+send1-1, send1-2, send1Slew
+send2-1, send2-2, send2Slew
+fb1, fb1Slew, fb2, fb2Slew
+delay1, delay2, fade1, fade2
 cut1, rq1, low1, high1, band1, notch1, fdry1, fwet1
 cut1Slew, rq1Slew, fdry1Slew, fwet1Slew
-ret0-0, ret0-1, ret0Slew
-ret1-0, ret1-1, ret1Slew
+cut2, rq2, low2, high2, band2, notch2, fdry2, fwet2
+cut2Slew, rq2Slew, fdry2Slew, fwet2Slew
+ret1-1, ret1-2, ret1Slew
+ret2-1, ret2-2, ret2Slew
 ```
 
 ---
