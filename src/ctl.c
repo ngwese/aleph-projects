@@ -49,10 +49,10 @@ static s32 ampDb[4];
 // adc parameter indices
 // keeping them here is clean and maintainable,
 // at the cost of a little code space.
-static const int ampParamId[] = {eParam_adc0,
-				 eParam_adc1,
+static const int ampParamId[] = {eParam_adc1,
 				 eParam_adc2,
-				 eParam_adc3};
+				 eParam_adc3,
+				 eParam_adc4};
 
 //---------------------------------
 //---- static function declarations
@@ -78,20 +78,20 @@ void ctl_init(void) {
   // set other parameters to fixed values
   // adc multiplier slew
   // this integrator value is very fast, but enough to prevent clicks
-  ctl_param_change(eParam_adcSlew0, 0x7fe00000);
   ctl_param_change(eParam_adcSlew1, 0x7fe00000);
   ctl_param_change(eParam_adcSlew2, 0x7fe00000);
   ctl_param_change(eParam_adcSlew3, 0x7fe00000);
+  ctl_param_change(eParam_adcSlew4, 0x7fe00000);
   // cv slew
-  ctl_param_change(eParam_cvSlew0, 0);
   ctl_param_change(eParam_cvSlew1, 0);
   ctl_param_change(eParam_cvSlew2, 0);
   ctl_param_change(eParam_cvSlew3, 0);
+  ctl_param_change(eParam_cvSlew4, 0);
   // cv values
-  ctl_param_change(eParam_cv0, 0);
   ctl_param_change(eParam_cv1, 0);
   ctl_param_change(eParam_cv2, 0);
   ctl_param_change(eParam_cv3, 0);
+  ctl_param_change(eParam_cv4, 0);
 }
 
 // get amplitude for a channel

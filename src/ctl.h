@@ -21,25 +21,25 @@
 // this really is just the easiest way to handle it.
 enum params {
   // cv slew
-  eParam_cvSlew0,
   eParam_cvSlew1,
   eParam_cvSlew2,
   eParam_cvSlew3,
+  eParam_cvSlew4,
   // adc multiplier slew
-  eParam_adcSlew0,
   eParam_adcSlew1,
   eParam_adcSlew2,
   eParam_adcSlew3,
+  eParam_adcSlew4,
   // cv values
-  eParam_cv0,
   eParam_cv1,
   eParam_cv2,
   eParam_cv3,
+  eParam_cv4,
   // adc multiplier values
-  eParam_adc0,
   eParam_adc1,
   eParam_adc2,
   eParam_adc3,
+  eParam_adc4,
 
   eParamNumParams
 };
