@@ -256,6 +256,18 @@ u8 state_load_setup(const char *stem) {
   return 1;
 }
 
+static void log_writing_file(const char *stem) {
+  char msg[22];
+
+  msg[0] = '\0';
+  if(stem != NULL && stem[0] != '\0') {
+    strncpy(msg, stem, sizeof(msg) - 5);
+    msg[sizeof(msg) - 5] = '\0';
+  }
+  strcat(msg, ".txt");
+  render_log(msg);
+}
+
 u8 state_save_setup(const char *stem) {
   SetupData data;
   MorphSlot i;
@@ -270,6 +282,7 @@ u8 state_save_setup(const char *stem) {
   /* persist any modified slot presets before writing the setup */
   for(i = 0; i < MORPH2D_SLOTS; ++i) {
     if(g_slots.occupied[i] && g_slots.dirty[i] && g_slots.stem[i][0] != '\0') {
+      log_writing_file(g_slots.stem[i]);
       if(!state_save_preset(i, g_slots.stem[i])) {
 	return 0;
       }
@@ -281,6 +294,7 @@ u8 state_save_setup(const char *stem) {
   data.module[MODULE_NAME_LEN - 1] = '\0';
   data.version = g_module.version;
   data.maps = g_play_maps;
+  log_writing_file(stem);
   if(setup_file_save(stem, &data) != eSetupIoOk) {
     return 0;
   }
