@@ -33,7 +33,8 @@ static region regFoot[4] = {
 #define HEAD_IND_W 8
 #define HEAD_IND_X (128 - HEAD_IND_W)
 #define HEAD_MIDI_W FONT_CHARW
-#define HEAD_MIDI_X (HEAD_IND_X - HEAD_GAP_W - HEAD_MIDI_W)
+#define HEAD_MIDI_GAP_W 2 /* black gap between m glyph and morph indicator */
+#define HEAD_MIDI_X (HEAD_IND_X - HEAD_MIDI_GAP_W - HEAD_MIDI_W)
 #define HEAD_TITLE_MAX_X (HEAD_MIDI_X - HEAD_GAP_W)
 #define HEAD_MARGIN 2
 #define HEAD_TEXT_X (HEAD_BAR_W + HEAD_GAP_W)
@@ -295,7 +296,7 @@ static void head_draw_midi_m(void) {
   u8 *dst;
   u8 x;
 
-  /* clear the M column (and gap to morph) so disconnect leaves black */
+  /* clear the m column (and gap to morph) so disconnect leaves black */
   for(x = HEAD_MIDI_X; x < HEAD_IND_X; ++x) {
     head_fill_col(x, 1, HEAD_BLACK);
   }
@@ -304,7 +305,7 @@ static void head_draw_midi_m(void) {
   }
   color = midi_flash ? HEAD_GREY_LIGHT : HEAD_GREY_DARK;
   dst = regHead.data + HEAD_MIDI_X;
-  (void)font_glyph_fixed('M', dst, 128, color, HEAD_BLACK);
+  (void)font_glyph_fixed('m', dst, 128, color, HEAD_BLACK);
 }
 
 static void head_draw_right_chrome(void) {
@@ -543,7 +544,7 @@ void render_log_tick(void) {
     if(midi_flash_age_ms >= RENDER_MIDI_FLASH_MS) {
       midi_flash = 0;
       midi_flash_age_ms = 0;
-      /* return to dark-grey M while still connected */
+      /* return to dark-grey m while still connected */
       head_draw_midi_m();
       regHead.dirty = 1;
     }

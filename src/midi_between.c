@@ -2,6 +2,7 @@
 
 #include "midi_common.h"
 #include "morph2d.h"
+#include "pages.h"
 #include "render.h"
 #include "state.h"
 
@@ -41,8 +42,9 @@ static void on_control_change(u8 ch, u8 num, u8 val) {
 
   slots_set_morph(&g_slots, x, y);
   state_apply();
-  /* morph cursor lives in the header chrome */
-  render_header_midi_refresh();
+  /* refresh header morph cursor and play-mode morph / param readouts */
+  pages_redraw();
+  render_update();
 }
 
 static midi_behavior_t g_midi_beh = {

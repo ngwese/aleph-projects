@@ -28,17 +28,17 @@ void render_edit_string(u8 row, const char *str, u8 cursor);
 /* charset row: draw chars with inverse glyph at sel (0xff = none). */
 void render_charset_row(u8 row, const char *chars, u8 sel);
 
-/* edit-mode page header: mid-grey bar, title box(es), optional MIDI M,
+/* edit-mode page header: mid-grey bar, title box(es), optional MIDI m,
  * morph-position indicator. dirty is unused here. */
 void render_header(const char *title, u8 dirty);
 /* slot page: capital letter box, optional preset-name box, light-grey "*"
- * after the name when dirty, MIDI M + morph indicator. */
+ * after the name when dirty, MIDI m + morph indicator. */
 void render_header_slot(char slot_letter, const char *preset, u8 dirty);
 void render_header_clear(void);
-/* redraw only MIDI M + morph chrome (after morph CC / connect). */
+/* redraw only MIDI m + morph chrome (after connect / activity flash). */
 void render_header_midi_refresh(void);
 
-/* USB-MIDI presence / activity for the header M glyph. */
+/* USB-MIDI presence / activity for the header m glyph. */
 void render_midi_set_connected(u8 connected);
 void render_midi_pulse_activity(void);
 

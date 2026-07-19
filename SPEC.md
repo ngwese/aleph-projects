@@ -399,7 +399,7 @@ morph point, and sends parameters to the module immediately.
 unsaved edits: show a light-grey `*` after the preset-name box in the
 header (1px black spacer). the upper-right header chrome always shows the
 current morph position (mid-grey outline, white 3×3 cursor); when MIDI is
-connected, a dark-grey `M` sits immediately left of that indicator and
+connected, a dark-grey `m` sits immediately left of that indicator and
 flashes light grey on received traffic (see [midi](#midi)). leaving the
 page keeps in-memory dirty state until save or reset; setup save should
 warn if dirty.
@@ -519,7 +519,7 @@ play layout (128×64, bees-style footer cells for `sw0`–`sw3`):
 
 ```text
 ┌──────────────────────────────────────┐
-│ ▌ setup name              [M][morph] │  ← header (edit-style)
+│ ▌ setup name              [m] [morph] │  ← header (edit-style)
 ├────────────┬─────────────────────────┤
 │ morph      │ enc0 label   enc1 label │
 │  (square)  │ enc0 value   enc1 value │
@@ -532,7 +532,7 @@ play layout (128×64, bees-style footer cells for `sw0`–`sw3`):
 
 **header:** same chrome as edit mode — 2px mid-grey bar, gap, then the
 current setup name in a white text box (or `none` if unset). upper-right
-morph-position indicator and optional MIDI `M` as on other pages.
+morph-position indicator and optional MIDI `m` as on other pages.
 
 **morph position (left):** a square region above the switch labels. a light
 gray square frame marks the unit morph plane; the current morph point is a
@@ -633,7 +633,8 @@ on channel 16:
 map linearly: `morph = (cc * 65535) / 127`. a CC of `0` is the low edge of
 the axis; `127` is the high edge (`MORPH2D_ONE`). after updating x and/or y,
 recompute effective parameters and send them to the module (same as panel
-morph moves).
+morph moves), and refresh the current page UI (play-mode morph square and
+encoder readouts, header morph cursor, etc.).
 
 panel encoders / play maps that drive morph continue to work; MIDI and panel
 both write the same morph point (last writer wins unless a later rule defines
@@ -646,22 +647,22 @@ shown) reserve space **immediately left of** the upper-right morph-position
 indicator for a MIDI presence glyph:
 
 ```text
-… title / name boxes …   [M] [morph 8×8]
+… title / name boxes …   [m]  [morph 8×8]
 ```
 
-- when a MIDI device is **connected** to the aleph, draw a capital `M` in
+- when a MIDI device is **connected** to the aleph, draw a lowercase `m` in
   **dark grey**.
-- when no MIDI device is connected, omit the `M` (leave that space black /
+- when no MIDI device is connected, omit the `m` (leave that space black /
   empty; do not shift the morph indicator).
-- when MIDI **traffic is received**, briefly flash the `M` in **light grey**,
+- when MIDI **traffic is received**, briefly flash the `m` in **light grey**,
   then return to dark grey while the device remains connected.
 
 the flash should be short enough to read as activity (on the order of the
 diagnostic log clear time or shorter), and may retrigger on further messages
 without requiring the glyph to go dark between bursts.
 
-layout note: keep a 1px black gap between the `M` and the morph indicator box
-so the two reads stay distinct. the `M` is not drawn inside a white text box
+layout note: keep a 2px black gap between the `m` and the morph indicator box
+so the two reads stay distinct. the `m` is not drawn inside a white text box
 (unlike page titles); it is a lone glyph on the black header background.
 
 ### still open (midi)
