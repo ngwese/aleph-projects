@@ -133,18 +133,21 @@ u8 state_save_preset(MorphSlot slot, const char *stem) {
   return 1;
 }
 
-u8 state_new_preset(MorphSlot slot, const char *stem, u8 from_eff) {
-  if(from_eff) {
-    slots_capture_effective(&g_slots, slot);
-  } else if(!g_slots.occupied[slot]) {
-    /* fill from defaults and mark occupied */
-    u16 i;
-    for(i = 0; i < g_module.num_params; ++i) {
-      banks[slot][i] = g_module.defaults[i];
-    }
-    g_slots.occupied[slot] = 1;
+u8 state_new_preset(MorphSlot slot, const char *stem) {
+  u16 i;
+
+  if(!g_module.loaded || stem == NULL || stem[0] == '\0') {
+    return 0;
   }
-  return state_save_preset(slot, stem);
+  for(i = 0; i < g_module.num_params; ++i) {
+    banks[slot][i] = g_module.defaults[i];
+  }
+  g_slots.occupied[slot] = 1;
+  if(!state_save_preset(slot, stem)) {
+    return 0;
+  }
+  state_apply();
+  return 1;
 }
 
 static u8 stem_in_memory(const char *stem) {

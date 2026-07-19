@@ -343,9 +343,10 @@ the preset selector is a modal list scoped to the currently loaded module:
 - sw0 **load**: load the highlighted preset into the selected slot and
   return to the slots page.
 - sw1 **cancel**: return without changing the slot.
-- sw2 **new**: create a new uniquely named preset from the current
-  effective parameters, assign it to the selected slot, and return to the
-  slots page.
+- sw2 **new**: create a new uniquely named preset from **module defaults**,
+  assign it to the selected slot, and return to the slots page. to bake the
+  current effective morph into that slot afterward, open the slot editor and
+  use alt+**capture**.
 - alt+sw0 **delete**: delete the highlighted preset with confirmation.
 - alt+sw1 **refresh**: rescan the preset directory.
 
@@ -383,8 +384,10 @@ when a preset is loaded, controls are:
   slot has no file yet, behave like new then save.
 - sw1 **reset**: reload slot values from the assigned preset file
   (discard unsaved edits). disabled / no-op if empty or never saved.
-- sw2 **new**: capture this slot’s current values into a new uniquely
-  named preset file and assign it to this slot.
+- sw2 **new**: create a new uniquely named preset from **module defaults**
+  and assign it to this slot (replaces in-memory slot values). to store the
+  current effective morph instead, use alt+**capture** after creating or
+  loading a preset.
 - sw3 alt
 - alt+sw0 **save as**: open the name-entry modal (header `preset name`)
   prefilled with the current stem (or a unique `pNNN` if unset); OK writes

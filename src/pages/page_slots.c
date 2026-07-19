@@ -207,7 +207,7 @@ static void handle_sw2(s32 data) {
       render_log("name fail");
       return;
     }
-    if(state_new_preset(sel_slot, stem, 1)) {
+    if(state_new_preset(sel_slot, stem)) {
       render_log("preset new");
       modal = 0;
     } else {

@@ -227,7 +227,7 @@ static void handle_sw0(s32 data) {
       render_log("name fail");
       return;
     }
-    if(state_new_preset(cur_slot, stem, 0)) {
+    if(state_new_preset(cur_slot, stem)) {
       render_log("preset new");
     } else {
       render_log("new fail");
@@ -307,7 +307,7 @@ static void handle_sw2(s32 data) {
     render_log("name fail");
     return;
   }
-  if(state_new_preset(cur_slot, stem, 0)) {
+  if(state_new_preset(cur_slot, stem)) {
     render_log("preset new");
   } else {
     render_log("new fail");
