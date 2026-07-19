@@ -2,6 +2,7 @@
 
 #include "encoders.h"
 #include "events.h"
+#include "midi.h"
 #include "timers.h"
 
 #include "render.h"
@@ -9,6 +10,7 @@
 static event_t e;
 static softTimer_t screenTimer = {.next = NULL, .prev = NULL};
 static softTimer_t encTimer = {.next = NULL, .prev = NULL};
+static softTimer_t midiPollTimer = {.next = NULL, .prev = NULL};
 
 static void screen_timer_callback(void *obj) {
   (void)obj;
@@ -33,7 +35,21 @@ static void enc_timer_callback(void *obj) {
   }
 }
 
+static void midi_poll_timer_callback(void *obj) {
+  (void)obj;
+  /* asynchronous, non-blocking; UHC callbacks post MIDI events */
+  midi_read();
+}
+
 void init_app_timers(void) {
   timer_add(&screenTimer, 50, &screen_timer_callback, NULL);
   timer_add(&encTimer, 50, &enc_timer_callback, NULL);
+}
+
+void timers_set_midi(void) {
+  timer_add(&midiPollTimer, 1, &midi_poll_timer_callback, NULL);
+}
+
+void timers_unset_midi(void) {
+  timer_remove(&midiPollTimer);
 }

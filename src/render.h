@@ -8,6 +8,7 @@
 #define RENDER_CONTENT_ROWS 5
 #define RENDER_LOG_CLEAR_MS 2000
 #define RENDER_TICK_MS 50
+#define RENDER_MIDI_FLASH_MS 150
 
 void render_init(void);
 void render_boot(const char *str);
@@ -27,20 +28,27 @@ void render_edit_string(u8 row, const char *str, u8 cursor);
 /* charset row: draw chars with inverse glyph at sel (0xff = none). */
 void render_charset_row(u8 row, const char *chars, u8 sel);
 
-/* edit-mode page header: mid-grey bar, title box(es), morph-position
- * indicator (mid-grey outline, white 3×3 cursor). dirty is unused here. */
+/* edit-mode page header: mid-grey bar, title box(es), optional MIDI M,
+ * morph-position indicator. dirty is unused here. */
 void render_header(const char *title, u8 dirty);
 /* slot page: capital letter box, optional preset-name box, light-grey "*"
- * after the name when dirty, morph-position indicator. */
+ * after the name when dirty, MIDI M + morph indicator. */
 void render_header_slot(char slot_letter, const char *preset, u8 dirty);
 void render_header_clear(void);
+/* redraw only MIDI M + morph chrome (after morph CC / connect). */
+void render_header_midi_refresh(void);
+
+/* USB-MIDI presence / activity for the header M glyph. */
+void render_midi_set_connected(u8 connected);
+void render_midi_pulse_activity(void);
 
 void render_footer(const char *a, const char *b, const char *c, const char *d);
 
 /* diagnostic log on the line above the footer; redrawn immediately. */
 void render_log(const char *str);
 void render_log_clear(void);
-/* call from the screen timer; clears log after RENDER_LOG_CLEAR_MS idle. */
+/* call from the screen timer; clears log after RENDER_LOG_CLEAR_MS idle;
+ * ages MIDI activity flash. */
 void render_log_tick(void);
 
 /* footer triangle for single-slot param targets (morph corner). */

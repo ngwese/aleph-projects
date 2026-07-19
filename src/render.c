@@ -23,19 +23,28 @@ static region regFoot[4] = {
     {.w = 32, .h = 8, .x = 96, .y = 56},
 };
 
-static char log_buf[22];
-static u8 log_active = 0;
-static u32 log_age_ms = 0;
-
 #define HEAD_GREY 0x5
+#define HEAD_GREY_DARK 0x3
+#define HEAD_GREY_LIGHT 0xa
 #define HEAD_WHITE 0xf
 #define HEAD_BLACK 0x0
 #define HEAD_BAR_W 2
 #define HEAD_GAP_W 1
 #define HEAD_IND_W 8
 #define HEAD_IND_X (128 - HEAD_IND_W)
+#define HEAD_MIDI_W FONT_CHARW
+#define HEAD_MIDI_X (HEAD_IND_X - HEAD_GAP_W - HEAD_MIDI_W)
+#define HEAD_TITLE_MAX_X (HEAD_MIDI_X - HEAD_GAP_W)
 #define HEAD_MARGIN 2
 #define HEAD_TEXT_X (HEAD_BAR_W + HEAD_GAP_W)
+
+static char log_buf[22];
+static u8 log_active = 0;
+static u32 log_age_ms = 0;
+
+static u8 midi_connected = 0;
+static u8 midi_flash = 0;
+static u32 midi_flash_age_ms = 0;
 
 static void head_fill_col(u8 x0, u8 w, u8 color) {
   u8 x;
@@ -281,6 +290,28 @@ static void head_draw_morph_indicator(void) {
   }
 }
 
+static void head_draw_midi_m(void) {
+  u8 color;
+  u8 *dst;
+  u8 x;
+
+  /* clear the M column (and gap to morph) so disconnect leaves black */
+  for(x = HEAD_MIDI_X; x < HEAD_IND_X; ++x) {
+    head_fill_col(x, 1, HEAD_BLACK);
+  }
+  if(!midi_connected) {
+    return;
+  }
+  color = midi_flash ? HEAD_GREY_LIGHT : HEAD_GREY_DARK;
+  dst = regHead.data + HEAD_MIDI_X;
+  (void)font_glyph_fixed('M', dst, 128, color, HEAD_BLACK);
+}
+
+static void head_draw_right_chrome(void) {
+  head_draw_midi_m();
+  head_draw_morph_indicator();
+}
+
 void render_header(const char *title, u8 dirty) {
   (void)dirty;
   if(title == NULL) {
@@ -289,15 +320,15 @@ void render_header(const char *title, u8 dirty) {
 
   region_fill(&regHead, HEAD_BLACK);
   head_fill_col(0, HEAD_BAR_W, HEAD_GREY);
-  (void)head_draw_text_box(HEAD_TEXT_X, title, (u8)(HEAD_IND_X - HEAD_GAP_W));
-  head_draw_morph_indicator();
+  (void)head_draw_text_box(HEAD_TEXT_X, title, HEAD_TITLE_MAX_X);
+  head_draw_right_chrome();
   regHead.dirty = 1;
 }
 
 void render_header_slot(char slot_letter, const char *preset, u8 dirty) {
   char slot[2];
   u8 x;
-  u8 x_max = (u8)(HEAD_IND_X - HEAD_GAP_W);
+  u8 x_max = HEAD_TITLE_MAX_X;
 
   slot[0] = slot_letter;
   slot[1] = '\0';
@@ -316,13 +347,39 @@ void render_header_slot(char slot_letter, const char *preset, u8 dirty) {
     font_string_region_clip(&regHead, "*", x, 0, HEAD_GREY, HEAD_BLACK);
   }
 
-  head_draw_morph_indicator();
+  head_draw_right_chrome();
   regHead.dirty = 1;
 }
 
 void render_header_clear(void) {
   region_fill(&regHead, HEAD_BLACK);
   regHead.dirty = 1;
+}
+
+void render_header_midi_refresh(void) {
+  head_draw_right_chrome();
+  regHead.dirty = 1;
+  app_pause();
+  region_draw(&regHead);
+  app_resume();
+}
+
+void render_midi_set_connected(u8 connected) {
+  midi_connected = connected ? 1 : 0;
+  if(!midi_connected) {
+    midi_flash = 0;
+    midi_flash_age_ms = 0;
+  }
+  render_header_midi_refresh();
+}
+
+void render_midi_pulse_activity(void) {
+  if(!midi_connected) {
+    return;
+  }
+  midi_flash = 1;
+  midi_flash_age_ms = 0;
+  render_header_midi_refresh();
 }
 
 void render_footer(const char *a, const char *b, const char *c, const char *d) {
@@ -481,6 +538,16 @@ void render_log_clear(void) {
 }
 
 void render_log_tick(void) {
+  if(midi_flash) {
+    midi_flash_age_ms += RENDER_TICK_MS;
+    if(midi_flash_age_ms >= RENDER_MIDI_FLASH_MS) {
+      midi_flash = 0;
+      midi_flash_age_ms = 0;
+      /* return to dark-grey M while still connected */
+      head_draw_midi_m();
+      regHead.dirty = 1;
+    }
+  }
   if(!log_active) {
     return;
   }

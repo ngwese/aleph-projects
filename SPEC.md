@@ -209,7 +209,6 @@ rules:
 
 future setup keys (follow-on; reserved names):
 
-- `midi.x`, `midi.y` — cc assignments
 - `cv.x`, `cv.y` — cv input mapping
 - `lfo.*` — lfo type / rate / depth
 - `foot.*` — footswitch targets
@@ -217,6 +216,9 @@ future setup keys (follow-on; reserved names):
   param label)
 - `play.sw0` … `play.sw3` — switch map (snap corner, or param
   set/momentary with slot scope, label, and value)
+
+morph MIDI (channel 16, CC14 / CC15) is fixed in [midi](#midi); it is not
+stored as setup keys unless learn/reassign returns later.
 
 ---
 
@@ -395,10 +397,12 @@ slot’s in-memory values, recomputes the effective set for the current
 morph point, and sends parameters to the module immediately.
 
 unsaved edits: show a light-grey `*` after the preset-name box in the
-header (1px black spacer). the upper-right header indicator always shows
-the current morph position (mid-grey outline, white 3×3 cursor). leaving
-the page keeps in-memory dirty state until save or reset; setup save
-should warn if dirty.
+header (1px black spacer). the upper-right header chrome always shows the
+current morph position (mid-grey outline, white 3×3 cursor); when MIDI is
+connected, a dark-grey `M` sits immediately left of that indicator and
+flashes light grey on received traffic (see [midi](#midi)). leaving the
+page keeps in-memory dirty state until save or reset; setup save should
+warn if dirty.
 
 ### play page
 
@@ -588,16 +592,95 @@ setups remain the portable unit.
 
 ---
 
+## midi
+
+MIDI is a live control path alongside the panel. channel numbering below is
+**1-based** (MIDI channel 1 = status nibble `0`).
+
+### channel map
+
+| MIDI channel | role |
+|-------------:|------|
+| 1 | slot A |
+| 2 | slot B |
+| 3 | slot C |
+| 4 | slot D |
+| 16 | setup (morph and other setup-level controls) |
+
+messages on channels 1–4 affect the corresponding slot (A–D). the exact
+per-slot message set (note / CC / program change, which CCs map to which
+parameters, etc.) is still to be specified; this section locks the
+**channel → slot** assignment.
+
+channel 16 is reserved for **setup-level** parameters (not a single slot’s
+preset values). morph position is the first of those.
+
+### setup channel: morph position
+
+on channel 16:
+
+| CC | control | mapping |
+|---:|---------|---------|
+| 14 | morph x | value `0`…`127` → morph x `0`…`65535` (full plane) |
+| 15 | morph y | value `0`…`127` → morph y `0`…`65535` (full plane) |
+
+map linearly: `morph = (cc * 65535) / 127`. a CC of `0` is the low edge of
+the axis; `127` is the high edge (`MORPH2D_ONE`). after updating x and/or y,
+recompute effective parameters and send them to the module (same as panel
+morph moves).
+
+panel encoders / play maps that drive morph continue to work; MIDI and panel
+both write the same morph point (last writer wins unless a later rule defines
+summing).
+
+### header midi indicator
+
+all pages that draw the edit-mode header (and play mode when a header is
+shown) reserve space **immediately left of** the upper-right morph-position
+indicator for a MIDI presence glyph:
+
+```text
+… title / name boxes …   [M] [morph 8×8]
+```
+
+- when a MIDI device is **connected** to the aleph, draw a capital `M` in
+  **dark grey**.
+- when no MIDI device is connected, omit the `M` (leave that space black /
+  empty; do not shift the morph indicator).
+- when MIDI **traffic is received**, briefly flash the `M` in **light grey**,
+  then return to dark grey while the device remains connected.
+
+the flash should be short enough to read as activity (on the order of the
+diagnostic log clear time or shorter), and may retrigger on further messages
+without requiring the glyph to go dark between bursts.
+
+layout note: keep a 1px black gap between the `M` and the morph indicator box
+so the two reads stay distinct. the `M` is not drawn inside a white text box
+(unlike page titles); it is a lone glyph on the black header background.
+
+### still open (midi)
+
+- which messages on channels 1–4 edit or recall slot state.
+- 14-bit CC pairs for finer morph resolution.
+- MIDI learn / editable CC numbers in setup files (earlier reserved
+  `midi.x` / `midi.y` keys are superseded by the fixed CC14 / CC15 mapping
+  above unless learn mode returns).
+- how “MIDI device connected” is detected on this hardware (USB host enum,
+  UART activity, etc.).
+
+---
+
 ## follow-on features
 
 these are out of scope for the first usable version but should inform
 naming and play control reservations.
 
-### midi control of (x, y)
+### midi (further)
 
-- assign midi ccs to x and y (14-bit optional later).
-- learn mode from play or a small midi page in edit.
-- store assignments in setup metadata.
+- see [midi](#midi) for the locked channel map and morph CC14 / CC15.
+- learn mode from play or a small midi page in edit (if CCs become
+  reassignable again).
+- additional setup-channel CCs beyond morph.
 
 ### footswitch
 
