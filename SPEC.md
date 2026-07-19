@@ -82,7 +82,8 @@ convergence; default around `PARAM_SLEW_DEFAULT` (`0x7ffecccc`) matching
 mix/spray.
 
 suggested startup: identity matrix (`inX-X` = unity, other sends = 0),
-`in*` / `out*` = unity, slews = default.
+`in*` / `out*` = unity, `in*Slew` / `out*Slew` = min (`0`), matrix send
+slews = `PARAM_SLEW_DEFAULT`.
 
 ---
 

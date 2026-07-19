@@ -5,8 +5,9 @@
 
 #define PARAM_AMP_MAX 0x7fffffff
 #define PARAM_SLEW_MAX 0x7fffffff
+#define PARAM_SLEW_MIN 0
 
-/* something pretty fast, but noticeable */
+/* something pretty fast, but noticeable (matrix send slews) */
 #define PARAM_SLEW_DEFAULT 0x7ffecccc
 
 /*

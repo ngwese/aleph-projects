@@ -64,10 +64,10 @@ void module_init(void) {
   param_setup(eParam_in2, PARAM_AMP_MAX);
   param_setup(eParam_in3, PARAM_AMP_MAX);
 
-  param_setup(eParam_in0Slew, PARAM_SLEW_DEFAULT);
-  param_setup(eParam_in1Slew, PARAM_SLEW_DEFAULT);
-  param_setup(eParam_in2Slew, PARAM_SLEW_DEFAULT);
-  param_setup(eParam_in3Slew, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_in0Slew, PARAM_SLEW_MIN);
+  param_setup(eParam_in1Slew, PARAM_SLEW_MIN);
+  param_setup(eParam_in2Slew, PARAM_SLEW_MIN);
+  param_setup(eParam_in3Slew, PARAM_SLEW_MIN);
 
   param_setup(eParam_in0_0, PARAM_AMP_MAX);
   param_setup(eParam_in0_1, 0);
@@ -98,10 +98,10 @@ void module_init(void) {
   param_setup(eParam_out2, PARAM_AMP_MAX);
   param_setup(eParam_out3, PARAM_AMP_MAX);
 
-  param_setup(eParam_out0Slew, PARAM_SLEW_DEFAULT);
-  param_setup(eParam_out1Slew, PARAM_SLEW_DEFAULT);
-  param_setup(eParam_out2Slew, PARAM_SLEW_DEFAULT);
-  param_setup(eParam_out3Slew, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_out0Slew, PARAM_SLEW_MIN);
+  param_setup(eParam_out1Slew, PARAM_SLEW_MIN);
+  param_setup(eParam_out2Slew, PARAM_SLEW_MIN);
+  param_setup(eParam_out3Slew, PARAM_SLEW_MIN);
 }
 
 void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
