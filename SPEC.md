@@ -270,7 +270,7 @@ edit pages form a ring, navigated like bees (enc1 = page, enc0 = selection
 unless a page overrides). setups is the first page:
 
 ```text
-setups → modules → slots → slot a → slot b → slot c → slot d → play → setups
+setups → modules → slots → slot a → slot b → slot c → slot d → play → info → setups
 ```
 
 common conventions (align with bees):
@@ -472,6 +472,26 @@ setup `play.sw*` value). that value is what play mode applies on press.
 if no module is loaded, param-target bindings cannot be chosen (morph and
 snap targets remain available). changing module invalidates bindings that
 refer to missing param labels (clear or leave unbound until fixed).
+
+### info page
+
+read-only system page at the end of the edit ring (after play maps).
+
+header: `info`.
+
+body (five content rows):
+
+- row 0: between build version (`VERSIONSTRING`) and short git id
+  (`GIT_HASH`), e.g. `0.1.0 abcd123` or `0.1.0 abcd123-dirty` when the
+  working tree was dirty at build time.
+- rows 1–4: DSP xrun counters, one per line — `winRx`, `winTx`, `clashRx`,
+  `clashTx` — polled from the blackfin at ~2 Hz (same SPI path as spray).
+
+enc1 (and enc2/enc3) navigate the page ring; no softkey actions.
+
+xrun counters on the DSP are cleared when a module is loaded (`bfin_enable`
+→ `audio_reset_xruns`). between also zeros its local cache and clears the
+header warning at that time.
 
 ---
 
@@ -855,15 +875,25 @@ status readout share the mapping above.
 example: set slot B’s parameter index 3 to mid-scale — channel 2, NRPN
 `0:3`, data entry `64:0` (`v14 = 8192`).
 
-### header midi indicator
+### header midi / xrun indicators
 
 all pages that draw the edit-mode header (and play mode when a header is
 shown) reserve space **immediately left of** the upper-right morph-position
-indicator for a MIDI presence glyph:
+indicator for status glyphs:
 
 ```text
-… title / name boxes …   [m]  [morph 8×8]
+… title / name boxes …   [!!!]  [m]  [morph 8×8]
 ```
+
+**xrun warning (`!!!`):**
+
+- when any polled DSP xrun counter is **non-zero**, draw `!!!` in **dark
+  grey** immediately left of the MIDI `m` (with a small black gap).
+- when all counters are zero, omit `!!!` (leave that space black).
+- title/name boxes shrink their max-x while the warning is shown so they
+  do not collide with the glyphs.
+
+**MIDI `m`:**
 
 - when a MIDI device is **connected** to the aleph, draw a lowercase `m` in
   **dark grey**.
@@ -877,8 +907,8 @@ diagnostic log clear time or shorter), and may retrigger on further messages
 without requiring the glyph to go dark between bursts.
 
 layout note: keep a 2px black gap between the `m` and the morph indicator box
-so the two reads stay distinct. the `m` is not drawn inside a white text box
-(unlike page titles); it is a lone glyph on the black header background.
+so the two reads stay distinct. neither glyph is drawn inside a white text
+box (unlike page titles); they sit on the black header background.
 
 ### slot NRPN status row
 

@@ -11,6 +11,7 @@
 #include "filesystem.h"
 #include "memory.h"
 #include "render.h"
+#include "xruns.h"
 
 #include "fat_string.h"
 
@@ -215,6 +216,7 @@ u8 module_load(const char *name) {
   bfin_get_module_version(&g_module.version);
   g_module.loaded = 1;
   bfin_enable();
+  xruns_clear_local();
   if(truncated) {
     render_log("too many params");
   } else {

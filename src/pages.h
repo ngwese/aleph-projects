@@ -12,6 +12,7 @@ typedef enum {
   ePageSlotC,
   ePageSlotD,
   ePagePlayMaps,
+  ePageInfo,
   ePagePlay,
   eNumPages
 } PageId;
@@ -42,6 +43,7 @@ void page_modules_init(void);
 void page_slots_init(void);
 void page_slot_init(void);
 void page_play_maps_init(void);
+void page_info_init(void);
 void page_play_init(void);
 
 void select_setups(void);
@@ -52,6 +54,7 @@ void select_slot_b(void);
 void select_slot_c(void);
 void select_slot_d(void);
 void select_play_maps(void);
+void select_info(void);
 void select_play(void);
 
 void redraw_setups(void);
@@ -62,6 +65,7 @@ void redraw_slot_b(void);
 void redraw_slot_c(void);
 void redraw_slot_d(void);
 void redraw_play_maps(void);
+void redraw_info(void);
 void redraw_play(void);
 
 #endif

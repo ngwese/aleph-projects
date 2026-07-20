@@ -57,6 +57,8 @@ void render_header_midi_refresh(void);
 /* USB-MIDI presence / activity for the header m glyph. */
 void render_midi_set_connected(u8 connected);
 void render_midi_pulse_activity(void);
+/* dark-grey "!!!" left of MIDI m when any DSP xrun counter is non-zero. */
+void render_xrun_set_warn(u8 warn);
 
 void render_footer(const char *a, const char *b, const char *c, const char *d);
 

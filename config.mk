@@ -10,6 +10,22 @@ BAUD = 115200
 include ../aleph_avr32_config.mk
 include ../aleph_avr32_src.mk
 
+# short git id (+ -dirty) for the info page
+ALEPH_ROOT := $(APP_DIR)/../..
+GIT_REV := $(shell git -C $(ALEPH_ROOT) rev-parse --short HEAD 2>/dev/null)
+ifneq ($(GIT_REV),)
+  GIT_DIRTY := $(shell git -C $(ALEPH_ROOT) diff --quiet --ignore-submodules HEAD >/dev/null 2>&1; echo $$?)
+  ifeq ($(GIT_DIRTY),0)
+    GIT_HASH := $(GIT_REV)
+  else
+    GIT_HASH := $(GIT_REV)-dirty
+  endif
+else
+  GIT_HASH :=
+endif
+CPPFLAGS += -DGIT_HASH='"$(GIT_HASH)"'
+$(info GIT_HASH: $(GIT_HASH))
+
 CSRCS += \
 	$(APP_DIR)/src/app_between.c \
 	$(APP_DIR)/src/app_timers.c \
@@ -22,9 +38,11 @@ CSRCS += \
 	$(APP_DIR)/src/pages/page_slot.c \
 	$(APP_DIR)/src/pages/page_play_maps.c \
 	$(APP_DIR)/src/pages/page_play.c \
+	$(APP_DIR)/src/pages/page_info.c \
 	$(APP_DIR)/src/pages/name_edit.c \
 	$(APP_DIR)/src/midi_between.c \
 	$(APP_DIR)/src/module_load.c \
+	$(APP_DIR)/src/xruns.c \
 	$(APP_DIR)/src/dirlist.c \
 	$(APP_DIR)/src/files_ensure.c \
 	$(APP_DIR)/src/lineio_fl.c \

@@ -12,6 +12,7 @@
 #include "midi_between.h"
 #include "pages.h"
 #include "render.h"
+#include "xruns.h"
 
 static void handle_Switch4(s32 data) {
   if(data > 0) {
@@ -46,6 +47,12 @@ static void handle_MidiPacket(s32 data) {
   between_midi_handle_packet((u32)data);
 }
 
+/* low-rate xrun counter poll (posted from xrunTimer) */
+static void handle_AppCustom(s32 data) {
+  (void)data;
+  (void)xruns_poll();
+}
+
 void assign_event_handlers(void) {
   /* page select installs enc/sw0-3; keep mode + power + MIDI global */
   app_event_handlers[kEventSwitch4] = handle_Switch4;
@@ -53,4 +60,5 @@ void assign_event_handlers(void) {
   app_event_handlers[kEventMidiConnect] = handle_MidiConnect;
   app_event_handlers[kEventMidiDisconnect] = handle_MidiDisconnect;
   app_event_handlers[kEventMidiPacket] = handle_MidiPacket;
+  app_event_handlers[kEventAppCustom] = handle_AppCustom;
 }

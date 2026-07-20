@@ -35,7 +35,11 @@ static region regFoot[4] = {
 #define HEAD_MIDI_W FONT_CHARW
 #define HEAD_MIDI_GAP_W 2 /* black gap between m glyph and morph indicator */
 #define HEAD_MIDI_X (HEAD_IND_X - HEAD_MIDI_GAP_W - HEAD_MIDI_W)
-#define HEAD_TITLE_MAX_X (HEAD_MIDI_X - HEAD_GAP_W)
+#define HEAD_XRUN_W (3 * FONT_CHARW) /* "!!!" */
+#define HEAD_XRUN_GAP_W 2            /* gap between !!! and m */
+#define HEAD_XRUN_X (HEAD_MIDI_X - HEAD_XRUN_GAP_W - HEAD_XRUN_W)
+#define HEAD_TITLE_MAX_X_BASE (HEAD_MIDI_X - HEAD_GAP_W)
+#define HEAD_TITLE_MAX_X_XRUN (HEAD_XRUN_X - HEAD_GAP_W)
 #define HEAD_MARGIN 2
 #define HEAD_TEXT_X (HEAD_BAR_W + HEAD_GAP_W)
 
@@ -46,6 +50,11 @@ static u32 log_age_ms = 0;
 static u8 midi_connected = 0;
 static u8 midi_flash = 0;
 static u32 midi_flash_age_ms = 0;
+static u8 xrun_warn = 0;
+
+static u8 head_title_max_x(void) {
+  return xrun_warn ? HEAD_TITLE_MAX_X_XRUN : HEAD_TITLE_MAX_X_BASE;
+}
 
 static void head_fill_col(u8 x0, u8 w, u8 color) {
   u8 x;
@@ -328,9 +337,17 @@ static void head_draw_midi_m(void) {
   u8 *dst;
   u8 x;
 
-  /* clear the m column (and gap to morph) so disconnect leaves black */
-  for(x = HEAD_MIDI_X; x < HEAD_IND_X; ++x) {
+  /* always clear warn + m columns through the morph gap */
+  for(x = HEAD_XRUN_X; x < HEAD_IND_X; ++x) {
     head_fill_col(x, 1, HEAD_BLACK);
+  }
+  if(xrun_warn) {
+    dst = regHead.data + HEAD_XRUN_X;
+    (void)font_glyph_fixed('!', dst, 128, HEAD_GREY_DARK, HEAD_BLACK);
+    dst = regHead.data + HEAD_XRUN_X + FONT_CHARW;
+    (void)font_glyph_fixed('!', dst, 128, HEAD_GREY_DARK, HEAD_BLACK);
+    dst = regHead.data + HEAD_XRUN_X + (2 * FONT_CHARW);
+    (void)font_glyph_fixed('!', dst, 128, HEAD_GREY_DARK, HEAD_BLACK);
   }
   if(!midi_connected) {
     return;
@@ -353,14 +370,14 @@ void render_header(const char *title, u8 dirty) {
 
   region_fill(&regHead, HEAD_BLACK);
   head_fill_col(0, HEAD_BAR_W, HEAD_GREY);
-  (void)head_draw_text_box(HEAD_TEXT_X, title, HEAD_TITLE_MAX_X);
+  (void)head_draw_text_box(HEAD_TEXT_X, title, head_title_max_x());
   head_draw_right_chrome();
   regHead.dirty = 1;
 }
 
 void render_header_with_name(const char *title, const char *name, u8 dirty) {
   u8 x;
-  u8 x_max = HEAD_TITLE_MAX_X;
+  u8 x_max = head_title_max_x();
 
   (void)dirty;
   if(title == NULL) {
@@ -384,7 +401,7 @@ void render_header_with_name(const char *title, const char *name, u8 dirty) {
 void render_header_slot(char slot_letter, const char *preset, u8 dirty) {
   char slot[2];
   u8 x;
-  u8 x_max = HEAD_TITLE_MAX_X;
+  u8 x_max = head_title_max_x();
 
   slot[0] = slot_letter;
   slot[1] = '\0';
@@ -435,6 +452,17 @@ void render_midi_pulse_activity(void) {
   }
   midi_flash = 1;
   midi_flash_age_ms = 0;
+  render_header_midi_refresh();
+}
+
+void render_xrun_set_warn(u8 warn) {
+  u8 next = warn ? 1 : 0;
+  if(xrun_warn == next) {
+    return;
+  }
+  xrun_warn = next;
+  /* right chrome only; callers redraw the full header when warn flips so
+   * title max-x updates. */
   render_header_midi_refresh();
 }
 

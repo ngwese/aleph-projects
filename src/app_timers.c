@@ -11,6 +11,7 @@ static event_t e;
 static softTimer_t screenTimer = {.next = NULL, .prev = NULL};
 static softTimer_t encTimer = {.next = NULL, .prev = NULL};
 static softTimer_t midiPollTimer = {.next = NULL, .prev = NULL};
+static softTimer_t xrunTimer = {.next = NULL, .prev = NULL};
 
 static void screen_timer_callback(void *obj) {
   (void)obj;
@@ -41,9 +42,19 @@ static void midi_poll_timer_callback(void *obj) {
   midi_read();
 }
 
+/* post AppCustom so main loop can SPI-read xrun counters */
+static void xrun_timer_callback(void *obj) {
+  (void)obj;
+  e.type = kEventAppCustom;
+  e.data = 0;
+  event_post(&e);
+}
+
 void init_app_timers(void) {
   timer_add(&screenTimer, 50, &screen_timer_callback, NULL);
   timer_add(&encTimer, 50, &enc_timer_callback, NULL);
+  /* ~2 Hz — low-rate DSP xrun poll (same as spray) */
+  timer_add(&xrunTimer, 500, &xrun_timer_callback, NULL);
 }
 
 void timers_set_midi(void) {
