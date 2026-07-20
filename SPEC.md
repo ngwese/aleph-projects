@@ -642,9 +642,11 @@ applicable; morph axes may show normalized or raw position). param labels
 include scope (`a/amp` for one slot, `*/amp` for all occupied slots) so edit-page
 binding changes are visible when re-entering play. unmapped encoders show `-`.
 param encoder moves use a coarse step (`±0x100` in scaler io, or `±0x100`
-raw when unscaled) so the readout and slot bank(s) update every detent
-(slot map writes one bank; all-slots writes every occupied bank to the same
-absolute value, then `slots_apply`).
+raw when unscaled) **per accumulated encoder tick** (the 50 ms poll posts
+the summed delta, not one event per detent) so fast turns keep pace with
+slow ones. slot map writes one bank; all-slots writes every occupied bank
+to the same absolute value, then `slots_apply`. morph.x/y likewise scale
+their axis step by the posted tick count.
 
 **switch footer labels:**
 

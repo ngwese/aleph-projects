@@ -145,8 +145,11 @@ static void handle_enc1(s32 data) {
 }
 
 static void handle_enc2(s32 data) {
-  s32 step = data > 0 ? (s32)(MORPH2D_ONE / 64) : -(s32)(MORPH2D_ONE / 64);
+  s32 step = (s32)(MORPH2D_ONE / 64) * data;
   s32 nx = (s32)g_slots.x + step;
+  if(data == 0) {
+    return;
+  }
   if(nx < 0) {
     nx = 0;
   }
@@ -160,8 +163,11 @@ static void handle_enc2(s32 data) {
 }
 
 static void handle_enc3(s32 data) {
-  s32 step = data > 0 ? (s32)(MORPH2D_ONE / 64) : -(s32)(MORPH2D_ONE / 64);
+  s32 step = (s32)(MORPH2D_ONE / 64) * data;
   s32 ny = (s32)g_slots.y + step;
+  if(data == 0) {
+    return;
+  }
   if(ny < 0) {
     ny = 0;
   }

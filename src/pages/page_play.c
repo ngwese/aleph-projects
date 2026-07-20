@@ -291,10 +291,12 @@ static void redraw(void) {
 void redraw_play(void) { redraw(); }
 
 static void nudge_axis(u16 *axis, s32 data) {
-  s32 step = (s32)(MORPH2D_ONE / 128);
+  /* enc timer posts accumulated ticks; scale step by |data| so fast
+   * turns are not collapsed to a single detent. */
+  s32 step = (s32)(MORPH2D_ONE / 128) * data;
   s32 v;
-  if(data < 0) {
-    step = -step;
+  if(data == 0) {
+    return;
   }
   v = (s32)(*axis) + step;
   if(v < 0) {
@@ -321,19 +323,25 @@ static ParamValue bump_raw(ParamValue v, const ParamDesc *d, s32 inc) {
 
 static ParamValue bump_one(u16 idx, ParamValue raw, s32 data) {
   ParamDesc *d = &g_module.desc[idx];
+  s32 delta32;
 
   if(data == 0) {
     return raw;
+  }
+  delta32 = (s32)0x100 * data;
+  if(delta32 > 32767) {
+    delta32 = 32767;
+  } else if(delta32 < -32768) {
+    delta32 = -32768;
   }
   if(param_scaler_usable(idx)) {
     ParamScaler *sc = &g_scalers[idx];
     io_t io = scaler_get_in(sc, (s32)raw);
     /* play has one encoder per binding (no separate fine/coarse). use
-     * slot-page coarse step (±0x100) each detent. */
-    io_t delta = (data > 0) ? (io_t)0x100 : (io_t)-0x100;
-    return (ParamValue)scaler_inc(sc, &io, delta);
+     * slot-page coarse step (±0x100) per accumulated tick. */
+    return (ParamValue)scaler_inc(sc, &io, (io_t)delta32);
   }
-  return bump_raw(raw, d, (data > 0) ? 0x100 : -0x100);
+  return bump_raw(raw, d, delta32);
 }
 
 static void apply_enc(u8 i, s32 data) {
