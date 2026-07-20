@@ -35,8 +35,9 @@ static region regFoot[4] = {
 #define HEAD_MIDI_W FONT_CHARW
 #define HEAD_MIDI_GAP_W 2 /* black gap between m glyph and morph indicator */
 #define HEAD_MIDI_X (HEAD_IND_X - HEAD_MIDI_GAP_W - HEAD_MIDI_W)
-#define HEAD_XRUN_W (3 * FONT_CHARW) /* "!!!" */
-#define HEAD_XRUN_GAP_W 2            /* gap between !!! and m */
+/* proportional "!!!": each ! is 1px + 1px advance (same as font_string) */
+#define HEAD_XRUN_W 6
+#define HEAD_XRUN_GAP_W 2 /* gap between !!! and m */
 #define HEAD_XRUN_X (HEAD_MIDI_X - HEAD_XRUN_GAP_W - HEAD_XRUN_W)
 #define HEAD_TITLE_MAX_X_BASE (HEAD_MIDI_X - HEAD_GAP_W)
 #define HEAD_TITLE_MAX_X_XRUN (HEAD_XRUN_X - HEAD_GAP_W)
@@ -342,12 +343,9 @@ static void head_draw_midi_m(void) {
     head_fill_col(x, 1, HEAD_BLACK);
   }
   if(xrun_warn) {
-    dst = regHead.data + HEAD_XRUN_X;
-    (void)font_glyph_fixed('!', dst, 128, HEAD_GREY_DARK, HEAD_BLACK);
-    dst = regHead.data + HEAD_XRUN_X + FONT_CHARW;
-    (void)font_glyph_fixed('!', dst, 128, HEAD_GREY_DARK, HEAD_BLACK);
-    dst = regHead.data + HEAD_XRUN_X + (2 * FONT_CHARW);
-    (void)font_glyph_fixed('!', dst, 128, HEAD_GREY_DARK, HEAD_BLACK);
+    /* proportional glyphs — fixed-width cells leave ~4px between bangs */
+    font_string_region_clip(&regHead, "!!!", HEAD_XRUN_X, 0, HEAD_GREY_DARK,
+			    HEAD_BLACK);
   }
   if(!midi_connected) {
     return;
