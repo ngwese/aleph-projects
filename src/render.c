@@ -12,9 +12,10 @@
 static region bootScrollRegion = {.w = 128, .h = 64, .x = 0, .y = 0};
 static scroll bootScroll;
 
-/* header 8; content 40 (5 rows); log 8; four bees-style SW label cells */
+/* header 8; content 48 (6 rows); log overlays last content row when active;
+ * four bees-style SW label cells at y=56 */
 static region regHead = {.w = 128, .h = 8, .x = 0, .y = 0};
-static region regMain = {.w = 128, .h = 40, .x = 0, .y = 8};
+static region regMain = {.w = 128, .h = 48, .x = 0, .y = 8};
 static region regLog = {.w = 128, .h = 8, .x = 0, .y = 48};
 static region regFoot[4] = {
     {.w = 32, .h = 8, .x = 0, .y = 56},
@@ -88,7 +89,7 @@ void render_init(void) {
   region_fill(&regHead, HEAD_BLACK);
   region_fill(&regLog, 0);
   region_draw(&regHead);
-  region_draw(&regLog);
+  /* do not draw empty log — it shares the last content row */
 }
 
 void render_boot(const char *str) {
@@ -134,7 +135,7 @@ void render_line_at(u8 row, u8 x, const char *str) {
 }
 
 void render_string_xy(u8 x, u8 y, const char *str, u8 fg) {
-  if(str == NULL || x >= 128 || y >= 40) {
+  if(str == NULL || x >= 128 || y >= 48) {
     return;
   }
   font_string_region_clip(&regMain, str, x, y, fg, 0);
@@ -146,7 +147,7 @@ void render_fill_rect(u8 x, u8 y, u8 w, u8 h, u8 color) {
   u8 yi;
   u8 x1;
   u8 y1;
-  if(w == 0 || h == 0 || x >= 128 || y >= 40) {
+  if(w == 0 || h == 0 || x >= 128 || y >= 48) {
     return;
   }
   x1 = (u8)(x + w);
@@ -154,8 +155,8 @@ void render_fill_rect(u8 x, u8 y, u8 w, u8 h, u8 color) {
   if(x1 > 128) {
     x1 = 128;
   }
-  if(y1 > 40) {
-    y1 = 40;
+  if(y1 > 48) {
+    y1 = 48;
   }
   for(yi = y; yi < y1; ++yi) {
     for(xi = x; xi < x1; ++xi) {
@@ -612,9 +613,11 @@ void render_log_clear(void) {
   log_active = 0;
   log_age_ms = 0;
   region_fill(&regLog, 0);
-  regLog.dirty = 1;
+  regLog.dirty = 0;
+  /* restore content row under the log overlay */
+  regMain.dirty = 1;
   app_pause();
-  region_draw(&regLog);
+  region_draw(&regMain);
   app_resume();
 }
 
@@ -646,8 +649,13 @@ void render_update(void) {
   }
   if(regMain.dirty) {
     region_draw(&regMain);
+    /* main includes the log overlay band; restack log if showing */
+    if(log_active) {
+      regLog.dirty = 1;
+    }
   }
-  if(regLog.dirty) {
+  /* log overlays the last content row; skip when inactive so row 5 shows */
+  if(log_active && regLog.dirty) {
     region_draw(&regLog);
   }
   for(i = 0; i < 4; ++i) {

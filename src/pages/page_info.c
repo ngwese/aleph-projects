@@ -2,11 +2,18 @@
 
 #include "app.h"
 #include "events.h"
+#include "font.h"
 #include "render.h"
 #include "xruns.h"
 
-#ifndef VERSIONSTRING
-#define VERSIONSTRING "0.0.0"
+#ifndef MAJ
+#define MAJ 0
+#endif
+#ifndef MIN
+#define MIN 0
+#endif
+#ifndef REV
+#define REV 0
 #endif
 #ifndef GIT_HASH
 #define GIT_HASH ""
@@ -45,58 +52,94 @@ static void format_u32(char *buf, u8 buf_len, u32 val) {
   buf[digits] = '\0';
 }
 
-static void xrun_line(char *dst, u8 dst_len, const char *label, u32 val) {
-  char num[8];
-  u8 i = 0;
-  u8 j;
+/* small unsigned decimal into dst; returns length. */
+static u8 format_u8(char *dst, u8 dst_len, u8 val) {
+  char reverse[3];
+  u8 digits = 0;
+  u8 i;
 
-  while(label[i] != '\0' && i + 1 < dst_len) {
-    dst[i] = label[i];
+  if(dst_len == 0) {
+    return 0;
+  }
+  do {
+    reverse[digits++] = (char)('0' + (val % 10));
+    val /= 10;
+  } while(val && digits < 3);
+  if(digits >= dst_len) {
+    digits = (u8)(dst_len - 1);
+  }
+  for(i = 0; i < digits; ++i) {
+    dst[i] = reverse[digits - 1 - i];
+  }
+  dst[digits] = '\0';
+  return digits;
+}
+
+static void format_version(char *dst, u8 dst_len) {
+  u8 i = 0;
+
+  if(dst_len < 6) {
+    if(dst_len > 0) {
+      dst[0] = '\0';
+    }
+    return;
+  }
+  i = format_u8(dst, dst_len, (u8)MAJ);
+  if(i + 1 < dst_len) {
+    dst[i++] = '.';
+  }
+  i = (u8)(i + format_u8(dst + i, (u8)(dst_len - i), (u8)MIN));
+  if(i + 1 < dst_len) {
+    dst[i++] = '.';
+  }
+  (void)format_u8(dst + i, (u8)(dst_len - i), (u8)REV);
+}
+
+/* dark-grey label, white value — e.g. "version 0.1.0" */
+static void info_line(u8 row, const char *label, const char *value) {
+  char lab[14];
+  u8 i = 0;
+  u8 x;
+  u8 y;
+
+  if(row >= RENDER_CONTENT_ROWS || label == NULL) {
+    return;
+  }
+  while(label[i] != '\0' && i + 2 < (u8)sizeof(lab)) {
+    lab[i] = label[i];
     ++i;
   }
-  if(i + 1 < dst_len) {
-    dst[i++] = ' ';
+  lab[i++] = ' ';
+  lab[i] = '\0';
+  y = (u8)(row * 8);
+  render_string_xy(0, y, lab, RENDER_PLAY_GREY_DARK);
+  x = font_string_pixels(lab);
+  if(value != NULL && value[0] != '\0') {
+    render_string_xy(x, y, value, 0xf);
   }
-  format_u32(num, sizeof(num), val);
-  j = 0;
-  while(num[j] != '\0' && i + 1 < dst_len) {
-    dst[i++] = num[j++];
-  }
-  dst[i] = '\0';
 }
 
 void redraw_info(void) {
   const bfin_xrun_t *xr = xruns_get();
-  char line[22];
-  u8 i = 0;
-  const char *ver = VERSIONSTRING;
+  char ver[12];
+  char num[8];
   const char *git = GIT_HASH;
 
   render_header("info", 0);
   render_clear();
 
-  /* version + git hash */
-  while(ver[i] != '\0' && i + 1 < (u8)sizeof(line)) {
-    line[i] = ver[i];
-    ++i;
-  }
-  if(git != NULL && git[0] != '\0' && i + 1 < (u8)sizeof(line)) {
-    line[i++] = ' ';
-    while(*git != '\0' && i + 1 < (u8)sizeof(line)) {
-      line[i++] = *git++;
-    }
-  }
-  line[i] = '\0';
-  render_line(0, line);
+  format_version(ver, sizeof(ver));
+  info_line(0, "version", ver);
+  info_line(1, "build", (git != NULL && git[0] != '\0') ? git : "-");
 
-  xrun_line(line, sizeof(line), "winRx", xr->windowRx);
-  render_line(1, line);
-  xrun_line(line, sizeof(line), "winTx", xr->windowTx);
-  render_line(2, line);
-  xrun_line(line, sizeof(line), "clashRx", xr->clashRx);
-  render_line(3, line);
-  xrun_line(line, sizeof(line), "clashTx", xr->clashTx);
-  render_line(4, line);
+  format_u32(num, sizeof(num), xr->windowRx);
+  info_line(2, "winRx", num);
+  format_u32(num, sizeof(num), xr->windowTx);
+  info_line(3, "winTx", num);
+  format_u32(num, sizeof(num), xr->clashRx);
+  info_line(4, "clashRx", num);
+  format_u32(num, sizeof(num), xr->clashTx);
+  info_line(5, "clashTx", num);
 
   render_footer("", "", "", "");
 }

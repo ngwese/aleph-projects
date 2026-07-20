@@ -4,8 +4,9 @@
 #include "morph2d.h"
 #include "types.h"
 
-/* content rows below the page header; row above footer is the diagnostic log. */
-#define RENDER_CONTENT_ROWS 5
+/* content rows below the page header (48px). diagnostic log overlays the
+ * last row when active; otherwise that row is normal content. */
+#define RENDER_CONTENT_ROWS 6
 #define RENDER_LOG_CLEAR_MS 2000
 #define RENDER_TICK_MS 50
 #define RENDER_MIDI_FLASH_MS 150

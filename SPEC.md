@@ -479,13 +479,14 @@ read-only system page at the end of the edit ring (after play maps).
 
 header: `info`.
 
-body (five content rows):
+body (six content rows; labels in dark grey, values in white):
 
-- row 0: between build version (`VERSIONSTRING`) and short git id
-  (`GIT_HASH`), e.g. `0.1.0 abcd123` or `0.1.0 abcd123-dirty` when the
-  working tree was dirty at build time.
-- rows 1–4: DSP xrun counters, one per line — `winRx`, `winTx`, `clashRx`,
-  `clashTx` — polled from the blackfin at ~2 Hz (same SPI path as spray).
+- row 0: `version` — between `maj.min.rev` from `version.mk` (`MAJ`/`MIN`/`REV`).
+- row 1: `build` — short git id (`GIT_HASH`), e.g. `abcd123` or
+  `abcd123-dirty` when the working tree was dirty at build time (`-` if
+  unavailable).
+- rows 2–5: DSP xrun counters — `winRx`, `winTx`, `clashRx`, `clashTx` —
+  polled from the blackfin at ~2 Hz (same SPI path as spray).
 
 enc1 (and enc2/enc3) navigate the page ring; no softkey actions.
 
