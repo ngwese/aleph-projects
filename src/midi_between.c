@@ -5,7 +5,9 @@
 #include "module_load.h"
 #include "morph2d.h"
 #include "pages.h"
+#include "param_scaler.h"
 #include "render.h"
+#include "scaler_tables.h"
 #include "state.h"
 
 /* MIDI channel 16 (1-based) → ch index 15.
@@ -41,6 +43,52 @@ static u8 ch_accepts_nrpn(u8 ch) {
   return (u8)(ch <= 3 || ch == MIDI_CH_SETUP);
 }
 
+static u8 param_scaler_usable(u16 idx) {
+  ParamType t;
+  if(idx >= g_module.num_params) {
+    return 0;
+  }
+  t = g_module.desc[idx].type;
+  if(t >= eParamNumTypes) {
+    return 0;
+  }
+  return scaler_tables_ok(t);
+}
+
+ParamValue between_midi_v14_to_raw(u16 param_idx, u16 v14) {
+  const ParamDesc *d;
+  ParamScaler *sc;
+  io_t io;
+
+  if(!g_module.loaded || param_idx >= g_module.num_params) {
+    return 0;
+  }
+  d = &g_module.desc[param_idx];
+  if(param_scaler_usable(param_idx)) {
+    sc = &g_scalers[param_idx];
+    io = (io_t)midi_nrpn_v14_to_range((s32)sc->inMin, (s32)sc->inMax, v14);
+    return (ParamValue)scaler_get_value(sc, io);
+  }
+  return midi_nrpn_map_v14(d, v14);
+}
+
+u16 between_midi_raw_to_v14(u16 param_idx, ParamValue raw) {
+  const ParamDesc *d;
+  ParamScaler *sc;
+  io_t io;
+
+  if(!g_module.loaded || param_idx >= g_module.num_params) {
+    return 0;
+  }
+  d = &g_module.desc[param_idx];
+  if(param_scaler_usable(param_idx)) {
+    sc = &g_scalers[param_idx];
+    io = scaler_get_in(sc, (s32)raw);
+    return midi_nrpn_range_to_v14((s32)sc->inMin, (s32)sc->inMax, (s32)io);
+  }
+  return midi_nrpn_raw_to_v14(d, raw);
+}
+
 static void apply_nrpn_data(u8 ch) {
   u16 idx;
   u16 v14;
@@ -61,7 +109,7 @@ static void apply_nrpn_data(u8 ch) {
   }
 
   v14 = midi_nrpn_v14(nrpn_ch[ch].data_msb, nrpn_ch[ch].data_lsb);
-  raw = midi_nrpn_map_v14(&g_module.desc[idx], v14);
+  raw = between_midi_v14_to_raw(idx, v14);
 
   if(ch <= 3) {
     s = (MorphSlot)ch;

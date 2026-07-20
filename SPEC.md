@@ -410,10 +410,11 @@ unsaved edits: show a light-grey `*` after the preset-name box in the
 header (1px black spacer). the upper-right header chrome always shows the
 current morph position (mid-grey outline, white 3×3 cursor); when MIDI is
 connected, a dark-grey `m` sits immediately left of that indicator and
-flashes light grey on received traffic. on slot pages with a loaded
-preset, a dark-grey `msb:lsb` NRPN address for the selected parameter
-sits immediately left of the `m` (see [midi](#midi)). leaving the page
-keeps in-memory dirty state until save or reset; setup save should warn
+flashes light grey on received traffic (see [midi](#midi)). on slot pages
+with a loaded preset, the status row above the diagnostic log shows dark-grey
+`nrpn ` / `value ` labels with light-grey `msb:lsb` readouts for the selected
+parameter’s NRPN address and absolute 14-bit data-entry value. leaving the
+page keeps in-memory dirty state until save or reset; setup save should warn
 if dirty.
 
 ### play page
@@ -430,9 +431,9 @@ body: a selectable list of the ten controls (`enc0`–`enc3`, `sw0`–`sw3`,
 `fs0`–`fs1`). each line shows a short summary of the current binding with a
 space after the colon (e.g. `enc2: morph.x`, `sw0: snap.a`,
 `fs0: set.all/in1`). the list is always four rows. the status row under it
-shows dark-grey `edit ` plus the focused field name; for set/momentary switch
-maps the same row also shows dark-grey `value ` and the stored binding value
-at the slot-page value column (`x=64`).
+shows dark-grey `edit ` plus the focused field name in light grey; for
+set/momentary switch maps the same row also shows dark-grey `value ` and the
+stored binding value in light grey at the slot-page value column (`x=64`).
 
 field focus starts at **kind** when a control is selected. softkeys jump to
 slot / param / value when those fields apply to the current binding; encoders
@@ -747,27 +748,29 @@ parameters to the module, and refresh UI (same path as panel slot edits).
 
 data entry is **absolute**, not relative to the current bank value.
 
-map `v14` linearly into the target parameter’s descriptor range
-(`ParamDesc.min` … `ParamDesc.max`, native raw `ParamValue` / `s32`):
+**scaled params** (amp, integrator, note, svf, … — any type with a usable
+bees scaler / NV table): map `v14` linearly through the scaler’s **io**
+range (`inMin`…`inMax`), then convert with `scaler_get_value` /
+`scaler_get_in`. this matches panel encoders and the slot UI strings, so
+the status-row `value` `msb:lsb` tracks audible edits and is what a
+controller should send.
 
 ```text
-span = max - min
-raw  = min + (v14 * span) / 16383
+io  = inMin + (v14 * (inMax - inMin)) / 16383
+raw = scaler_get_value(io)
 ```
 
-clamp to `[min, max]` after the divide. `v14 == 0` → `min`;
-`v14 == 16383` → `max`.
+inverse for display: `io = scaler_get_in(raw)`, then unmap `io` to `v14`.
 
-notes:
+**unscaled / discrete** (`bool`, `label`, and types without a usable
+scaler): map `v14` linearly into `ParamDesc.min`…`ParamDesc.max` (native
+raw). bool: `min` if `v14 < 8192`, else `max`. labels: round to the
+nearest integer index in range.
 
-- morph banks and presets continue to store **raw** values; MIDI writes
-  the same domain the slot editor’s scalers present, not a separate
-  normalized float.
-- discrete types (`bool`, `label`): after the linear map, snap to the
-  nearest legal raw step (for bool: `min` if `v14 < 8192`, else `max`;
-  for labels: round to the nearest integer index in range).
-- table-backed continuous types (amp, note, …) still store the mapped
-  raw DSP value; UI strings continue to go through existing scalers.
+clamp after mapping. `v14 == 0` → low end; `v14 == 16383` → high end.
+
+banks and presets continue to store **raw** DSP values; MIDI and the
+status readout share the mapping above.
 
 #### addressing examples
 
@@ -807,36 +810,30 @@ layout note: keep a 2px black gap between the `m` and the morph indicator box
 so the two reads stay distinct. the `m` is not drawn inside a white text box
 (unlike page titles); it is a lone glyph on the black header background.
 
-### header NRPN readout (slot pages)
+### slot NRPN status row
 
-on **slot edit pages** (A–D) only, show the NRPN address of the **currently
-selected parameter** immediately **left of** the MIDI `m` glyph, in
-**dark grey** (same grey as the idle `m`):
+on **slot edit pages** (A–D) with a loaded preset, the content row
+immediately above the diagnostic log (same placement as the play-maps
+`edit` / `value` status line) shows:
 
 ```text
-… [A] [preset*] …   [msb:lsb]  [m]  [morph 8×8]
+nrpn 0:3                     value 64:0
 ```
 
-format: decimal MSB and LSB of `param_index`, separated by `:`, no spaces
-(e.g. param 0 → `0:0`, param 3 → `0:3`, param 128 → `1:0`). use the
-minimum digits needed (no zero-padding) so the field stays narrow.
+- dark-grey labels `nrpn ` and `value ` (trailing space), matching play-maps
+  status label style.
+- light-grey `msb:lsb` text for each field (no zero-padding).
+- `nrpn` — NRPN address of the shared selected parameter index
+  (`param_sel`).
+- `value` — absolute 14-bit data-entry equivalent of the selected
+  parameter’s current raw slot value (`midi_nrpn_raw_to_v14`), so a
+  controller can match the bank. the value column starts at `x=64` like
+  other slot / play-maps value fields.
+- empty slots omit this row (only `empty` in the body).
+- informational only; not editable on this row.
 
-rules:
-
-- the shared slot-page `param_sel` drives the numbers; changing the
-  selected parameter updates the readout immediately.
-- if the slot is empty (no param list), omit the NRPN text (leave that
-  region black; do not shift `m` / morph).
-- do not show the NRPN readout on non-slot pages (setups, modules, slots
-  overview, play maps, play mode).
-- keep a small black gap between the NRPN text and the `m` (same idea as
-  the `m`–morph gap) so the three header chrome items stay distinct.
-- the NRPN readout is informational only (not editable in the header);
-  it mirrors what an external controller should send on channels 1–4 / 16
-  to hit that parameter.
-
-title / preset name boxes still clip against the left edge of this chrome
-cluster (`NRPN` + `m` + morph), not against the morph box alone.
+the parameter list uses the four rows above the status line (scroll keeps
+the selection visible).
 
 ### still open (midi)
 

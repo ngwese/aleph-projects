@@ -48,10 +48,8 @@ void render_header(const char *title, u8 dirty);
  * is NULL/empty) — same pattern as the slot page preset box. */
 void render_header_with_name(const char *title, const char *name, u8 dirty);
 /* slot page: capital letter box, optional preset-name box, light-grey "*"
- * after the name when dirty, optional NRPN msb:lsb, MIDI m + morph.
- * nrpn_param < 0 omits the NRPN readout (empty slot / no selection). */
-void render_header_slot(char slot_letter, const char *preset, u8 dirty,
-			s16 nrpn_param);
+ * after the name when dirty, MIDI m + morph indicator. */
+void render_header_slot(char slot_letter, const char *preset, u8 dirty);
 void render_header_clear(void);
 /* redraw only MIDI m + morph chrome (after connect / activity flash). */
 void render_header_midi_refresh(void);

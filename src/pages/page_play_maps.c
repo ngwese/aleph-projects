@@ -270,7 +270,7 @@ static void redraw(void) {
   tag = field_tag();
   render_string_xy(0, status_y, "edit ", RENDER_PLAY_GREY_DARK);
   edit_x = (u8)font_string_pixels("edit ");
-  render_string_xy(edit_x, status_y, tag, 0xf);
+  render_string_xy(edit_x, status_y, tag, RENDER_PLAY_GREY_LIGHT);
 
   if(show_value) {
     u8 val_lab_w;
@@ -288,7 +288,7 @@ static void redraw(void) {
     } else {
       fmt_s32(num, (s32)swm->value);
     }
-    render_string_xy(PLAY_MAPS_VAL_X, status_y, num, 0xf);
+    render_string_xy(PLAY_MAPS_VAL_X, status_y, num, RENDER_PLAY_GREY_LIGHT);
   }
 
   if(g_alt_mode) {

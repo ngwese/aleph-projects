@@ -10,9 +10,9 @@ u16 midi_nrpn_v14(u8 data_msb, u8 data_lsb) {
   return (u16)(((u16)(data_msb & 0x7f) << 7) | (u16)(data_lsb & 0x7f));
 }
 
-static s32 map_linear(s32 min, s32 max, u16 v14) {
+s32 midi_nrpn_v14_to_range(s32 min, s32 max, u16 v14) {
   s32 span;
-  s32 raw;
+  s32 out;
 
   if(v14 > MIDI_NRPN_V14_MAX) {
     v14 = MIDI_NRPN_V14_MAX;
@@ -26,17 +26,44 @@ static s32 map_linear(s32 min, s32 max, u16 v14) {
 
   span = max - min;
   if(span >= 0) {
-    raw = min + (s32)(((u32)v14 * (u32)span) / (u32)MIDI_NRPN_V14_MAX);
+    out = min + (s32)(((u32)v14 * (u32)span) / (u32)MIDI_NRPN_V14_MAX);
   } else {
-    raw = min - (s32)(((u32)v14 * (u32)(-span)) / (u32)MIDI_NRPN_V14_MAX);
+    out = min - (s32)(((u32)v14 * (u32)(-span)) / (u32)MIDI_NRPN_V14_MAX);
   }
-  if(raw < min) {
-    raw = min;
+  if(out < min) {
+    out = min;
   }
-  if(raw > max) {
-    raw = max;
+  if(out > max) {
+    out = max;
   }
-  return raw;
+  return out;
+}
+
+u16 midi_nrpn_range_to_v14(s32 min, s32 max, s32 v) {
+  s32 span;
+  u32 d;
+  u32 s;
+
+  if(v <= min) {
+    return 0;
+  }
+  if(v >= max) {
+    return MIDI_NRPN_V14_MAX;
+  }
+  span = max - min;
+  if(span == 0) {
+    return 0;
+  }
+  if(span > 0) {
+    d = (u32)(v - min);
+    s = (u32)span;
+  } else {
+    d = (u32)(min - v);
+    s = (u32)(-span);
+  }
+  /* (d * 16383) / s without overflowing u32 */
+  return (u16)((d / s) * (u32)MIDI_NRPN_V14_MAX +
+	       ((d % s) * (u32)MIDI_NRPN_V14_MAX) / s);
 }
 
 static s32 map_round(s32 min, s32 max, u16 v14) {
@@ -87,7 +114,25 @@ ParamValue midi_nrpn_map_v14(const ParamDesc *d, u16 v14) {
   if(d->type == eParamTypeLabel) {
     return (ParamValue)map_round(min, max, v14);
   }
-  return (ParamValue)map_linear(min, max, v14);
+  return (ParamValue)midi_nrpn_v14_to_range(min, max, v14);
+}
+
+u16 midi_nrpn_raw_to_v14(const ParamDesc *d, ParamValue raw) {
+  s32 min;
+  s32 max;
+  s32 v;
+
+  if(d == NULL) {
+    return 0;
+  }
+  min = d->min;
+  max = d->max;
+  v = (s32)raw;
+
+  if(d->type == eParamTypeBool) {
+    return (u16)((v == min) ? 0 : MIDI_NRPN_V14_MAX);
+  }
+  return midi_nrpn_range_to_v14(min, max, v);
 }
 
 static u8 fmt_u_small(char *dst, u8 v) {
@@ -109,7 +154,7 @@ static u8 fmt_u_small(char *dst, u8 v) {
   return n;
 }
 
-u8 midi_nrpn_fmt_addr(char *dst, u8 dst_len, u16 param_index) {
+u8 midi_nrpn_fmt_msb_lsb(char *dst, u8 dst_len, u16 v14) {
   u8 msb;
   u8 lsb;
   u8 n;
@@ -117,11 +162,11 @@ u8 midi_nrpn_fmt_addr(char *dst, u8 dst_len, u16 param_index) {
   if(dst == NULL || dst_len < 2) {
     return 0;
   }
-  if(param_index > MIDI_NRPN_PARAM_MAX) {
-    param_index = MIDI_NRPN_PARAM_MAX;
+  if(v14 > MIDI_NRPN_V14_MAX) {
+    v14 = MIDI_NRPN_V14_MAX;
   }
-  msb = (u8)((param_index >> 7) & 0x7f);
-  lsb = (u8)(param_index & 0x7f);
+  msb = (u8)((v14 >> 7) & 0x7f);
+  lsb = (u8)(v14 & 0x7f);
   n = fmt_u_small(dst, msb);
   if((u8)(n + 1) >= dst_len) {
     dst[dst_len - 1] = '\0';

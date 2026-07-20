@@ -4,8 +4,12 @@
 
 #include "app.h"
 #include "events.h"
+#include "fix.h"
 
 #include "between_limits.h"
+#include "font.h"
+#include "midi_between.h"
+#include "midi_nrpn.h"
 #include "module_load.h"
 #include "morph2d.h"
 #include "name_edit.h"
@@ -104,12 +108,20 @@ static void fmt_param_value(char *dst, u16 dst_len, u16 idx, ParamValue raw) {
 static void redraw_slot(MorphSlot slot) {
   char line[24];
   char num[FIX_DIG_TOTAL + 1];
+  char nrpn_s[8];
+  char val14_s[8];
   u16 i;
   u16 start;
+  u8 status_y;
+  u8 nrpn_x;
+  u8 val_lab_w;
+  u8 val_lab_x;
+  ParamValue raw;
+  u16 v14;
 
   render_clear();
   if(!g_slots.occupied[slot]) {
-    render_header_slot((char)('A' + (u8)slot), NULL, 0, -1);
+    render_header_slot((char)('A' + (u8)slot), NULL, 0);
     render_line(2, "empty");
     render_footer("new", "-", "-", "-");
     return;
@@ -117,10 +129,11 @@ static void redraw_slot(MorphSlot slot) {
 
   clamp_param_sel();
   render_header_slot((char)('A' + (u8)slot), g_slots.stem[slot],
-		     g_slots.dirty[slot], param_sel);
+		     g_slots.dirty[slot]);
 
+  /* four list rows; status line above the diagnostic log (row 4) */
   start = (param_sel > 3) ? (u16)(param_sel - 3) : 0;
-  for(i = 0; i < 5; ++i) {
+  for(i = 0; i < 4; ++i) {
     u16 idx = start + i;
     if(idx >= g_slots.num_params) {
       break;
@@ -134,6 +147,23 @@ static void redraw_slot(MorphSlot slot) {
     render_line((u8)i, line);
     render_line_at((u8)i, SLOT_VAL_X, num);
   }
+
+  status_y = (u8)(4 * 8);
+  midi_nrpn_fmt_msb_lsb(nrpn_s, sizeof(nrpn_s), (u16)param_sel);
+  raw = slots_get_value(&g_slots, slot, (u16)param_sel);
+  v14 = between_midi_raw_to_v14((u16)param_sel, raw);
+  midi_nrpn_fmt_msb_lsb(val14_s, sizeof(val14_s), v14);
+
+  render_string_xy(0, status_y, "nrpn ", RENDER_PLAY_GREY_DARK);
+  nrpn_x = (u8)font_string_pixels("nrpn ");
+  render_string_xy(nrpn_x, status_y, nrpn_s, RENDER_PLAY_GREY_LIGHT);
+
+  val_lab_w = (u8)font_string_pixels("value ");
+  val_lab_x = (SLOT_VAL_X > val_lab_w) ? (u8)(SLOT_VAL_X - val_lab_w) : 0;
+  render_fill_rect(val_lab_x, status_y, (u8)(128 - val_lab_x), 8, 0);
+  render_string_xy(val_lab_x, status_y, "value ", RENDER_PLAY_GREY_DARK);
+  render_string_xy(SLOT_VAL_X, status_y, val14_s, RENDER_PLAY_GREY_LIGHT);
+
   if(g_alt_mode) {
     render_footer("save as", "capture", "focus", "alt");
   } else {
@@ -183,8 +213,19 @@ static void bump_param_scaled(io_t delta) {
   ParamScaler *sc = &g_scalers[param_sel];
   ParamValue raw = slots_get_value(&g_slots, cur_slot, (u16)param_sel);
   io_t io = scaler_get_in(sc, (s32)raw);
-  ParamValue next = (ParamValue)scaler_inc(sc, &io, delta);
-  slots_set_value(&g_slots, cur_slot, (u16)param_sel, next);
+  /* get_in returns the table-bucket base (e.g. amp inRshift==5). a fine
+   * +1 stays in the same bucket so raw/display do not move, while -1
+   * crosses into the previous bucket — only decrement appears to work.
+   * promote sub-bucket steps to one index (0x20), same as play mode. */
+  if(delta > 0 && delta < (io_t)0x20) {
+    delta = (io_t)0x20;
+  } else if(delta < 0 && delta > (io_t)-0x20) {
+    delta = (io_t)-0x20;
+  }
+  {
+    ParamValue next = (ParamValue)scaler_inc(sc, &io, delta);
+    slots_set_value(&g_slots, cur_slot, (u16)param_sel, next);
+  }
 }
 
 static void bump_param(io_t fine_or_coarse, u8 coarse) {
