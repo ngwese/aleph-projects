@@ -187,6 +187,11 @@ slot.d: soft-pad
 
 x: 22937
 y: 39321
+
+play.enc2: morph.x
+play.enc3: morph.y
+play.cc1: param.amp
+play.cc2: -
 ```
 
 the setup name is the file name without the `.txt` extension; it is not
@@ -205,7 +210,9 @@ rules:
    (full scale = unit square corners).
 4. `play.enc0` … `play.enc3` — encoder maps; `play.sw0` … `play.sw3` —
    panel switch maps; `play.fs0`, `play.fs1` — footswitch maps (same value
-   syntax as panel switches). omitted keys use defaults.
+   syntax as panel switches); `play.cc1` … `play.cc12` — MIDI CC maps
+   (param label only; channel selects slot at apply time). omitted keys use
+   defaults.
 5. loading a setup: if needed, replace the current module with the setup’s
    module, load each referenced preset into its slot, set the morph point,
    and apply the effective parameters.
@@ -427,17 +434,20 @@ files.
 header: `play` (plus dirty indicator if maps differ from the last saved
 setup, if that distinction is tracked).
 
-body: a selectable list of the ten controls (`enc0`–`enc3`, `sw0`–`sw3`,
-`fs0`–`fs1`). each line shows a short summary of the current binding with a
-space after the colon (e.g. `enc2: morph.x`, `sw0: snap.a`,
-`fs0: set.all/in1`). the list is always four rows. the status row under it
-shows dark-grey `edit ` plus the focused field name in light grey; for
-set/momentary switch maps the same row also shows dark-grey `value ` and the
-stored binding value in light grey at the slot-page value column (`x=64`).
+body: a selectable list of the controls (`enc0`–`enc3`, `sw0`–`sw3`,
+`fs0`–`fs1`, `cc1`–`cc12`). each line shows a short summary of the current
+binding with a space after the colon (e.g. `enc2: morph.x`, `sw0: snap.a`,
+`fs0: set.all/in1`, `cc3: amp`). the list is always four rows. the status
+row under it shows dark-grey `edit ` plus the focused field name in light
+grey; for set/momentary switch maps the same row also shows dark-grey
+`value ` and the stored binding value in light grey at the slot-page value
+column (`x=64`).
 
 field focus starts at **kind** when a control is selected. softkeys jump to
 slot / param / value when those fields apply to the current binding; encoders
-adjust the focused field.
+adjust the focused field. MIDI CC bindings have only **kind** (`none` /
+`param`) and **param** (label) — no slot or stored value (channel and CC
+value supply those at play time).
 
 controls:
 
@@ -450,9 +460,10 @@ controls:
 - sw1 **param**: focus the param field (when the binding has one)
 - sw2 **value**: focus the value field (set/momentary switch maps only)
 - sw3: alt
-- alt+sw0 **reset**: restore the selected control to its
-  [default map](#default-encoder-map) / [default switch map](#default-switch-map)
-- alt+sw1 **rst all**: restore all ten controls to defaults
+- alt+sw0 **reset**: restore the selected control to its default
+  (encoders / switches / footswitches / CC maps)
+- alt+sw1 **rst all**: restore all play controls (enc, sw, fs, cc1–cc12)
+  to defaults
 
 set/momentary switch bindings always carry a stored param value (seeded from
 the module default when the binding kind is first chosen; persisted in the
@@ -470,12 +481,13 @@ play remaps the front panel away from menu navigation. encoders and
 switches are **mappable** to internal play targets. all play bindings are
 owned by the **setup**: configure them on the edit-mode [play page](#play-page),
 persist them with setup save/load (see `play.enc*` / `play.sw*` /
-`play.fs*` keys).
+`play.fs*` / `play.cc*` keys).
 
 encoder and switch indices match bees / hardware (`enc0`–`enc3`,
 `sw0`–`sw3`). footswitches are `fs0` / `fs1` (hardware `Switch6` /
 `Switch7`); they use the same target kinds as panel switches and are
-configured as `play.fs0` / `play.fs1`.
+configured as `play.fs0` / `play.fs1`. MIDI continuous controllers
+`cc1`–`cc12` are setup play maps as well (`play.cc1` … `play.cc12`).
 
 ### encoder targets
 
@@ -543,6 +555,37 @@ notes:
 | fs1 | unmapped |
 | mode | return to edit |
 
+### default CC map
+
+| control | default |
+|---------|---------|
+| cc1…cc12 | unmapped |
+
+### MIDI CC targets (play maps)
+
+each of MIDI CC **1** through **12** may be mapped to a **param label** only
+(or left unmapped). unlike encoders, there is no morph target and no
+slot/all choice in the binding:
+
+| setup value | meaning |
+|-------------|---------|
+| `-` | unmapped |
+| `param.<label>` | absolute param; UI summary shows `<label>` |
+
+**apply (live MIDI):**
+
+- MIDI **channel 1–4** → write the mapped param on slot A–D (skip if empty).
+- MIDI **channel 16** → write the same raw value on every occupied slot.
+- other channels: ignored for these CCs.
+- CC value `0`…`127` maps across the full parameter range using the same
+  scaler-io / descriptor path as NRPN 14-bit data entry (7-bit stretched to
+  the 14-bit mapper: `v14 = cc * 16383 / 127`).
+
+**coexistence with NRPN:** CC 98 / 99 always select NRPN address. CC 6 / 38
+are NRPN data entry when the corresponding `play.cc6` is unbound; if
+`play.cc6` is bound to a param, that play map wins for CC 6. morph remains
+CC 14 / 15 on channel 16.
+
 ### display
 
 play layout (128×64, bees-style footer cells for `sw0`–`sw3`):
@@ -597,10 +640,11 @@ keep chrome minimal; play is for performing, not editing.
 
 ### persistence
 
-encoder and switch maps (target kind, slot if any, param label if any,
-set/momentary value if any) are stored **only** in the setup file. loading a
-setup replaces the in-memory play bindings; saving a setup writes the
-current bindings from the play page. see reserved setup keys below.
+encoder, switch, footswitch, and MIDI CC maps (target kind, slot if any,
+param label if any, set/momentary value if any) are stored **only** in the
+setup file. loading a setup replaces the in-memory play bindings; saving a
+setup writes the current bindings from the play page. see reserved setup
+keys (`play.enc*`, `play.sw*`, `play.fs*`, `play.cc*`).
 
 ---
 
@@ -647,15 +691,19 @@ MIDI is a live control path alongside the panel. channel numbering below is
 | 2 | slot B |
 | 3 | slot C |
 | 4 | slot D |
-| 16 | setup: morph CCs, and NRPN → **all slots** |
+| 16 | setup: morph CCs, play-mapped CC → **all slots**, NRPN → **all slots** |
 
 messages on channels 1–4 target that slot only. channel 16 is shared:
 
 - **CC 14 / 15** — morph position (setup-level; not a slot bank write).
+- **play-mapped CC 1–12** — when bound in the setup (`play.ccN`), absolute
+  param writes (see [MIDI CC targets](#midi-cc-targets-play-maps)); channel
+  16 writes all occupied slots.
 - **NRPN data entry** — set the addressed parameter on **every occupied
   slot** (same absolute value written to each bank), then re-apply.
 
-channels 5–15 are ignored for now.
+channels 5–15 are ignored for now (including unbound play CCs on those
+channels).
 
 ### setup channel: morph position
 
@@ -678,6 +726,25 @@ summing).
 
 morph stays on ordinary CCs so it does not compete with the NRPN address /
 data-entry controllers below.
+
+### play-mapped CC 1–12
+
+setup play bindings `play.cc1` … `play.cc12` assign MIDI CC numbers **1–12**
+to a **param label only** (no morph, no slot/all in the map). full behavior
+is specified under [MIDI CC targets (play maps)](#midi-cc-targets-play-maps);
+summary for the MIDI path:
+
+- binding value `-` → unmapped (CC ignored here, except unbound CC 6 / 38
+  still serve NRPN data entry).
+- binding value `param.<label>` → on CC receive, map `0…127` across the
+  full param range (scaler io when available; same stretch as
+  `v14 = cc * 16383 / 127` into the NRPN mapper) and write the raw bank
+  value.
+- **channel 1–4** → that slot (A–D) if occupied; **channel 16** → every
+  occupied slot; other channels ignored.
+- if `play.cc6` is bound, it takes priority over NRPN data-entry MSB on
+  CC 6; unbound CC 6 / 38 remain NRPN data entry. CC 98 / 99 always select
+  NRPN address.
 
 ### slot parameters (NRPN)
 
@@ -724,7 +791,9 @@ rules:
 2. CC 6 or 38 updates that half of `v14` and **immediately** applies the
    assembled 14-bit value to the current NRPN address (so a controller may
    stream MSB-only or LSB-only moves; missing halves read as the last
-   stored value, initially 0).
+   stored value, initially 0). **exception:** if `play.cc6` is bound to a
+   param, CC 6 is consumed by the play map and does not update NRPN data
+   entry (see [play-mapped CC 1–12](#play-mapped-cc-1-12)).
 3. RPN select (CC 101 / 100) is not used; if received, between may clear
    the NRPN address to “unset” or ignore — prefer **ignore** for v1.
 4. null / reset NRPN (`MSB=LSB=127`) is ignored (no param 16383).
@@ -856,12 +925,12 @@ naming and play control reservations.
 
 ### midi (further)
 
-- see [midi](#midi) for the locked channel map, morph CC14 / CC15, and
-  slot-parameter NRPNs.
+- see [midi](#midi) for the locked channel map, morph CC14 / CC15,
+  play-mapped CC 1–12, and slot-parameter NRPNs.
 - learn mode from play or a small midi page in edit (if CCs become
   reassignable again).
-- additional setup-channel CCs beyond morph (still avoiding CC 6 / 38 /
-  98 / 99 on channel 16 so NRPN data entry stays free).
+- additional setup-channel CCs beyond morph (mind play.cc6 vs NRPN data
+  entry MSB, and CC 98 / 99 / 38 reserved for NRPN).
 
 ### footswitch
 

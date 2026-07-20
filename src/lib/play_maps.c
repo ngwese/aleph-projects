@@ -173,6 +173,14 @@ void play_maps_clear_invalid(PlayMaps *m, const ParamDesc *desc,
       }
     }
   }
+  for(i = 0; i < PLAY_MAPS_CC_COUNT; ++i) {
+    if(m->cc[i].kind == ePlayCcParam) {
+      if(!label_known(m->cc[i].label, desc, num_params)) {
+	memset(&m->cc[i], 0, sizeof(m->cc[i]));
+	m->cc[i].kind = ePlayCcNone;
+      }
+    }
+  }
 }
 
 u8 play_maps_parse_enc(const char *val, PlayEncMap *out) {
@@ -537,6 +545,77 @@ u8 play_maps_sw_snap_slot(PlaySwKind kind, MorphSlot *out) {
     *out = (MorphSlot)(kind - ePlaySwSnapA);
   }
   return 1;
+}
+
+u8 play_maps_parse_cc(const char *val, PlayCcMap *out) {
+  if(out == NULL) {
+    return 0;
+  }
+  memset(out, 0, sizeof(*out));
+  if(val == NULL || val[0] == '\0' || strcmp(val, "-") == 0) {
+    out->kind = ePlayCcNone;
+    return 1;
+  }
+  /* param.<label> — channel selects slot/all at apply time */
+  if(strncmp(val, "param.", 6) != 0) {
+    return 0;
+  }
+  out->kind = ePlayCcParam;
+  copy_label(out->label, val + 6);
+  return out->label[0] != '\0';
+}
+
+u8 play_maps_format_cc(char *buf, u32 buf_size, const PlayCcMap *m) {
+  if(buf == NULL || buf_size == 0 || m == NULL) {
+    return 0;
+  }
+  switch(m->kind) {
+  case ePlayCcNone:
+    if(buf_size < 2) {
+      return 0;
+    }
+    strcpy(buf, "-");
+    return 1;
+  case ePlayCcParam:
+    if(buf_size < 7 + strlen(m->label)) {
+      return 0;
+    }
+    strcpy(buf, "param.");
+    strcat(buf, m->label);
+    return 1;
+  default:
+    return 0;
+  }
+}
+
+void play_maps_summary_cc(char *buf, u32 buf_size, const PlayCcMap *m) {
+  if(buf == NULL || buf_size == 0) {
+    return;
+  }
+  buf[0] = '\0';
+  if(m == NULL) {
+    return;
+  }
+  switch(m->kind) {
+  case ePlayCcNone:
+    strncpy(buf, "-", buf_size - 1);
+    break;
+  case ePlayCcParam:
+    strncpy(buf, m->label, buf_size - 1);
+    break;
+  default:
+    strncpy(buf, "?", buf_size - 1);
+    break;
+  }
+  buf[buf_size - 1] = '\0';
+}
+
+void play_maps_reset_cc(PlayMaps *m, u8 idx) {
+  if(m == NULL || idx >= PLAY_MAPS_CC_COUNT) {
+    return;
+  }
+  memset(&m->cc[idx], 0, sizeof(m->cc[idx]));
+  m->cc[idx].kind = ePlayCcNone;
 }
 
 void play_maps_reset_enc(PlayMaps *m, u8 idx) {

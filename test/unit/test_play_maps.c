@@ -20,6 +20,8 @@ void test_defaults(void) {
   TEST_ASSERT_EQUAL_INT(ePlaySwSnapD, m.sw[3].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwNone, m.fs[0].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwNone, m.fs[1].kind);
+  TEST_ASSERT_EQUAL_INT(ePlayCcNone, m.cc[0].kind);
+  TEST_ASSERT_EQUAL_INT(ePlayCcNone, m.cc[11].kind);
 }
 
 void test_enc_roundtrip(void) {
@@ -80,6 +82,25 @@ void test_sw_roundtrip(void) {
   TEST_ASSERT_EQUAL_STRING("set.d.hz:-42", buf);
 }
 
+void test_cc_roundtrip(void) {
+  PlayCcMap m;
+  char buf[64];
+
+  TEST_ASSERT_TRUE(play_maps_parse_cc("-", &m));
+  TEST_ASSERT_EQUAL_INT(ePlayCcNone, m.kind);
+  TEST_ASSERT_TRUE(play_maps_format_cc(buf, sizeof(buf), &m));
+  TEST_ASSERT_EQUAL_STRING("-", buf);
+
+  TEST_ASSERT_TRUE(play_maps_parse_cc("param.amp", &m));
+  TEST_ASSERT_EQUAL_INT(ePlayCcParam, m.kind);
+  TEST_ASSERT_EQUAL_STRING("amp", m.label);
+  TEST_ASSERT_TRUE(play_maps_format_cc(buf, sizeof(buf), &m));
+  TEST_ASSERT_EQUAL_STRING("param.amp", buf);
+
+  play_maps_summary_cc(buf, sizeof(buf), &m);
+  TEST_ASSERT_EQUAL_STRING("amp", buf);
+}
+
 void test_clear_invalid(void) {
   PlayMaps m;
   ParamDesc desc[2];
@@ -104,6 +125,10 @@ void test_clear_invalid(void) {
   m.fs[1].kind = ePlaySwMomSlot;
   m.fs[1].slot = eMorphSlotA;
   strcpy(m.fs[1].label, "missing");
+  m.cc[0].kind = ePlayCcParam;
+  strcpy(m.cc[0].label, "amp");
+  m.cc[1].kind = ePlayCcParam;
+  strcpy(m.cc[1].label, "nope");
 
   play_maps_clear_invalid(&m, desc, 2);
   TEST_ASSERT_EQUAL_INT(ePlayEncParamSlot, m.enc[0].kind);
@@ -112,6 +137,8 @@ void test_clear_invalid(void) {
   TEST_ASSERT_EQUAL_INT(ePlaySwNone, m.sw[1].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwSetAll, m.fs[0].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwNone, m.fs[1].kind);
+  TEST_ASSERT_EQUAL_INT(ePlayCcParam, m.cc[0].kind);
+  TEST_ASSERT_EQUAL_INT(ePlayCcNone, m.cc[1].kind);
   /* snaps and morph defaults untouched */
   TEST_ASSERT_EQUAL_INT(ePlayEncMorphX, m.enc[2].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwSnapC, m.sw[2].kind);
@@ -146,6 +173,7 @@ int main(void) {
   RUN_TEST(test_defaults);
   RUN_TEST(test_enc_roundtrip);
   RUN_TEST(test_sw_roundtrip);
+  RUN_TEST(test_cc_roundtrip);
   RUN_TEST(test_clear_invalid);
   RUN_TEST(test_footer_and_snap);
   return UNITY_END();

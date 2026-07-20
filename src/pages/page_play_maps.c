@@ -22,8 +22,11 @@ enum {
   eFieldValue
 };
 
-/* 0..3 = enc, 4..7 = sw, 8..9 = fs */
-#define PLAY_MAPS_CTRL_COUNT \
+/* 0..3 = enc, 4..7 = sw, 8..9 = fs, 10..21 = cc1..cc12 */
+#define PLAY_MAPS_CTRL_COUNT                                                     \
+  (PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT + PLAY_MAPS_FS_COUNT +               \
+   PLAY_MAPS_CC_COUNT)
+#define PLAY_MAPS_CC_BASE                                                        \
   (PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT + PLAY_MAPS_FS_COUNT)
 
 static s16 sel;
@@ -37,10 +40,15 @@ static u8 is_panel_sw(void) {
   return sel >= PLAY_MAPS_ENC_COUNT &&
 	 sel < (PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT);
 }
-static u8 is_sw_like(void) { return !is_enc(); }
+static u8 is_fs(void) {
+  return sel >= (PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT) &&
+	 sel < PLAY_MAPS_CC_BASE;
+}
+static u8 is_sw_like(void) { return is_panel_sw() || is_fs(); }
+static u8 is_cc(void) { return sel >= PLAY_MAPS_CC_BASE; }
 
 static PlaySwMap *cur_sw_map(void) {
-  if(is_enc()) {
+  if(is_enc() || is_cc()) {
     return NULL;
   }
   if(is_panel_sw()) {
@@ -49,7 +57,15 @@ static PlaySwMap *cur_sw_map(void) {
   return &g_play_maps.fs[sel - PLAY_MAPS_ENC_COUNT - PLAY_MAPS_SW_COUNT];
 }
 
+static PlayCcMap *cur_cc_map(void) {
+  if(!is_cc()) {
+    return NULL;
+  }
+  return &g_play_maps.cc[sel - PLAY_MAPS_CC_BASE];
+}
+
 static u8 enc_i(void) { return (u8)sel; }
+static u8 cc_i(void) { return (u8)(sel - PLAY_MAPS_CC_BASE); }
 
 static u8 param_scaler_usable(u16 idx) {
   ParamType t;
@@ -101,6 +117,13 @@ static void seed_sw_value(PlaySwMap *m) {
 static u8 field_ok(u8 f) {
   if(f == eFieldKind) {
     return 1;
+  }
+  if(is_cc()) {
+    PlayCcMap *m = cur_cc_map();
+    if(f == eFieldParam) {
+      return m != NULL && m->kind == ePlayCcParam;
+    }
+    return 0;
   }
   if(is_sw_like()) {
     PlaySwMap *m = cur_sw_map();
@@ -249,7 +272,7 @@ static void redraw(void) {
       strcat(line, ": ");
       play_maps_summary_sw(sum, sizeof(sum),
 			   &g_play_maps.sw[idx - PLAY_MAPS_ENC_COUNT]);
-    } else {
+    } else if(idx < PLAY_MAPS_CC_BASE) {
       strcat(line, "fs");
       {
 	char n[2] = {
@@ -261,6 +284,20 @@ static void redraw(void) {
       play_maps_summary_sw(
 	sum, sizeof(sum),
 	&g_play_maps.fs[idx - PLAY_MAPS_ENC_COUNT - PLAY_MAPS_SW_COUNT]);
+    } else {
+      u8 cc_n = (u8)(idx - PLAY_MAPS_CC_BASE + 1);
+      strcat(line, "cc");
+      if(cc_n >= 10) {
+	char n[3] = {(char)('0' + (cc_n / 10)), (char)('0' + (cc_n % 10)),
+		     '\0'};
+	strcat(line, n);
+      } else {
+	char n[2] = {(char)('0' + cc_n), '\0'};
+	strcat(line, n);
+      }
+      strcat(line, ": ");
+      play_maps_summary_cc(sum, sizeof(sum),
+			   &g_play_maps.cc[idx - PLAY_MAPS_CC_BASE]);
     }
     strncat(line, sum, sizeof(line) - strlen(line) - 1);
     render_line((u8)i, line);
@@ -376,6 +413,29 @@ static void cycle_sw_kind(PlaySwMap *m, s8 dir) {
   }
 }
 
+static void cycle_cc_kind(PlayCcMap *m, s8 dir) {
+  PlayCcKind next;
+  if(m == NULL) {
+    return;
+  }
+  if(!g_module.loaded || g_module.num_params == 0) {
+    m->kind = ePlayCcNone;
+    m->label[0] = '\0';
+    return;
+  }
+  if(dir > 0) {
+    next = (m->kind == ePlayCcNone) ? ePlayCcParam : ePlayCcNone;
+  } else {
+    next = (m->kind == ePlayCcParam) ? ePlayCcNone : ePlayCcParam;
+  }
+  m->kind = next;
+  if(m->kind == ePlayCcParam) {
+    ensure_param_label(m->label);
+  } else {
+    m->label[0] = '\0';
+  }
+}
+
 static void cycle_param_label(char *label, s8 dir, u8 coarse) {
   s16 idx;
   s16 step;
@@ -433,7 +493,19 @@ static void bump_sw_value(PlaySwMap *m, s8 dir, u8 coarse) {
 }
 
 static void adjust_field(s8 dir, u8 coarse) {
-  if(is_sw_like()) {
+  if(is_cc()) {
+    PlayCcMap *m = cur_cc_map();
+    switch(field) {
+    case eFieldKind:
+      cycle_cc_kind(m, dir);
+      break;
+    case eFieldParam:
+      cycle_param_label(m->label, dir, coarse);
+      break;
+    default:
+      break;
+    }
+  } else if(is_sw_like()) {
     PlaySwMap *m = cur_sw_map();
     switch(field) {
     case eFieldKind:
@@ -516,10 +588,12 @@ static void handle_sw0(s32 data) {
       play_maps_reset_enc(&g_play_maps, enc_i());
     } else if(is_panel_sw()) {
       play_maps_reset_sw(&g_play_maps, (u8)(sel - PLAY_MAPS_ENC_COUNT));
-    } else {
+    } else if(is_fs()) {
       play_maps_reset_fs(
 	&g_play_maps,
 	(u8)(sel - PLAY_MAPS_ENC_COUNT - PLAY_MAPS_SW_COUNT));
+    } else {
+      play_maps_reset_cc(&g_play_maps, cc_i());
     }
     field = eFieldKind;
     redraw();

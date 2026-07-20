@@ -10,6 +10,8 @@
 #define PLAY_MAPS_ENC_COUNT 4
 #define PLAY_MAPS_SW_COUNT 4
 #define PLAY_MAPS_FS_COUNT 2
+/* MIDI CC numbers 1..12 (array index 0 → CC1). */
+#define PLAY_MAPS_CC_COUNT 12
 /* panel sw0–3 then footswitches fs0–1 (logical index for play apply). */
 #define PLAY_MAPS_SW_TOTAL (PLAY_MAPS_SW_COUNT + PLAY_MAPS_FS_COUNT)
 
@@ -33,6 +35,12 @@ typedef enum {
   ePlaySwMomAll
 } PlaySwKind;
 
+/* CC maps are param-label only; MIDI channel selects slot (1–4) or all (16). */
+typedef enum {
+  ePlayCcNone = 0,
+  ePlayCcParam
+} PlayCcKind;
+
 typedef struct {
   PlayEncKind kind;
   MorphSlot slot; /* for ePlayEncParamSlot */
@@ -47,9 +55,15 @@ typedef struct {
 } PlaySwMap;
 
 typedef struct {
+  PlayCcKind kind;
+  char label[PARAM_LABEL_LEN];
+} PlayCcMap;
+
+typedef struct {
   PlayEncMap enc[PLAY_MAPS_ENC_COUNT];
   PlaySwMap sw[PLAY_MAPS_SW_COUNT];
   PlaySwMap fs[PLAY_MAPS_FS_COUNT]; /* footswitches; same targets as sw */
+  PlayCcMap cc[PLAY_MAPS_CC_COUNT]; /* MIDI CC 1..12 */
 } PlayMaps;
 
 /* panel 0..3 or footswitch 4..5 → map; NULL if out of range. */
@@ -62,16 +76,19 @@ void play_maps_set_defaults(PlayMaps *m);
 void play_maps_clear_invalid(PlayMaps *m, const ParamDesc *desc,
 			     u16 num_params);
 
-/* parse/format value portion of play.encN / play.swN (no key). */
+/* parse/format value portion of play.encN / play.swN / play.ccN (no key). */
 u8 play_maps_parse_enc(const char *val, PlayEncMap *out);
 u8 play_maps_parse_sw(const char *val, PlaySwMap *out);
+u8 play_maps_parse_cc(const char *val, PlayCcMap *out);
 /* write into buf; returns 0 on failure. */
 u8 play_maps_format_enc(char *buf, u32 buf_size, const PlayEncMap *m);
 u8 play_maps_format_sw(char *buf, u32 buf_size, const PlaySwMap *m);
+u8 play_maps_format_cc(char *buf, u32 buf_size, const PlayCcMap *m);
 
 /* short UI summary, e.g. "morph.x", "slot.b/amp", "snap.a". */
 void play_maps_summary_enc(char *buf, u32 buf_size, const PlayEncMap *m);
 void play_maps_summary_sw(char *buf, u32 buf_size, const PlaySwMap *m);
+void play_maps_summary_cc(char *buf, u32 buf_size, const PlayCcMap *m);
 
 /* footer text for a switch (slot letter, param name, or "-"). */
 void play_maps_footer_sw(char *buf, u32 buf_size, const PlaySwMap *m);
@@ -86,5 +103,6 @@ u8 play_maps_sw_snap_slot(PlaySwKind kind, MorphSlot *out);
 void play_maps_reset_enc(PlayMaps *m, u8 idx);
 void play_maps_reset_sw(PlayMaps *m, u8 idx);
 void play_maps_reset_fs(PlayMaps *m, u8 idx);
+void play_maps_reset_cc(PlayMaps *m, u8 idx);
 
 #endif

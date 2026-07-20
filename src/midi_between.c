@@ -6,6 +6,7 @@
 #include "morph2d.h"
 #include "pages.h"
 #include "param_scaler.h"
+#include "play_maps.h"
 #include "render.h"
 #include "scaler_tables.h"
 #include "state.h"
@@ -89,6 +90,63 @@ u16 between_midi_raw_to_v14(u16 param_idx, ParamValue raw) {
   return midi_nrpn_raw_to_v14(d, raw);
 }
 
+ParamValue between_midi_cc7_to_raw(u16 param_idx, u8 cc7) {
+  u16 v14;
+  if(cc7 >= 127) {
+    v14 = MIDI_NRPN_V14_MAX;
+  } else {
+    v14 = (u16)(((u32)cc7 * (u32)MIDI_NRPN_V14_MAX) / 127u);
+  }
+  return between_midi_v14_to_raw(param_idx, v14);
+}
+
+static void apply_play_cc(u8 ch, u8 cc_num, u8 val) {
+  const PlayCcMap *m;
+  s16 idx;
+  ParamValue raw;
+  MorphSlot s;
+  u8 wrote = 0;
+  u8 i;
+
+  if(cc_num < 1 || cc_num > PLAY_MAPS_CC_COUNT) {
+    return;
+  }
+  m = &g_play_maps.cc[cc_num - 1];
+  if(m->kind != ePlayCcParam || m->label[0] == '\0') {
+    return;
+  }
+  if(!ch_accepts_nrpn(ch)) {
+    return;
+  }
+  idx = module_find_param(m->label);
+  if(idx < 0) {
+    return;
+  }
+  raw = between_midi_cc7_to_raw((u16)idx, val);
+
+  if(ch <= 3) {
+    s = (MorphSlot)ch;
+    if(!g_slots.occupied[s]) {
+      return;
+    }
+    slots_set_value(&g_slots, s, (u16)idx, raw);
+    wrote = 1;
+  } else if(ch == MIDI_CH_SETUP) {
+    for(i = 0; i < MORPH2D_SLOTS; ++i) {
+      if(g_slots.occupied[i]) {
+	slots_set_value(&g_slots, (MorphSlot)i, (u16)idx, raw);
+	wrote = 1;
+      }
+    }
+  }
+  if(!wrote) {
+    return;
+  }
+  state_apply();
+  pages_redraw();
+  render_update();
+}
+
 static void apply_nrpn_data(u8 ch) {
   u16 idx;
   u16 v14;
@@ -141,26 +199,37 @@ static void on_control_change(u8 ch, u8 num, u8 val) {
 
   val = (u8)(val & 0x7f);
 
-  if(num == MIDI_CC_NRPN_MSB || num == MIDI_CC_NRPN_LSB ||
-     num == MIDI_CC_DATA_MSB || num == MIDI_CC_DATA_LSB) {
+  /* NRPN address select (never play-mapped) */
+  if(num == MIDI_CC_NRPN_MSB || num == MIDI_CC_NRPN_LSB) {
     if(!ch_accepts_nrpn(ch) || ch >= 16) {
       return;
     }
     if(num == MIDI_CC_NRPN_MSB) {
       nrpn_ch[ch].nrpn_msb = val;
+    } else {
+      nrpn_ch[ch].nrpn_lsb = val;
+    }
+    return;
+  }
+
+  /* play-mapped CC 1..12 take priority when bound (CC6 overlaps NRPN data
+   * entry MSB — unbound CC6 still feeds NRPN below). */
+  if(num >= 1 && num <= PLAY_MAPS_CC_COUNT) {
+    if(g_play_maps.cc[num - 1].kind == ePlayCcParam) {
+      apply_play_cc(ch, num, val);
       return;
     }
-    if(num == MIDI_CC_NRPN_LSB) {
-      nrpn_ch[ch].nrpn_lsb = val;
+  }
+
+  if(num == MIDI_CC_DATA_MSB || num == MIDI_CC_DATA_LSB) {
+    if(!ch_accepts_nrpn(ch) || ch >= 16) {
       return;
     }
     if(num == MIDI_CC_DATA_MSB) {
       nrpn_ch[ch].data_msb = val;
-      apply_nrpn_data(ch);
-      return;
+    } else {
+      nrpn_ch[ch].data_lsb = val;
     }
-    /* MIDI_CC_DATA_LSB */
-    nrpn_ch[ch].data_lsb = val;
     apply_nrpn_data(ch);
     return;
   }
