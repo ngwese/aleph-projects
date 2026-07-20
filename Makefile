@@ -12,7 +12,8 @@ ldr_name = $(module_name)-$(version).ldr
 
 # add sources from here/audio library.
 module_obj = mx44_module.o \
-	$(audio)/filter_1p.o
+	$(audio)/filter_1p.o \
+	$(audio)/ricks_tricks.o
 
 # -----  below here, probably dont need to customize.
 

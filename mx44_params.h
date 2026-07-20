@@ -10,11 +10,24 @@
 /* something pretty fast, but noticeable (matrix send slews) */
 #define PARAM_SLEW_DEFAULT 0x7ffecccc
 
+/* output base-width filter cutoffs (fix16 Hz, integer in high 16 bits) */
+#define PARAM_HZ_MIN (20 << 16)
+#define PARAM_HZ_MAX (20000 << 16)
+#define PARAM_BASE_DEFAULT (20 << 16)
+#define PARAM_WIDTH_DEFAULT (20000 << 16)
+#define PARAM_WIDTH_MIN 0
+#define PARAM_WIDTH_MAX (20000 << 16)
+
+/* filter dry/wet: 0 = full dry (unfiltered), MAX = full wet */
+#define PARAM_WET_DEFAULT 0
+
 /*
   order matches SPEC.md suggested enum grouping (1-based labels):
   in1..in4, in1Slew..in4Slew,
   inX-1..inX-4 + inXMixSlew per input,
-  out1..out4, out1Slew..out4Slew
+  out1..out4, out1Slew..out4Slew,
+  out1Base..out4Base, out1Width..out4Width,
+  out1Wet..out4Wet, out1WetSlew..out4WetSlew
 */
 enum params {
   eParam_in1,
@@ -60,6 +73,26 @@ enum params {
   eParam_out2Slew,
   eParam_out3Slew,
   eParam_out4Slew,
+
+  eParam_out1Base,
+  eParam_out2Base,
+  eParam_out3Base,
+  eParam_out4Base,
+
+  eParam_out1Width,
+  eParam_out2Width,
+  eParam_out3Width,
+  eParam_out4Width,
+
+  eParam_out1Wet,
+  eParam_out2Wet,
+  eParam_out3Wet,
+  eParam_out4Wet,
+
+  eParam_out1WetSlew,
+  eParam_out2WetSlew,
+  eParam_out3WetSlew,
+  eParam_out4WetSlew,
 
   eParamNumParams
 };
