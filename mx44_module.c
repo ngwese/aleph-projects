@@ -129,33 +129,31 @@ void module_init(void) {
   param_setup(eParam_in4MixSlew, PARAM_SLEW_DEFAULT);
 
   param_setup(eParam_out1, PARAM_AMP_MAX);
-  param_setup(eParam_out2, PARAM_AMP_MAX);
-  param_setup(eParam_out3, PARAM_AMP_MAX);
-  param_setup(eParam_out4, PARAM_AMP_MAX);
-
   param_setup(eParam_out1Slew, PARAM_SLEW_MIN);
-  param_setup(eParam_out2Slew, PARAM_SLEW_MIN);
-  param_setup(eParam_out3Slew, PARAM_SLEW_MIN);
-  param_setup(eParam_out4Slew, PARAM_SLEW_MIN);
-
   param_setup(eParam_out1Base, PARAM_BASE_DEFAULT);
-  param_setup(eParam_out2Base, PARAM_BASE_DEFAULT);
-  param_setup(eParam_out3Base, PARAM_BASE_DEFAULT);
-  param_setup(eParam_out4Base, PARAM_BASE_DEFAULT);
-
   param_setup(eParam_out1Width, PARAM_WIDTH_DEFAULT);
-  param_setup(eParam_out2Width, PARAM_WIDTH_DEFAULT);
-  param_setup(eParam_out3Width, PARAM_WIDTH_DEFAULT);
-  param_setup(eParam_out4Width, PARAM_WIDTH_DEFAULT);
-
   param_setup(eParam_out1Wet, PARAM_WET_DEFAULT);
-  param_setup(eParam_out2Wet, PARAM_WET_DEFAULT);
-  param_setup(eParam_out3Wet, PARAM_WET_DEFAULT);
-  param_setup(eParam_out4Wet, PARAM_WET_DEFAULT);
-
   param_setup(eParam_out1WetSlew, PARAM_SLEW_DEFAULT);
+
+  param_setup(eParam_out2, PARAM_AMP_MAX);
+  param_setup(eParam_out2Slew, PARAM_SLEW_MIN);
+  param_setup(eParam_out2Base, PARAM_BASE_DEFAULT);
+  param_setup(eParam_out2Width, PARAM_WIDTH_DEFAULT);
+  param_setup(eParam_out2Wet, PARAM_WET_DEFAULT);
   param_setup(eParam_out2WetSlew, PARAM_SLEW_DEFAULT);
+
+  param_setup(eParam_out3, PARAM_AMP_MAX);
+  param_setup(eParam_out3Slew, PARAM_SLEW_MIN);
+  param_setup(eParam_out3Base, PARAM_BASE_DEFAULT);
+  param_setup(eParam_out3Width, PARAM_WIDTH_DEFAULT);
+  param_setup(eParam_out3Wet, PARAM_WET_DEFAULT);
   param_setup(eParam_out3WetSlew, PARAM_SLEW_DEFAULT);
+
+  param_setup(eParam_out4, PARAM_AMP_MAX);
+  param_setup(eParam_out4Slew, PARAM_SLEW_MIN);
+  param_setup(eParam_out4Base, PARAM_BASE_DEFAULT);
+  param_setup(eParam_out4Width, PARAM_WIDTH_DEFAULT);
+  param_setup(eParam_out4Wet, PARAM_WET_DEFAULT);
   param_setup(eParam_out4WetSlew, PARAM_SLEW_DEFAULT);
 }
 

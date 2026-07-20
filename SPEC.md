@@ -92,12 +92,7 @@ overflow: use saturating / guarded accumulation consistent with other
 | input level slews | 4 | `in1Slew`…`in4Slew` | integrator |
 | matrix sends | 16 | `inX-Y` (X,Y ∈ 1…4) | amp |
 | matrix send slews | 4 | `in1MixSlew`…`in4MixSlew` | integrator |
-| output levels | 4 | `out1`…`out4` | amp |
-| output level slews | 4 | `out1Slew`…`out4Slew` | integrator |
-| output filter base | 4 | `out1Base`…`out4Base` | fix (Hz) |
-| output filter width | 4 | `out1Width`…`out4Width` | fix (Hz) |
-| output filter wet | 4 | `out1Wet`…`out4Wet` | amp |
-| output filter wet slews | 4 | `out1WetSlew`…`out4WetSlew` | integrator |
+| output (per out Y) | 6×4 | `outY`, `outYSlew`, `outYBase`, `outYWidth`, `outYWet`, `outYWetSlew` | amp / integrator / fix / fix / amp / integrator |
 | **total** | **52** | | |
 
 amp params: `0`…`PARAM_AMP_MAX` (`0x7fffffff`), displayed as dB in bees.
@@ -158,28 +153,28 @@ internal (1-based labels).
 | `in4-4` | `in4` | `out4` | matrix send: input 4 → output 4 mix |
 | `in4MixSlew` | — | `in4-*` | shared slew for all sends from input 4 |
 | `out1` | `out1` | `dac0` | output 1 level from blend to DAC |
-| `out2` | `out2` | `dac1` | output 2 level from blend to DAC |
-| `out3` | `out3` | `dac2` | output 3 level from blend to DAC |
-| `out4` | `out4` | `dac3` | output 4 level from blend to DAC |
 | `out1Slew` | — | `out1` | slew time for `out1` |
-| `out2Slew` | — | `out2` | slew time for `out2` |
-| `out3Slew` | — | `out3` | slew time for `out3` |
-| `out4Slew` | — | `out4` | slew time for `out4` |
 | `out1Base` | — | `bpf1` | output 1 HP cutoff (Hz); LP = base + width |
-| `out2Base` | — | `bpf2` | output 2 HP cutoff (Hz) |
-| `out3Base` | — | `bpf3` | output 3 HP cutoff (Hz) |
-| `out4Base` | — | `bpf4` | output 4 HP cutoff (Hz) |
 | `out1Width` | — | `bpf1` | output 1 bandwidth (Hz) |
-| `out2Width` | — | `bpf2` | output 2 bandwidth (Hz) |
-| `out3Width` | — | `bpf3` | output 3 bandwidth (Hz) |
-| `out4Width` | — | `bpf4` | output 4 bandwidth (Hz) |
 | `out1Wet` | — | `bpf1` | output 1 filter dry/wet (0 = dry) |
-| `out2Wet` | — | `bpf2` | output 2 filter dry/wet (0 = dry) |
-| `out3Wet` | — | `bpf3` | output 3 filter dry/wet (0 = dry) |
-| `out4Wet` | — | `bpf4` | output 4 filter dry/wet (0 = dry) |
 | `out1WetSlew` | — | `out1Wet` | slew time for `out1Wet` |
+| `out2` | `out2` | `dac1` | output 2 level from blend to DAC |
+| `out2Slew` | — | `out2` | slew time for `out2` |
+| `out2Base` | — | `bpf2` | output 2 HP cutoff (Hz) |
+| `out2Width` | — | `bpf2` | output 2 bandwidth (Hz) |
+| `out2Wet` | — | `bpf2` | output 2 filter dry/wet (0 = dry) |
 | `out2WetSlew` | — | `out2Wet` | slew time for `out2Wet` |
+| `out3` | `out3` | `dac2` | output 3 level from blend to DAC |
+| `out3Slew` | — | `out3` | slew time for `out3` |
+| `out3Base` | — | `bpf3` | output 3 HP cutoff (Hz) |
+| `out3Width` | — | `bpf3` | output 3 bandwidth (Hz) |
+| `out3Wet` | — | `bpf3` | output 3 filter dry/wet (0 = dry) |
 | `out3WetSlew` | — | `out3Wet` | slew time for `out3Wet` |
+| `out4` | `out4` | `dac3` | output 4 level from blend to DAC |
+| `out4Slew` | — | `out4` | slew time for `out4` |
+| `out4Base` | — | `bpf4` | output 4 HP cutoff (Hz) |
+| `out4Width` | — | `bpf4` | output 4 bandwidth (Hz) |
+| `out4Wet` | — | `bpf4` | output 4 filter dry/wet (0 = dry) |
 | `out4WetSlew` | — | `out4Wet` | slew time for `out4Wet` |
 
 ---
@@ -198,8 +193,8 @@ internal (1-based labels).
 - param labels must fit `PARAM_LABEL_LEN` (16); names above are ≤11 chars.
 - no CV DAC surface (block lib has no `cv_*` API); audio matrix only.
 - keep enum order stable once published; bees / between / ctl apps key off
-  indices and labels. filter params are **appended** after `out4Slew`
-  (base, width, wet, wet slews).
+  indices and labels. output params are grouped **per output** (level, slew,
+  base, width, wet, wet slew).
 
 ### suggested enum grouping
 
@@ -210,12 +205,10 @@ in1-1..in1-4, in1MixSlew
 in2-1..in2-4, in2MixSlew
 in3-1..in3-4, in3MixSlew
 in4-1..in4-4, in4MixSlew
-out1..out4
-out1Slew..out4Slew
-out1Base..out4Base
-out1Width..out4Width
-out1Wet..out4Wet
-out1WetSlew..out4WetSlew
+out1, out1Slew, out1Base, out1Width, out1Wet, out1WetSlew
+out2, out2Slew, out2Base, out2Width, out2Wet, out2WetSlew
+out3, out3Slew, out3Base, out3Width, out3Wet, out3WetSlew
+out4, out4Slew, out4Base, out4Width, out4Wet, out4WetSlew
 ```
 
 (exact C enum names can use underscores, e.g. `eParam_in1_2` for label

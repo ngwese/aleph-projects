@@ -68,36 +68,34 @@ void fill_param_desc(ParamDesc *desc) {
   fill_slew(&desc[eParam_in4MixSlew], "in4MixSlew");
 
   fill_amp(&desc[eParam_out1], "out1");
-  fill_amp(&desc[eParam_out2], "out2");
-  fill_amp(&desc[eParam_out3], "out3");
-  fill_amp(&desc[eParam_out4], "out4");
-
   fill_slew(&desc[eParam_out1Slew], "out1Slew");
-  fill_slew(&desc[eParam_out2Slew], "out2Slew");
-  fill_slew(&desc[eParam_out3Slew], "out3Slew");
-  fill_slew(&desc[eParam_out4Slew], "out4Slew");
-
   fill_hz(&desc[eParam_out1Base], "out1Base", PARAM_HZ_MIN, PARAM_HZ_MAX);
-  fill_hz(&desc[eParam_out2Base], "out2Base", PARAM_HZ_MIN, PARAM_HZ_MAX);
-  fill_hz(&desc[eParam_out3Base], "out3Base", PARAM_HZ_MIN, PARAM_HZ_MAX);
-  fill_hz(&desc[eParam_out4Base], "out4Base", PARAM_HZ_MIN, PARAM_HZ_MAX);
-
   fill_hz(&desc[eParam_out1Width], "out1Width", PARAM_WIDTH_MIN,
 	  PARAM_WIDTH_MAX);
+  fill_amp(&desc[eParam_out1Wet], "out1Wet");
+  fill_slew(&desc[eParam_out1WetSlew], "out1WetSlew");
+
+  fill_amp(&desc[eParam_out2], "out2");
+  fill_slew(&desc[eParam_out2Slew], "out2Slew");
+  fill_hz(&desc[eParam_out2Base], "out2Base", PARAM_HZ_MIN, PARAM_HZ_MAX);
   fill_hz(&desc[eParam_out2Width], "out2Width", PARAM_WIDTH_MIN,
 	  PARAM_WIDTH_MAX);
+  fill_amp(&desc[eParam_out2Wet], "out2Wet");
+  fill_slew(&desc[eParam_out2WetSlew], "out2WetSlew");
+
+  fill_amp(&desc[eParam_out3], "out3");
+  fill_slew(&desc[eParam_out3Slew], "out3Slew");
+  fill_hz(&desc[eParam_out3Base], "out3Base", PARAM_HZ_MIN, PARAM_HZ_MAX);
   fill_hz(&desc[eParam_out3Width], "out3Width", PARAM_WIDTH_MIN,
 	  PARAM_WIDTH_MAX);
+  fill_amp(&desc[eParam_out3Wet], "out3Wet");
+  fill_slew(&desc[eParam_out3WetSlew], "out3WetSlew");
+
+  fill_amp(&desc[eParam_out4], "out4");
+  fill_slew(&desc[eParam_out4Slew], "out4Slew");
+  fill_hz(&desc[eParam_out4Base], "out4Base", PARAM_HZ_MIN, PARAM_HZ_MAX);
   fill_hz(&desc[eParam_out4Width], "out4Width", PARAM_WIDTH_MIN,
 	  PARAM_WIDTH_MAX);
-
-  fill_amp(&desc[eParam_out1Wet], "out1Wet");
-  fill_amp(&desc[eParam_out2Wet], "out2Wet");
-  fill_amp(&desc[eParam_out3Wet], "out3Wet");
   fill_amp(&desc[eParam_out4Wet], "out4Wet");
-
-  fill_slew(&desc[eParam_out1WetSlew], "out1WetSlew");
-  fill_slew(&desc[eParam_out2WetSlew], "out2WetSlew");
-  fill_slew(&desc[eParam_out3WetSlew], "out3WetSlew");
   fill_slew(&desc[eParam_out4WetSlew], "out4WetSlew");
 }
