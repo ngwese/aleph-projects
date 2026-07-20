@@ -109,14 +109,15 @@ static void redraw_slot(MorphSlot slot) {
 
   render_clear();
   if(!g_slots.occupied[slot]) {
-    render_header_slot((char)('A' + (u8)slot), NULL, 0);
+    render_header_slot((char)('A' + (u8)slot), NULL, 0, -1);
     render_line(2, "empty");
     render_footer("new", "-", "-", "-");
     return;
   }
 
+  clamp_param_sel();
   render_header_slot((char)('A' + (u8)slot), g_slots.stem[slot],
-		     g_slots.dirty[slot]);
+		     g_slots.dirty[slot], param_sel);
 
   start = (param_sel > 3) ? (u16)(param_sel - 3) : 0;
   for(i = 0; i < 5; ++i) {

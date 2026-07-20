@@ -27,18 +27,17 @@ static void redraw(void) {
   u16 i;
   char line[24];
   render_clear();
-  render_header("module", 0);
-  render_status_line(0, g_module.loaded ? g_module.name : NULL);
+  render_header_with_name("module", g_module.loaded ? g_module.name : NULL, 0);
   if(list.count == 0) {
-    render_line(1, "(none)");
+    render_line(0, "(none)");
   } else {
-    for(i = 0; i < 4 && (u16)(sel + (s16)i) < list.count; ++i) {
+    for(i = 0; i < 5 && (u16)(sel + (s16)i) < list.count; ++i) {
       u16 idx = (u16)(sel + (s16)i);
       line[0] = (idx == (u16)sel) ? '>' : ' ';
       line[1] = ' ';
       line[2] = '\0';
       strncat(line, list.names[idx], 20);
-      render_line((u8)(1 + i), line);
+      render_line((u8)i, line);
     }
   }
   if(g_alt_mode) {

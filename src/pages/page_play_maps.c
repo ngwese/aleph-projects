@@ -6,6 +6,7 @@
 #include "events.h"
 #include "fix.h"
 
+#include "font.h"
 #include "module_load.h"
 #include "param_scaler.h"
 #include "play_maps.h"
@@ -209,19 +210,21 @@ static void redraw(void) {
   u16 start;
   u8 idx;
   u8 show_value;
-  u8 list_rows;
   PlaySwMap *swm;
+  u8 status_y;
+  u8 edit_x;
+  const char *tag;
 
   clamp_field();
   swm = cur_sw_map();
   show_value = (swm != NULL) && sw_has_value(swm);
-  list_rows = show_value ? 3 : 4;
 
   render_clear();
   render_header("play", 0);
 
-  start = (sel > (s16)(list_rows - 1)) ? (u16)(sel - (list_rows - 1)) : 0;
-  for(i = 0; i < list_rows; ++i) {
+  /* always four list rows — status line shares row 4 with optional value */
+  start = (sel > 3) ? (u16)(sel - 3) : 0;
+  for(i = 0; i < 4; ++i) {
     idx = (u8)(start + i);
     if(idx >= PLAY_MAPS_CTRL_COUNT) {
       break;
@@ -263,20 +266,29 @@ static void redraw(void) {
     render_line((u8)i, line);
   }
 
-  strcpy(line, "edit: ");
-  strcat(line, field_tag());
-  render_line(list_rows, line);
+  status_y = (u8)(4 * 8);
+  tag = field_tag();
+  render_string_xy(0, status_y, "edit ", RENDER_PLAY_GREY_DARK);
+  edit_x = (u8)font_string_pixels("edit ");
+  render_string_xy(edit_x, status_y, tag, 0xf);
 
   if(show_value) {
+    u8 val_lab_w;
+    u8 val_lab_x;
     s16 pidx = find_param(swm->label);
-    strcpy(line, "value:");
-    render_line(4, line);
+    val_lab_w = (u8)font_string_pixels("value ");
+    val_lab_x = (PLAY_MAPS_VAL_X > val_lab_w)
+		  ? (u8)(PLAY_MAPS_VAL_X - val_lab_w)
+		  : 0;
+    /* keep value block readable if edit text runs long */
+    render_fill_rect(val_lab_x, status_y, (u8)(128 - val_lab_x), 8, 0);
+    render_string_xy(val_lab_x, status_y, "value ", RENDER_PLAY_GREY_DARK);
     if(pidx >= 0) {
       fmt_param_value(num, sizeof(num), (u16)pidx, swm->value);
     } else {
       fmt_s32(num, (s32)swm->value);
     }
-    render_line_at(4, PLAY_MAPS_VAL_X, num);
+    render_string_xy(PLAY_MAPS_VAL_X, status_y, num, 0xf);
   }
 
   if(g_alt_mode) {

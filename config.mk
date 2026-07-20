@@ -45,6 +45,7 @@ CSRCS += \
 	$(APP_DIR)/src/scalers/scaler_short.c \
 	$(APP_DIR)/src/scalers/scaler_svf_fc.c \
 	$(APP_DIR)/src/lib/kvtext.c \
+	$(APP_DIR)/src/lib/midi_nrpn.c \
 	$(APP_DIR)/src/lib/morph2d.c \
 	$(APP_DIR)/src/lib/play_maps.c \
 	$(APP_DIR)/src/lib/preset_io.c \

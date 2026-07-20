@@ -10,6 +10,7 @@
 #include "font.h"
 #include "module_load.h"
 #include "morph2d.h"
+#include "preset_file.h"
 #include "render.h"
 #include "state.h"
 
@@ -42,14 +43,14 @@ static void draw_slot_pair(u8 row_lab, u8 row_name, MorphSlot left,
   lx = font_string_pixels(pref_l);
   letter[0] = (char)('a' + (u8)left);
   letter[1] = '\0';
-  render_line_at(row_lab, lx, letter);
+  render_string_xy(lx, (u8)(row_lab * 8), letter, RENDER_PLAY_GREY_DARK);
   slot_name(left, name);
   render_line_at(row_name, lx, name);
 
   render_line_at(row_lab, SLOT_COL_B_X, pref_r);
   rx = (u8)(SLOT_COL_B_X + font_string_pixels(pref_r));
   letter[0] = (char)('a' + (u8)right);
-  render_line_at(row_lab, rx, letter);
+  render_string_xy(rx, (u8)(row_lab * 8), letter, RENDER_PLAY_GREY_DARK);
   slot_name(right, name);
   render_line_at(row_name, rx, name);
 }
@@ -79,7 +80,21 @@ static void redraw_modal(void) {
       render_line((u8)i, line);
     }
   }
-  render_footer("load", "cancel", "new", "alt");
+  if(g_alt_mode) {
+    render_footer("delete", "-", "-", "alt");
+  } else {
+    render_footer("load", "cancel", "new", "alt");
+  }
+}
+
+static void rescan_presets(void) {
+  char path[BETWEEN_PATH_MAX];
+  strcpy(path, BETWEEN_PRESET_PATH);
+  strcat(path, g_module.name);
+  dirlist_scan(&presets, path, ".txt");
+  if(preset_sel >= (s16)presets.count) {
+    preset_sel = presets.count ? (s16)presets.count - 1 : 0;
+  }
 }
 
 static void redraw(void) {
@@ -93,15 +108,12 @@ static void redraw(void) {
 void redraw_slots(void) { redraw(); }
 
 static void open_modal(void) {
-  char path[BETWEEN_PATH_MAX];
   if(!g_module.loaded) {
     pages_set(ePageModules);
     return;
   }
-  strcpy(path, BETWEEN_PRESET_PATH);
-  strcat(path, g_module.name);
-  dirlist_scan(&presets, path, ".txt");
   preset_sel = 0;
+  rescan_presets();
   modal = 1;
   redraw();
   render_update();
@@ -167,7 +179,17 @@ static void handle_sw0(s32 data) {
     return;
   }
   if(modal) {
-    if(presets.count > 0) {
+    if(g_alt_mode) {
+      if(presets.count == 0) {
+	return;
+      }
+      if(preset_file_delete(g_module.name, presets.names[preset_sel])) {
+	rescan_presets();
+	render_log("deleted");
+      } else {
+	render_log("delete fail");
+      }
+    } else if(presets.count > 0) {
       if(state_load_preset(sel_slot, presets.names[preset_sel])) {
 	render_log("preset loaded");
       } else {

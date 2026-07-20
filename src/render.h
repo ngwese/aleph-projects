@@ -22,12 +22,16 @@ void render_line_inv(u8 row, const char *str);
 void render_line_at(u8 row, u8 x, const char *str);
 /* draw str at pixel (x, y) in the content region (fg on black). */
 void render_string_xy(u8 x, u8 y, const char *str, u8 fg);
+/* fill a content-region rectangle (inclusive of origin; clipped). */
+void render_fill_rect(u8 x, u8 y, u8 w, u8 h, u8 color);
 
 /* play morph square geometry (content-region pixels). */
 #define RENDER_PLAY_MORPH_OX 2
 #define RENDER_PLAY_MORPH_OY 2
 #define RENDER_PLAY_MORPH_SZ 36
 #define RENDER_PLAY_GREY 0x5
+#define RENDER_PLAY_GREY_DARK 0x3
+#define RENDER_PLAY_GREY_LIGHT 0xa
 
 /* status row: 2px mid-grey bar, 1px gap, then name (or "none"). */
 void render_status_line(u8 row, const char *name);
@@ -40,9 +44,14 @@ void render_charset_row(u8 row, const char *chars, u8 sel);
 /* edit-mode page header: mid-grey bar, title box(es), optional MIDI m,
  * morph-position indicator. dirty is unused here. */
 void render_header(const char *title, u8 dirty);
+/* like render_header, plus a second white name box (uses "none" if name
+ * is NULL/empty) — same pattern as the slot page preset box. */
+void render_header_with_name(const char *title, const char *name, u8 dirty);
 /* slot page: capital letter box, optional preset-name box, light-grey "*"
- * after the name when dirty, MIDI m + morph indicator. */
-void render_header_slot(char slot_letter, const char *preset, u8 dirty);
+ * after the name when dirty, optional NRPN msb:lsb, MIDI m + morph.
+ * nrpn_param < 0 omits the NRPN readout (empty slot / no selection). */
+void render_header_slot(char slot_letter, const char *preset, u8 dirty,
+			s16 nrpn_param);
 void render_header_clear(void);
 /* redraw only MIDI m + morph chrome (after connect / activity flash). */
 void render_header_midi_refresh(void);

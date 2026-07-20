@@ -277,9 +277,10 @@ common conventions (align with bees):
 ### setups page
 
 - list of `.txt` files under `/data/between/setups/`.
-- first content line: currently loaded setup name (2px mid-grey bar, 3px
-  spacer, name aligned with the header title), or `none`.
-- the setup list fills the remaining content rows above the log.
+- header: page title box `setup` plus a second white box with the currently
+  loaded setup name, or `none` (same dual-box pattern as the slot page
+  letter + preset name).
+- the setup list fills the content rows above the log.
 - directory listing is scanned automatically the first time the page is
   entered; afterward only via hold alt, then sw2 **scan**.
 - sw0 **load**: load the selected setup.
@@ -288,7 +289,7 @@ common conventions (align with bees):
   - load the referenced presets into the four slots, set the saved morph
     point, and apply the effective parameters.
 - sw1 **save**: write the current configuration to the current setup name
-  (`g_setup_name` / status line), creating that file if needed (module,
+  (`g_setup_name` / header name box), creating that file if needed (module,
   slots, morph point, and play bindings). if no name is set yet, allocate a
   unique `sNNN` stem.
 - alt+sw1 **save as**: open the name-entry modal (header `setup name`)
@@ -301,9 +302,9 @@ common conventions (align with bees):
 ### modules page
 
 - scrolling list of modules from `/mod/` (`.ldr` basename).
-- first content line: currently loaded module (2px mid-grey bar, 3px spacer,
-  name aligned with the header title), or `none`.
-- the module list fills the remaining content rows above the log.
+- header: page title box `module` plus a second white box with the currently
+  loaded module name, or `none`.
+- the module list fills the content rows above the log.
 - directory listing is scanned automatically the first time the page is
   entered; afterward only via hold alt, then sw2 **scan**.
 - sw0 **load**: load the selected module, replacing the current module.
@@ -345,8 +346,8 @@ the preset selector is a modal list scoped to the currently loaded module:
   assign it to the selected slot, and return to the slots page. to bake the
   current effective morph into that slot afterward, open the slot editor and
   use alt+**capture**.
-- alt+sw0 **delete**: delete the highlighted preset with confirmation.
-- alt+sw1 **refresh**: rescan the preset directory.
+- alt+sw0 **delete**: delete the highlighted preset file and rescan the
+  module’s preset directory (same pattern as setup delete).
 
 if no module is loaded, the slots page displays `empty`; preset selection
 redirects to the modules page.
@@ -409,9 +410,11 @@ unsaved edits: show a light-grey `*` after the preset-name box in the
 header (1px black spacer). the upper-right header chrome always shows the
 current morph position (mid-grey outline, white 3×3 cursor); when MIDI is
 connected, a dark-grey `m` sits immediately left of that indicator and
-flashes light grey on received traffic (see [midi](#midi)). leaving the
-page keeps in-memory dirty state until save or reset; setup save should
-warn if dirty.
+flashes light grey on received traffic. on slot pages with a loaded
+preset, a dark-grey `msb:lsb` NRPN address for the selected parameter
+sits immediately left of the `m` (see [midi](#midi)). leaving the page
+keeps in-memory dirty state until save or reset; setup save should warn
+if dirty.
 
 ### play page
 
@@ -426,10 +429,10 @@ setup, if that distinction is tracked).
 body: a selectable list of the ten controls (`enc0`–`enc3`, `sw0`–`sw3`,
 `fs0`–`fs1`). each line shows a short summary of the current binding with a
 space after the colon (e.g. `enc2: morph.x`, `sw0: snap.a`,
-`fs0: set.all/in1`). when the selected control is a set/momentary switch map,
-the line under the list shows `edit: <field>`, and the bottom content row shows
-`value:` with the stored binding value at the same column as slot-page param
-values (`x=64`).
+`fs0: set.all/in1`). the list is always four rows. the status row under it
+shows dark-grey `edit ` plus the focused field name; for set/momentary switch
+maps the same row also shows dark-grey `value ` and the stored binding value
+at the slot-page value column (`x=64`).
 
 field focus starts at **kind** when a control is selected. softkeys jump to
 slot / param / value when those fields apply to the current binding; encoders
@@ -570,9 +573,13 @@ column enc0/enc2, right column enc1/enc3) spanning the width between the
 morph square and the screen edge with an **8px** margin on each side. the
 block is centered vertically in the content area with a **3px** gap between
 the top and bottom cell rows. labels draw in mid-grey; values in white.
-each cell is a label line plus the current value below (scaled string when
-applicable; morph axes may show normalized or raw position). unmapped
-encoders show a blank or `-` label/value.
+each cell is a mid-grey label plus the current value below (scaled string when
+applicable; morph axes may show normalized or raw position). param labels
+include scope (`a/amp` for one slot, `*/amp` for all occupied slots) so edit-page
+binding changes are visible when re-entering play. unmapped encoders show `-`.
+param encoder moves use a performance-sized scaler step so the readout and slot
+bank(s) update every detent (slot map writes one bank; all-slots writes every
+occupied bank to the same absolute value, then `slots_apply`).
 
 **switch footer labels:**
 
@@ -639,19 +646,19 @@ MIDI is a live control path alongside the panel. channel numbering below is
 | 2 | slot B |
 | 3 | slot C |
 | 4 | slot D |
-| 16 | setup (morph and other setup-level controls) |
+| 16 | setup: morph CCs, and NRPN → **all slots** |
 
-messages on channels 1–4 affect the corresponding slot (A–D). the exact
-per-slot message set (note / CC / program change, which CCs map to which
-parameters, etc.) is still to be specified; this section locks the
-**channel → slot** assignment.
+messages on channels 1–4 target that slot only. channel 16 is shared:
 
-channel 16 is reserved for **setup-level** parameters (not a single slot’s
-preset values). morph position is the first of those.
+- **CC 14 / 15** — morph position (setup-level; not a slot bank write).
+- **NRPN data entry** — set the addressed parameter on **every occupied
+  slot** (same absolute value written to each bank), then re-apply.
+
+channels 5–15 are ignored for now.
 
 ### setup channel: morph position
 
-on channel 16:
+on channel 16 (7-bit CCs; unchanged):
 
 | CC | control | mapping |
 |---:|---------|---------|
@@ -667,6 +674,113 @@ encoder readouts, header morph cursor, etc.).
 panel encoders / play maps that drive morph continue to work; MIDI and panel
 both write the same morph point (last writer wins unless a later rule defines
 summing).
+
+morph stays on ordinary CCs so it does not compete with the NRPN address /
+data-entry controllers below.
+
+### slot parameters (NRPN)
+
+slot banks are edited with **NRPNs** and **14-bit absolute** data-entry
+values. the address space is sized for **up to 1024 parameters** (NRPN
+numbers `0`…`1023`), independent of the current firmware
+`BETWEEN_PARAMS_MAX` cap. only indices `<` the loaded module’s
+`num_params` are live; higher NRPNs are ignored.
+
+#### controllers
+
+standard NRPN + data entry (per MIDI channel):
+
+| CC | name | role |
+|---:|------|------|
+| 99 | NRPN MSB | parameter index bits `13…7` |
+| 98 | NRPN LSB | parameter index bits `6…0` |
+| 6 | data entry MSB | value bits `13…7` |
+| 38 | data entry LSB | value bits `6…0` |
+
+parameter index (`.dsc` order, 0-based):
+
+```text
+param_index = (NRPN_MSB << 7) | NRPN_LSB
+```
+
+14-bit absolute value:
+
+```text
+v14 = (DATA_MSB << 7) | DATA_LSB    // 0 … 16383
+```
+
+#### running state
+
+keep **per MIDI channel** running state:
+
+- last NRPN MSB / LSB (default `0` / `0` until first CC 99 / 98)
+- last data-entry MSB / LSB (default `0` / `0`)
+
+rules:
+
+1. CC 99 or 98 updates the NRPN address for that channel only; it does
+   **not** write a parameter by itself.
+2. CC 6 or 38 updates that half of `v14` and **immediately** applies the
+   assembled 14-bit value to the current NRPN address (so a controller may
+   stream MSB-only or LSB-only moves; missing halves read as the last
+   stored value, initially 0).
+3. RPN select (CC 101 / 100) is not used; if received, between may clear
+   the NRPN address to “unset” or ignore — prefer **ignore** for v1.
+4. null / reset NRPN (`MSB=LSB=127`) is ignored (no param 16383).
+
+#### channel → write target
+
+| channel | on data entry |
+|--------:|---------------|
+| 1 | set param on slot A if occupied |
+| 2 | set param on slot B if occupied |
+| 3 | set param on slot C if occupied |
+| 4 | set param on slot D if occupied |
+| 16 | set the **same** mapped raw value on **every occupied** slot |
+
+empty slots are skipped (no auto-create). if channel 16 has no occupied
+slots, the message is a no-op. after any successful write(s), mark
+affected slot(s) dirty, recompute the effective morph blend, send
+parameters to the module, and refresh UI (same path as panel slot edits).
+
+#### absolute range mapping
+
+data entry is **absolute**, not relative to the current bank value.
+
+map `v14` linearly into the target parameter’s descriptor range
+(`ParamDesc.min` … `ParamDesc.max`, native raw `ParamValue` / `s32`):
+
+```text
+span = max - min
+raw  = min + (v14 * span) / 16383
+```
+
+clamp to `[min, max]` after the divide. `v14 == 0` → `min`;
+`v14 == 16383` → `max`.
+
+notes:
+
+- morph banks and presets continue to store **raw** values; MIDI writes
+  the same domain the slot editor’s scalers present, not a separate
+  normalized float.
+- discrete types (`bool`, `label`): after the linear map, snap to the
+  nearest legal raw step (for bool: `min` if `v14 < 8192`, else `max`;
+  for labels: round to the nearest integer index in range).
+- table-backed continuous types (amp, note, …) still store the mapped
+  raw DSP value; UI strings continue to go through existing scalers.
+
+#### addressing examples
+
+| param index | NRPN MSB (CC99) | NRPN LSB (CC98) |
+|------------:|----------------:|----------------:|
+| 0 | 0 | 0 |
+| 1 | 0 | 1 |
+| 127 | 0 | 127 |
+| 128 | 1 | 0 |
+| 1023 | 7 | 127 |
+
+example: set slot B’s parameter index 3 to mid-scale — channel 2, NRPN
+`0:3`, data entry `64:0` (`v14 = 8192`).
 
 ### header midi indicator
 
@@ -693,13 +807,46 @@ layout note: keep a 2px black gap between the `m` and the morph indicator box
 so the two reads stay distinct. the `m` is not drawn inside a white text box
 (unlike page titles); it is a lone glyph on the black header background.
 
+### header NRPN readout (slot pages)
+
+on **slot edit pages** (A–D) only, show the NRPN address of the **currently
+selected parameter** immediately **left of** the MIDI `m` glyph, in
+**dark grey** (same grey as the idle `m`):
+
+```text
+… [A] [preset*] …   [msb:lsb]  [m]  [morph 8×8]
+```
+
+format: decimal MSB and LSB of `param_index`, separated by `:`, no spaces
+(e.g. param 0 → `0:0`, param 3 → `0:3`, param 128 → `1:0`). use the
+minimum digits needed (no zero-padding) so the field stays narrow.
+
+rules:
+
+- the shared slot-page `param_sel` drives the numbers; changing the
+  selected parameter updates the readout immediately.
+- if the slot is empty (no param list), omit the NRPN text (leave that
+  region black; do not shift `m` / morph).
+- do not show the NRPN readout on non-slot pages (setups, modules, slots
+  overview, play maps, play mode).
+- keep a small black gap between the NRPN text and the `m` (same idea as
+  the `m`–morph gap) so the three header chrome items stay distinct.
+- the NRPN readout is informational only (not editable in the header);
+  it mirrors what an external controller should send on channels 1–4 / 16
+  to hit that parameter.
+
+title / preset name boxes still clip against the left edge of this chrome
+cluster (`NRPN` + `m` + morph), not against the morph box alone.
+
 ### still open (midi)
 
-- which messages on channels 1–4 edit or recall slot state.
-- 14-bit CC pairs for finer morph resolution.
+- 14-bit CC pairs (or NRPNs) for finer morph resolution than CC14 / CC15.
 - MIDI learn / editable CC numbers in setup files (earlier reserved
   `midi.x` / `midi.y` keys are superseded by the fixed CC14 / CC15 mapping
   above unless learn mode returns).
+- note / program-change uses on channels 1–4 (recall, mute, etc.).
+- whether channel-16 “all slots” should also touch empty slots by
+  auto-creating from defaults (default: no).
 - how “MIDI device connected” is detected on this hardware (USB host enum,
   UART activity, etc.).
 
@@ -712,10 +859,12 @@ naming and play control reservations.
 
 ### midi (further)
 
-- see [midi](#midi) for the locked channel map and morph CC14 / CC15.
+- see [midi](#midi) for the locked channel map, morph CC14 / CC15, and
+  slot-parameter NRPNs.
 - learn mode from play or a small midi page in edit (if CCs become
   reassignable again).
-- additional setup-channel CCs beyond morph.
+- additional setup-channel CCs beyond morph (still avoiding CC 6 / 38 /
+  98 / 99 on channel 16 so NRPN data entry stays free).
 
 ### footswitch
 

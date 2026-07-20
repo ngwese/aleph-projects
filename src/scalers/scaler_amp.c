@@ -80,11 +80,12 @@ io_t scaler_amp_in(void* scaler, s32 x) {
   s32 ju = tabSize - 1;
   s32 jm = 0;
 
-  /// FIXME: this search result is often off by one, or something like it.
-
   // first, cheat and check zero.
   /// will often be true
   if(x == 0) { return 0; }
+  if(x >= tabVal[tabSize - 1]) {
+    return (io_t)((tabSize - 1) << inRshift);
+  }
 
   while(ju - jl > 1) {
     jm = (ju + jl) >> 1;
@@ -95,7 +96,8 @@ io_t scaler_amp_in(void* scaler, s32 x) {
       ju = jm;
     }
   }
-  return (u16)jm << inRshift;
+  /* jl is the greatest index with tabVal[jl] <= x (ju == jl + 1). */
+  return (u16)jl << inRshift;
 }
 
 

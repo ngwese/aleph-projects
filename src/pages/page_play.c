@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "app.h"
+#include "encoders.h"
 #include "events.h"
 
 #include "module_load.h"
@@ -128,8 +129,23 @@ static void enc_label(char *dst, u32 dst_len, const PlayEncMap *m) {
     strncpy(dst, "morph.y", dst_len - 1);
     break;
   case ePlayEncParamSlot:
+    /* e.g. "a/amp" so slot changes are visible on play */
+    if(dst_len < 4) {
+      strncpy(dst, "?", dst_len - 1);
+    } else {
+      dst[0] = (char)('a' + (u8)m->slot);
+      dst[1] = '/';
+      dst[2] = '\0';
+      strncat(dst, m->label, dst_len - 3);
+    }
+    break;
   case ePlayEncParamAll:
-    strncpy(dst, m->label, dst_len - 1);
+    if(dst_len < 5) {
+      strncpy(dst, "?", dst_len - 1);
+    } else {
+      strcpy(dst, "*/");
+      strncat(dst, m->label, dst_len - 3);
+    }
     break;
   default:
     strncpy(dst, "?", dst_len - 1);
@@ -237,6 +253,10 @@ static void redraw(void) {
   y_lab_bot = (u8)(y_val_top + PLAY_ENC_LINE_H + PLAY_ENC_ROW_GAP);
   y_val_bot = (u8)(y_lab_bot + PLAY_ENC_LINE_H);
 
+  /* clear each column band so shorter labels/values do not ghost */
+  render_fill_rect(col0_x, y_lab_top, col_w, block_h, 0);
+  render_fill_rect(col1_x, y_lab_top, (u8)(area_r - col1_x), block_h, 0);
+
   enc_label(lab, sizeof(lab), &g_play_maps.enc[0]);
   render_string_xy(col0_x, y_lab_top, lab, RENDER_PLAY_GREY);
   enc_value_str(val, sizeof(val), &g_play_maps.enc[0]);
@@ -301,13 +321,20 @@ static ParamValue bump_raw(ParamValue v, const ParamDesc *d, s32 inc) {
 
 static ParamValue bump_one(u16 idx, ParamValue raw, s32 data) {
   ParamDesc *d = &g_module.desc[idx];
+
+  if(data == 0) {
+    return raw;
+  }
   if(param_scaler_usable(idx)) {
     ParamScaler *sc = &g_scalers[idx];
     io_t io = scaler_get_in(sc, (s32)raw);
-    io_t delta = (data > 0) ? (io_t)1 : (io_t)-1;
+    /* play has one encoder per binding (no separate coarse). one table
+     * index (inRshift==5) so amp/note/etc move each detent. direction
+     * from s32 like morph / slot page. */
+    io_t delta = (data > 0) ? (io_t)0x20 : (io_t)-0x20;
     return (ParamValue)scaler_inc(sc, &io, delta);
   }
-  return bump_raw(raw, d, data > 0 ? 1 : -1);
+  return bump_raw(raw, d, (data > 0) ? 64 : -64);
 }
 
 static void apply_enc(u8 i, s32 data) {
@@ -504,6 +531,11 @@ static void handle_fs1(s32 data) { apply_sw(5, data); }
 
 void select_play(void) {
   mom.active = 0;
+  /* responsive play knobs; edit mode restores its own thresholds via pages_set */
+  set_enc_thresh(0, 0);
+  set_enc_thresh(1, 0);
+  set_enc_thresh(2, 0);
+  set_enc_thresh(3, 0);
   app_event_handlers[kEventEncoder0] = handle_enc0;
   app_event_handlers[kEventEncoder1] = handle_enc1;
   app_event_handlers[kEventEncoder2] = handle_enc2;

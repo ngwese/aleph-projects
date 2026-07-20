@@ -1,6 +1,8 @@
 #include "midi_between.h"
 
 #include "midi_common.h"
+#include "midi_nrpn.h"
+#include "module_load.h"
 #include "morph2d.h"
 #include "pages.h"
 #include "render.h"
@@ -8,11 +10,25 @@
 
 /* MIDI channel 16 (1-based) → ch index 15.
  * CC14 / CC15 → morph x / y (SPEC).
- * channels 1–4 (ch 0–3) reserved for slots A–D (message set TBD). */
+ * channels 1–4 (ch 0–3): NRPN → that slot.
+ * channel 16: NRPN → all occupied slots. */
 
 #define MIDI_CH_SETUP 15
 #define MIDI_CC_MORPH_X 14
 #define MIDI_CC_MORPH_Y 15
+#define MIDI_CC_DATA_MSB 6
+#define MIDI_CC_DATA_LSB 38
+#define MIDI_CC_NRPN_LSB 98
+#define MIDI_CC_NRPN_MSB 99
+
+typedef struct {
+  u8 nrpn_msb;
+  u8 nrpn_lsb;
+  u8 data_msb;
+  u8 data_lsb;
+} NrpnRun;
+
+static NrpnRun nrpn_ch[16];
 
 static u16 cc_to_morph(u8 val) {
   if(val >= 127) {
@@ -21,12 +37,87 @@ static u16 cc_to_morph(u8 val) {
   return (u16)(((u32)val * MORPH2D_ONE) / 127u);
 }
 
+static u8 ch_accepts_nrpn(u8 ch) {
+  return (u8)(ch <= 3 || ch == MIDI_CH_SETUP);
+}
+
+static void apply_nrpn_data(u8 ch) {
+  u16 idx;
+  u16 v14;
+  ParamValue raw;
+  MorphSlot s;
+  u8 wrote = 0;
+
+  idx = midi_nrpn_param_index(nrpn_ch[ch].nrpn_msb, nrpn_ch[ch].nrpn_lsb);
+  /* null / reset NRPN */
+  if(nrpn_ch[ch].nrpn_msb == 127 && nrpn_ch[ch].nrpn_lsb == 127) {
+    return;
+  }
+  if(idx > MIDI_NRPN_PARAM_MAX) {
+    return;
+  }
+  if(!g_module.loaded || idx >= g_module.num_params) {
+    return;
+  }
+
+  v14 = midi_nrpn_v14(nrpn_ch[ch].data_msb, nrpn_ch[ch].data_lsb);
+  raw = midi_nrpn_map_v14(&g_module.desc[idx], v14);
+
+  if(ch <= 3) {
+    s = (MorphSlot)ch;
+    if(!g_slots.occupied[s]) {
+      return;
+    }
+    slots_set_value(&g_slots, s, idx, raw);
+    wrote = 1;
+  } else if(ch == MIDI_CH_SETUP) {
+    for(s = 0; s < MORPH2D_SLOTS; ++s) {
+      if(g_slots.occupied[s]) {
+	slots_set_value(&g_slots, s, idx, raw);
+	wrote = 1;
+      }
+    }
+  }
+
+  if(!wrote) {
+    return;
+  }
+  state_apply();
+  pages_redraw();
+  render_update();
+}
+
 static void on_control_change(u8 ch, u8 num, u8 val) {
   u16 x;
   u16 y;
 
+  val = (u8)(val & 0x7f);
+
+  if(num == MIDI_CC_NRPN_MSB || num == MIDI_CC_NRPN_LSB ||
+     num == MIDI_CC_DATA_MSB || num == MIDI_CC_DATA_LSB) {
+    if(!ch_accepts_nrpn(ch) || ch >= 16) {
+      return;
+    }
+    if(num == MIDI_CC_NRPN_MSB) {
+      nrpn_ch[ch].nrpn_msb = val;
+      return;
+    }
+    if(num == MIDI_CC_NRPN_LSB) {
+      nrpn_ch[ch].nrpn_lsb = val;
+      return;
+    }
+    if(num == MIDI_CC_DATA_MSB) {
+      nrpn_ch[ch].data_msb = val;
+      apply_nrpn_data(ch);
+      return;
+    }
+    /* MIDI_CC_DATA_LSB */
+    nrpn_ch[ch].data_lsb = val;
+    apply_nrpn_data(ch);
+    return;
+  }
+
   if(ch != MIDI_CH_SETUP) {
-    /* ch 0–3: slot A–D — not implemented in base MIDI */
     return;
   }
 
@@ -42,7 +133,6 @@ static void on_control_change(u8 ch, u8 num, u8 val) {
 
   slots_set_morph(&g_slots, x, y);
   state_apply();
-  /* refresh header morph cursor and play-mode morph / param readouts */
   pages_redraw();
   render_update();
 }

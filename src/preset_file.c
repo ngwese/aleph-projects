@@ -67,22 +67,16 @@ PresetIoStatus preset_file_save(const char *module, const char *stem,
 
 u8 preset_file_delete(const char *module, const char *stem) {
   char path[BETWEEN_PATH_MAX];
-  void *fp;
+  int rc;
+  if(module == NULL || stem == NULL || stem[0] == '\0') {
+    return 0;
+  }
   render_log("delete preset...");
   make_path(path, module, stem);
   app_pause();
-  fp = fl_fopen(path, "r");
-  if(fp == NULL) {
-    app_resume();
-    return 0;
-  }
-  fl_fclose(fp);
-  fp = fl_fopen(path, "w");
-  if(fp != NULL) {
-    fl_fclose(fp);
-  }
+  rc = fl_remove(path);
   app_resume();
-  return 1;
+  return (u8)(rc == 0);
 }
 
 u8 preset_file_exists(const char *module, const char *stem) {

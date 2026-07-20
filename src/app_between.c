@@ -39,8 +39,7 @@ u8 app_launch(eLaunchState state) {
   print_dbg("\r\n launching between; state=");
   print_dbg_ulong(state);
 
-  render_boot("BETWEEN");
-  render_boot(VERSIONSTRING);
+  render_boot("BETWEEN " VERSIONSTRING);
 
   print_dbg("\r\n between; waiting for SD...");
   while(!sd_mmc_spi_mem_check()) {

@@ -100,6 +100,9 @@ io_t scaler_integrator_in(void* scaler, s32 x) {
   // first, cheat and check zero.
   /// will often be true
   if(x == 0) { return 0; }
+  if(x >= tabVal[tabSize - 1]) {
+    return (io_t)((tabSize - 1) << inRshift);
+  }
 
   while(ju - jl > 1) {
     jm = (ju + jl) >> 1;
@@ -111,10 +114,8 @@ io_t scaler_integrator_in(void* scaler, s32 x) {
     }
   }
 
-  /* print_dbg(" , median index: "); */
-  /* print_dbg_ulong(jm); */
-
-  return (u16)jm << inRshift;
+  /* jl is the greatest index with tabVal[jl] <= x (ju == jl + 1). */
+  return (u16)jl << inRshift;
 }
 
 

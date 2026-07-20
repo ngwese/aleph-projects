@@ -4,6 +4,7 @@
 
 #include "app.h"
 #include "font.h"
+#include "midi_nrpn.h"
 #include "morph2d.h"
 #include "region.h"
 #include "screen.h"
@@ -35,6 +36,8 @@ static region regFoot[4] = {
 #define HEAD_MIDI_W FONT_CHARW
 #define HEAD_MIDI_GAP_W 2 /* black gap between m glyph and morph indicator */
 #define HEAD_MIDI_X (HEAD_IND_X - HEAD_MIDI_GAP_W - HEAD_MIDI_W)
+#define HEAD_NRPN_GAP_W 2 /* black gap between NRPN text and m */
+#define HEAD_NRPN_MAX_CHARS 5 /* e.g. "7:127" */
 #define HEAD_TITLE_MAX_X (HEAD_MIDI_X - HEAD_GAP_W)
 #define HEAD_MARGIN 2
 #define HEAD_TEXT_X (HEAD_BAR_W + HEAD_GAP_W)
@@ -46,6 +49,11 @@ static u32 log_age_ms = 0;
 static u8 midi_connected = 0;
 static u8 midi_flash = 0;
 static u32 midi_flash_age_ms = 0;
+
+/* slot-page NRPN address chrome (left of m); cleared on non-slot headers */
+static u8 head_nrpn_on = 0;
+static char head_nrpn_text[HEAD_NRPN_MAX_CHARS + 1];
+static u8 head_nrpn_x = 0;
 
 static void head_fill_col(u8 x0, u8 w, u8 color) {
   u8 x;
@@ -128,6 +136,30 @@ void render_string_xy(u8 x, u8 y, const char *str, u8 fg) {
     return;
   }
   font_string_region_clip(&regMain, str, x, y, fg, 0);
+  regMain.dirty = 1;
+}
+
+void render_fill_rect(u8 x, u8 y, u8 w, u8 h, u8 color) {
+  u8 xi;
+  u8 yi;
+  u8 x1;
+  u8 y1;
+  if(w == 0 || h == 0 || x >= 128 || y >= 40) {
+    return;
+  }
+  x1 = (u8)(x + w);
+  y1 = (u8)(y + h);
+  if(x1 > 128) {
+    x1 = 128;
+  }
+  if(y1 > 40) {
+    y1 = 40;
+  }
+  for(yi = y; yi < y1; ++yi) {
+    for(xi = x; xi < x1; ++xi) {
+      regMain.data[(u32)yi * 128u + (u32)xi] = color;
+    }
+  }
   regMain.dirty = 1;
 }
 
@@ -299,6 +331,50 @@ static void head_draw_morph_indicator(void) {
   }
 }
 
+static void head_clear_nrpn(void) {
+  head_nrpn_on = 0;
+  head_nrpn_text[0] = '\0';
+  head_nrpn_x = 0;
+}
+
+static u8 head_title_max_x(void) {
+  if(head_nrpn_on && head_nrpn_text[0] != '\0') {
+    return (u8)(head_nrpn_x - HEAD_GAP_W);
+  }
+  return HEAD_TITLE_MAX_X;
+}
+
+static void head_set_nrpn(s16 param_index) {
+  u8 len;
+  u8 w;
+
+  head_clear_nrpn();
+  if(param_index < 0) {
+    return;
+  }
+  len = midi_nrpn_fmt_addr(head_nrpn_text, sizeof(head_nrpn_text),
+			   (u16)param_index);
+  if(len == 0) {
+    return;
+  }
+  w = (u8)(len * FONT_CHARW);
+  if(w > HEAD_MIDI_X) {
+    return;
+  }
+  head_nrpn_x = (u8)(HEAD_MIDI_X - HEAD_NRPN_GAP_W - w);
+  head_nrpn_on = 1;
+}
+
+static void head_draw_nrpn(void) {
+  if(!head_nrpn_on || head_nrpn_text[0] == '\0') {
+    return;
+  }
+  /* full header draws region_fill first; midi refresh must not wipe titles
+   * left of the NRPN field, so we only paint the glyph columns. */
+  font_string_region_clip(&regHead, head_nrpn_text, head_nrpn_x, 0,
+			  HEAD_GREY_DARK, HEAD_BLACK);
+}
+
 static void head_draw_midi_m(void) {
   u8 color;
   u8 *dst;
@@ -317,6 +393,7 @@ static void head_draw_midi_m(void) {
 }
 
 static void head_draw_right_chrome(void) {
+  head_draw_nrpn();
   head_draw_midi_m();
   head_draw_morph_indicator();
 }
@@ -327,6 +404,7 @@ void render_header(const char *title, u8 dirty) {
     title = "";
   }
 
+  head_clear_nrpn();
   region_fill(&regHead, HEAD_BLACK);
   head_fill_col(0, HEAD_BAR_W, HEAD_GREY);
   (void)head_draw_text_box(HEAD_TEXT_X, title, HEAD_TITLE_MAX_X);
@@ -334,13 +412,41 @@ void render_header(const char *title, u8 dirty) {
   regHead.dirty = 1;
 }
 
-void render_header_slot(char slot_letter, const char *preset, u8 dirty) {
-  char slot[2];
+void render_header_with_name(const char *title, const char *name, u8 dirty) {
   u8 x;
   u8 x_max = HEAD_TITLE_MAX_X;
 
+  (void)dirty;
+  if(title == NULL) {
+    title = "";
+  }
+  if(name == NULL || name[0] == '\0') {
+    name = "none";
+  }
+
+  head_clear_nrpn();
+  region_fill(&regHead, HEAD_BLACK);
+  head_fill_col(0, HEAD_BAR_W, HEAD_GREY);
+  x = head_draw_text_box(HEAD_TEXT_X, title, x_max);
+  if((u16)x + HEAD_GAP_W < x_max) {
+    x = (u8)(x + HEAD_GAP_W);
+    (void)head_draw_text_box(x, name, x_max);
+  }
+  head_draw_right_chrome();
+  regHead.dirty = 1;
+}
+
+void render_header_slot(char slot_letter, const char *preset, u8 dirty,
+			s16 nrpn_param) {
+  char slot[2];
+  u8 x;
+  u8 x_max;
+
   slot[0] = slot_letter;
   slot[1] = '\0';
+
+  head_set_nrpn(nrpn_param);
+  x_max = head_title_max_x();
 
   region_fill(&regHead, HEAD_BLACK);
   head_fill_col(0, HEAD_BAR_W, HEAD_GREY);
@@ -361,6 +467,7 @@ void render_header_slot(char slot_letter, const char *preset, u8 dirty) {
 }
 
 void render_header_clear(void) {
+  head_clear_nrpn();
   region_fill(&regHead, HEAD_BLACK);
   regHead.dirty = 1;
 }

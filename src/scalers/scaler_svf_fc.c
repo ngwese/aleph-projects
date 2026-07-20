@@ -77,6 +77,10 @@ io_t scaler_svf_fc_in(void* scaler, s32 x) {
   print_dbg("\r\n scaler_svf_fc_in, x: 0x");
   print_dbg_hex(x);
 
+  if(x >= tabVal[tabSize - 1]) {
+    return (io_t)((tabSize - 1) << inRshift);
+  }
+
   // binary tree search
   while(ju - jl > 1) {
     jm = (ju + jl) >> 1;
@@ -88,7 +92,8 @@ io_t scaler_svf_fc_in(void* scaler, s32 x) {
     }
   }
 
-  return (u16)jm << inRshift;
+  /* jl is the greatest index with tabVal[jl] <= x (ju == jl + 1). */
+  return (u16)jl << inRshift;
 }
 
 
