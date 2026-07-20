@@ -23,8 +23,8 @@ On the slot page, only the **sign** of the encoder event is used:
 `scaler_get_in(raw)` snaps to the table-bucket base (amp `inRshift==5`).
 A literal fine `±1` stays in the same bucket on increment (raw unchanged) but
 crosses into the previous bucket on decrement — so only decrease appeared to
-work. Slot fine therefore promotes sub-bucket steps to `±0x20`, same as play
-mode.
+work. Slot fine therefore promotes sub-bucket steps to `±0x20`. Play-mode
+mapped encoders use the coarse step (`±0x100`) instead.
 
 For scaled params (amp, integrator, note, …):
 

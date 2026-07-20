@@ -216,7 +216,7 @@ static void bump_param_scaled(io_t delta) {
   /* get_in returns the table-bucket base (e.g. amp inRshift==5). a fine
    * +1 stays in the same bucket so raw/display do not move, while -1
    * crosses into the previous bucket — only decrement appears to work.
-   * promote sub-bucket steps to one index (0x20), same as play mode. */
+   * promote sub-bucket steps to one table index (0x20). */
   if(delta > 0 && delta < (io_t)0x20) {
     delta = (io_t)0x20;
   } else if(delta < 0 && delta > (io_t)-0x20) {

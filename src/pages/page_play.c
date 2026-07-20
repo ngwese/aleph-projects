@@ -328,13 +328,12 @@ static ParamValue bump_one(u16 idx, ParamValue raw, s32 data) {
   if(param_scaler_usable(idx)) {
     ParamScaler *sc = &g_scalers[idx];
     io_t io = scaler_get_in(sc, (s32)raw);
-    /* play has one encoder per binding (no separate coarse). one table
-     * index (inRshift==5) so amp/note/etc move each detent. direction
-     * from s32 like morph / slot page. */
-    io_t delta = (data > 0) ? (io_t)0x20 : (io_t)-0x20;
+    /* play has one encoder per binding (no separate fine/coarse). use
+     * slot-page coarse step (±0x100) each detent. */
+    io_t delta = (data > 0) ? (io_t)0x100 : (io_t)-0x100;
     return (ParamValue)scaler_inc(sc, &io, delta);
   }
-  return bump_raw(raw, d, (data > 0) ? 64 : -64);
+  return bump_raw(raw, d, (data > 0) ? 0x100 : -0x100);
 }
 
 static void apply_enc(u8 i, s32 data) {
