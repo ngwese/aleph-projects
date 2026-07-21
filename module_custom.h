@@ -18,6 +18,9 @@
 //! Detect window overrun / buffer clash xruns (SPI readout always available)
 #define MODULE_AUDIO_XRUN_DETECT 1
 
+//! Peak meters on logical ADC/DAC banks (SPI MSG_GET_METER_COM)
+#define MODULE_AUDIO_METER 1
+
 #define NUM_PARAMS eParamNumParams
 
 #endif  // h guard
