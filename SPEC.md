@@ -8,10 +8,12 @@ dry so the mixer boots as an unfiltered matrix).
 four ADC inputs feed four internal input buses; each input bus is sent to
 four output mix buses through independent matrix levels; each output mix
 bus is dry/wet-blended with its bandpass, then drives one DAC through an
-output level. every amplitude control has 1-pole slewing (`filter_1p`).
-matrix send slews share one time constant per **input** (all four sends
-from that input use the same slew). filter cutoffs use a fixed internal
-slew (not exposed).
+output level. every amplitude control has 1-pole slewing (`filter_1p_lo_blk` in
+`dsp_block`). slews advance **once per audio block** (`MODULE_BLOCKSIZE`
+frames); bees still send per-sample integrator coeffs, converted with
+`c → c^N` so convergence time stays equivalent. matrix send slews share
+one time constant per **input** (all four sends from that input use the
+same slew). filter cutoffs use a fixed internal slew (not exposed).
 
 parameter labels are **1-based** (`in1`…`in4`, `out1`…`out4`). ADC/DAC
 hardware channels remain 0-based (`adc0`…`adc3`, `dac0`…`dac3`);
@@ -61,23 +63,25 @@ for each output Y in 1..4:
 ```
 
 signal equation (per sample / frame inside the block), after slewed gains
-have been updated. arrays below are **0-based** hardware indices; param
-`in(k+1)` / `out(k+1)` control index `k`:
+have been **prepared once for the block**. arrays below are **0-based**
+hardware indices; param `in(k+1)` / `out(k+1)` control index `k`:
 
 ```text
 bus_in[k]  = adc[k] * in[k+1]
 mix[m]     = Σ_k  bus_in[k] * in[k+1]-(m+1)
 hpHz[m]    = out(m+1)Base          (slewed)
 lpHz[m]    = hpHz[m] + out(m+1)Width   (clamped: ≥ hp+1, ≤ ~20 kHz)
-filt[m]    = LP(HP(mix[m], hpHz[m]), lpHz[m])   # 1-pole each; always run
-wet[m]     = out(m+1)Wet           (slewed)
+filt[m]    = LP(HP(mix[m]))   # 1-pole each; alphas prepared once/block; always run
+wet[m]     = out(m+1)Wet           (slewed once/block)
 dry[m]     = 1 - wet[m]
 blend[m]   = mix[m] * dry[m] + filt[m] * wet[m]
 dac[m]     = blend[m] * out[m+1]
 ```
 
-when `outYWet` is 0, the audible path is the unfiltered mix; the BPF still
-runs so its state stays warm while dry/wet moves.
+BPF coefficient rebuild (`hpf_freq_calc` / `lpf_freq_calc`, including
+integer divides) runs in `filter_bp_blk_prepare` **once per block** per
+output. the sample loop only applies stored alphas so filter state stays
+warm while wet moves.
 
 overflow: use saturating / guarded accumulation consistent with other
 `modules_block` mixers (e.g. spray / mix-style `add_fr1x32`).

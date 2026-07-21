@@ -3,6 +3,7 @@ module_name = mx44
 
 # paths to aleph repository sources
 audio = ../../dsp
+audio_block = ../../dsp_block
 bfin = ../../bfin_lib_block/src
 
 # define version ids
@@ -12,8 +13,8 @@ ldr_name = $(module_name)-$(version).ldr
 
 # add sources from here/audio library.
 module_obj = mx44_module.o \
-	$(audio)/filter_1p.o \
-	$(audio)/ricks_tricks.o
+	$(audio_block)/filter_1p_blk.o \
+	$(audio_block)/filter_bp_blk.o
 
 # -----  below here, probably dont need to customize.
 
@@ -23,6 +24,7 @@ all: $(module_name).ldr $(module_name).dsc
 include ../../bfin_lib_block/bfin_lib_block.mk
 
 CFLAGS += -D ARCH_BFIN=1
+CFLAGS += -I$(audio_block)
 # diagnose gcc errors
 # CFLAGS += --verbose
 

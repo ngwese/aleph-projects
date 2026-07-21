@@ -7,18 +7,20 @@
   adc[i] * in[i+1] → bus; bus * in[i+1]-[j+1] summed into out mix j;
   bpf (HP base Hz, LP base+width Hz) dry/wet-mixed, then * out → dac.
   parameter labels are 1-based; arrays stay 0-based.
-  each amplitude has a 1-pole slew; matrix sends from input X share inXMixSlew.
+  each amplitude has a 1-pole slew (block-rate filter_1p_lo_blk);
+  matrix sends from input X share inXMixSlew.
   filter cutoffs use a fixed internal slew; BPF always runs (warm).
 */
 
 #include <string.h>
 
 #include "audio_channels.h"
-#include "filter_1p.h"
+#include "filter_1p_blk.h"
+#include "filter_bp_blk.h"
 #include "fract_math.h"
 #include "module.h"
+#include "module_custom.h"
 #include "mx44_params.h"
-#include "ricks_tricks.h"
 
 /* fixed internal slew for filter Hz params (medium, avoids zipper) */
 #define FILT_HZ_SLEW PARAM_SLEW_DEFAULT
@@ -29,18 +31,21 @@ ModuleData *gModuleData;
 static ModuleData super;
 static ParamData mParamData[eParamNumParams];
 
-static filter_1p_lo inSlew[4];
-static filter_1p_lo outSlew[4];
-static filter_1p_lo mixSlew[4][4]; /* [in][out], 0-based */
+static filter_1p_lo_blk inSlew[4];
+static filter_1p_lo_blk outSlew[4];
+static filter_1p_lo_blk mixSlew[4][4]; /* [in][out], 0-based */
 
-static filter_1p_lo baseHzSlew[4];
-static filter_1p_lo widthHzSlew[4];
-static filter_1p_lo wetSlew[4];
-static bpf outFilt[4];
+static filter_1p_lo_blk baseHzSlew[4];
+static filter_1p_lo_blk widthHzSlew[4];
+static filter_1p_lo_blk wetSlew[4];
+static filter_bp_blk outFilt[4];
 
 static fract32 inVal[4];
 static fract32 outVal[4];
 static fract32 mixVal[4][4];
+static fract32 baseHzVal[4];
+static fract32 widthHzVal[4];
+static fract32 wetVal[4];
 
 static inline void param_setup(u32 id, ParamValue v) {
   gModuleData->paramData[id].value = v;
@@ -50,7 +55,7 @@ static inline void param_setup(u32 id, ParamValue v) {
 static void set_mix_slew(u8 xin, fract32 slew) {
   u8 y;
   for(y = 0; y < 4; ++y) {
-    filter_1p_lo_set_slew(&(mixSlew[xin][y]), slew);
+    filter_1p_lo_blk_set_slew(&(mixSlew[xin][y]), slew);
   }
 }
 
@@ -80,16 +85,17 @@ void module_init(void) {
   gModuleData->numParams = eParamNumParams;
 
   for(x = 0; x < 4; ++x) {
-    filter_1p_lo_init(&(inSlew[x]), 0);
-    filter_1p_lo_init(&(outSlew[x]), 0);
-    filter_1p_lo_init(&(baseHzSlew[x]), PARAM_BASE_DEFAULT);
-    filter_1p_lo_init(&(widthHzSlew[x]), PARAM_WIDTH_DEFAULT);
-    filter_1p_lo_init(&(wetSlew[x]), PARAM_WET_DEFAULT);
-    filter_1p_lo_set_slew(&(baseHzSlew[x]), FILT_HZ_SLEW);
-    filter_1p_lo_set_slew(&(widthHzSlew[x]), FILT_HZ_SLEW);
-    bpf_init(&(outFilt[x]));
+    filter_1p_lo_blk_init(&(inSlew[x]), 0, MODULE_BLOCKSIZE);
+    filter_1p_lo_blk_init(&(outSlew[x]), 0, MODULE_BLOCKSIZE);
+    filter_1p_lo_blk_init(&(baseHzSlew[x]), PARAM_BASE_DEFAULT, MODULE_BLOCKSIZE);
+    filter_1p_lo_blk_init(&(widthHzSlew[x]), PARAM_WIDTH_DEFAULT,
+			 MODULE_BLOCKSIZE);
+    filter_1p_lo_blk_init(&(wetSlew[x]), PARAM_WET_DEFAULT, MODULE_BLOCKSIZE);
+    filter_1p_lo_blk_set_slew(&(baseHzSlew[x]), FILT_HZ_SLEW);
+    filter_1p_lo_blk_set_slew(&(widthHzSlew[x]), FILT_HZ_SLEW);
+    filter_bp_blk_init(&(outFilt[x]));
     for(y = 0; y < 4; ++y) {
-      filter_1p_lo_init(&(mixSlew[x][y]), 0);
+      filter_1p_lo_blk_init(&(mixSlew[x][y]), 0, MODULE_BLOCKSIZE);
     }
   }
 
@@ -169,8 +175,6 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
   fract32 sig;
   u32 hpHz;
   u32 lpHz;
-  fract32 baseFix;
-  fract32 widthFix;
 
   fract32 *inCh[4];
   fract32 *outCh[4];
@@ -185,13 +189,35 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
   outCh[2] = audio_out_channel(outChannels, 2);
   outCh[3] = audio_out_channel(outChannels, 3);
 
+  /* block-rate slews: one step per amp / Hz / wet */
+  for(x = 0; x < 4; ++x) {
+    filter_1p_lo_blk_prepare(&(inSlew[x]));
+    inVal[x] = filter_1p_lo_blk_next(&(inSlew[x]));
+    filter_1p_lo_blk_prepare(&(outSlew[x]));
+    outVal[x] = filter_1p_lo_blk_next(&(outSlew[x]));
+    filter_1p_lo_blk_prepare(&(baseHzSlew[x]));
+    baseHzVal[x] = filter_1p_lo_blk_next(&(baseHzSlew[x]));
+    filter_1p_lo_blk_prepare(&(widthHzSlew[x]));
+    widthHzVal[x] = filter_1p_lo_blk_next(&(widthHzSlew[x]));
+    filter_1p_lo_blk_prepare(&(wetSlew[x]));
+    wetVal[x] = filter_1p_lo_blk_next(&(wetSlew[x]));
+    for(y = 0; y < 4; ++y) {
+      filter_1p_lo_blk_prepare(&(mixSlew[x][y]));
+      mixVal[x][y] = filter_1p_lo_blk_next(&(mixSlew[x][y]));
+    }
+  }
+
+  /* BPF alphas once per block (integer divides only here) */
+  for(y = 0; y < 4; ++y) {
+    hpHz = (u32)(baseHzVal[y] >> 16);
+    lpHz = clamp_lp_hz(hpHz, (u32)(widthHzVal[y] >> 16));
+    filter_bp_blk_prepare(&(outFilt[y]),
+			  filter_bp_blk_hzToDimensionless(hpHz),
+			  filter_bp_blk_hzToDimensionless(lpHz));
+  }
+
   for(frame = 0; frame < MODULE_BLOCKSIZE; frame++) {
     for(x = 0; x < 4; ++x) {
-      inVal[x] = filter_1p_lo_next(&(inSlew[x]));
-      outVal[x] = filter_1p_lo_next(&(outSlew[x]));
-      for(y = 0; y < 4; ++y) {
-        mixVal[x][y] = filter_1p_lo_next(&(mixSlew[x][y]));
-      }
       bus[x] = mult_fr1x32x32(inCh[x][frame], inVal[x]);
     }
 
@@ -201,15 +227,8 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
         mix = add_fr1x32(mix, mult_fr1x32x32(bus[x], mixVal[x][y]));
       }
 
-      baseFix = filter_1p_lo_next(&(baseHzSlew[y]));
-      widthFix = filter_1p_lo_next(&(widthHzSlew[y]));
-      hpHz = (u32)(baseFix >> 16);
-      lpHz = clamp_lp_hz(hpHz, (u32)(widthFix >> 16));
-
-      filt = bpf_next_dynamic_precise(&(outFilt[y]), mix,
-				      hzToDimensionless(hpHz),
-				      hzToDimensionless(lpHz));
-      wet = filter_1p_lo_next(&(wetSlew[y]));
+      filt = filter_bp_blk_next(&(outFilt[y]), mix);
+      wet = wetVal[y];
       dry = sub_fr1x32(FR32_MAX, wet);
       sig = add_fr1x32(mult_fr1x32x32(mix, dry),
 		       mult_fr1x32x32(filt, wet));
@@ -221,171 +240,171 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
 void module_set_param(u32 idx, ParamValue v) {
   switch(idx) {
   case eParam_in1 :
-    filter_1p_lo_in(&(inSlew[0]), v);
+    filter_1p_lo_blk_in(&(inSlew[0]), v);
     break;
   case eParam_in2 :
-    filter_1p_lo_in(&(inSlew[1]), v);
+    filter_1p_lo_blk_in(&(inSlew[1]), v);
     break;
   case eParam_in3 :
-    filter_1p_lo_in(&(inSlew[2]), v);
+    filter_1p_lo_blk_in(&(inSlew[2]), v);
     break;
   case eParam_in4 :
-    filter_1p_lo_in(&(inSlew[3]), v);
+    filter_1p_lo_blk_in(&(inSlew[3]), v);
     break;
 
   case eParam_in1Slew :
-    filter_1p_lo_set_slew(&(inSlew[0]), v);
+    filter_1p_lo_blk_set_slew(&(inSlew[0]), v);
     break;
   case eParam_in2Slew :
-    filter_1p_lo_set_slew(&(inSlew[1]), v);
+    filter_1p_lo_blk_set_slew(&(inSlew[1]), v);
     break;
   case eParam_in3Slew :
-    filter_1p_lo_set_slew(&(inSlew[2]), v);
+    filter_1p_lo_blk_set_slew(&(inSlew[2]), v);
     break;
   case eParam_in4Slew :
-    filter_1p_lo_set_slew(&(inSlew[3]), v);
+    filter_1p_lo_blk_set_slew(&(inSlew[3]), v);
     break;
 
   case eParam_in1_1 :
-    filter_1p_lo_in(&(mixSlew[0][0]), v);
+    filter_1p_lo_blk_in(&(mixSlew[0][0]), v);
     break;
   case eParam_in1_2 :
-    filter_1p_lo_in(&(mixSlew[0][1]), v);
+    filter_1p_lo_blk_in(&(mixSlew[0][1]), v);
     break;
   case eParam_in1_3 :
-    filter_1p_lo_in(&(mixSlew[0][2]), v);
+    filter_1p_lo_blk_in(&(mixSlew[0][2]), v);
     break;
   case eParam_in1_4 :
-    filter_1p_lo_in(&(mixSlew[0][3]), v);
+    filter_1p_lo_blk_in(&(mixSlew[0][3]), v);
     break;
   case eParam_in1MixSlew :
     set_mix_slew(0, v);
     break;
 
   case eParam_in2_1 :
-    filter_1p_lo_in(&(mixSlew[1][0]), v);
+    filter_1p_lo_blk_in(&(mixSlew[1][0]), v);
     break;
   case eParam_in2_2 :
-    filter_1p_lo_in(&(mixSlew[1][1]), v);
+    filter_1p_lo_blk_in(&(mixSlew[1][1]), v);
     break;
   case eParam_in2_3 :
-    filter_1p_lo_in(&(mixSlew[1][2]), v);
+    filter_1p_lo_blk_in(&(mixSlew[1][2]), v);
     break;
   case eParam_in2_4 :
-    filter_1p_lo_in(&(mixSlew[1][3]), v);
+    filter_1p_lo_blk_in(&(mixSlew[1][3]), v);
     break;
   case eParam_in2MixSlew :
     set_mix_slew(1, v);
     break;
 
   case eParam_in3_1 :
-    filter_1p_lo_in(&(mixSlew[2][0]), v);
+    filter_1p_lo_blk_in(&(mixSlew[2][0]), v);
     break;
   case eParam_in3_2 :
-    filter_1p_lo_in(&(mixSlew[2][1]), v);
+    filter_1p_lo_blk_in(&(mixSlew[2][1]), v);
     break;
   case eParam_in3_3 :
-    filter_1p_lo_in(&(mixSlew[2][2]), v);
+    filter_1p_lo_blk_in(&(mixSlew[2][2]), v);
     break;
   case eParam_in3_4 :
-    filter_1p_lo_in(&(mixSlew[2][3]), v);
+    filter_1p_lo_blk_in(&(mixSlew[2][3]), v);
     break;
   case eParam_in3MixSlew :
     set_mix_slew(2, v);
     break;
 
   case eParam_in4_1 :
-    filter_1p_lo_in(&(mixSlew[3][0]), v);
+    filter_1p_lo_blk_in(&(mixSlew[3][0]), v);
     break;
   case eParam_in4_2 :
-    filter_1p_lo_in(&(mixSlew[3][1]), v);
+    filter_1p_lo_blk_in(&(mixSlew[3][1]), v);
     break;
   case eParam_in4_3 :
-    filter_1p_lo_in(&(mixSlew[3][2]), v);
+    filter_1p_lo_blk_in(&(mixSlew[3][2]), v);
     break;
   case eParam_in4_4 :
-    filter_1p_lo_in(&(mixSlew[3][3]), v);
+    filter_1p_lo_blk_in(&(mixSlew[3][3]), v);
     break;
   case eParam_in4MixSlew :
     set_mix_slew(3, v);
     break;
 
   case eParam_out1 :
-    filter_1p_lo_in(&(outSlew[0]), v);
+    filter_1p_lo_blk_in(&(outSlew[0]), v);
     break;
   case eParam_out2 :
-    filter_1p_lo_in(&(outSlew[1]), v);
+    filter_1p_lo_blk_in(&(outSlew[1]), v);
     break;
   case eParam_out3 :
-    filter_1p_lo_in(&(outSlew[2]), v);
+    filter_1p_lo_blk_in(&(outSlew[2]), v);
     break;
   case eParam_out4 :
-    filter_1p_lo_in(&(outSlew[3]), v);
+    filter_1p_lo_blk_in(&(outSlew[3]), v);
     break;
 
   case eParam_out1Slew :
-    filter_1p_lo_set_slew(&(outSlew[0]), v);
+    filter_1p_lo_blk_set_slew(&(outSlew[0]), v);
     break;
   case eParam_out2Slew :
-    filter_1p_lo_set_slew(&(outSlew[1]), v);
+    filter_1p_lo_blk_set_slew(&(outSlew[1]), v);
     break;
   case eParam_out3Slew :
-    filter_1p_lo_set_slew(&(outSlew[2]), v);
+    filter_1p_lo_blk_set_slew(&(outSlew[2]), v);
     break;
   case eParam_out4Slew :
-    filter_1p_lo_set_slew(&(outSlew[3]), v);
+    filter_1p_lo_blk_set_slew(&(outSlew[3]), v);
     break;
 
   case eParam_out1Base :
-    filter_1p_lo_in(&(baseHzSlew[0]), v);
+    filter_1p_lo_blk_in(&(baseHzSlew[0]), v);
     break;
   case eParam_out2Base :
-    filter_1p_lo_in(&(baseHzSlew[1]), v);
+    filter_1p_lo_blk_in(&(baseHzSlew[1]), v);
     break;
   case eParam_out3Base :
-    filter_1p_lo_in(&(baseHzSlew[2]), v);
+    filter_1p_lo_blk_in(&(baseHzSlew[2]), v);
     break;
   case eParam_out4Base :
-    filter_1p_lo_in(&(baseHzSlew[3]), v);
+    filter_1p_lo_blk_in(&(baseHzSlew[3]), v);
     break;
 
   case eParam_out1Width :
-    filter_1p_lo_in(&(widthHzSlew[0]), v);
+    filter_1p_lo_blk_in(&(widthHzSlew[0]), v);
     break;
   case eParam_out2Width :
-    filter_1p_lo_in(&(widthHzSlew[1]), v);
+    filter_1p_lo_blk_in(&(widthHzSlew[1]), v);
     break;
   case eParam_out3Width :
-    filter_1p_lo_in(&(widthHzSlew[2]), v);
+    filter_1p_lo_blk_in(&(widthHzSlew[2]), v);
     break;
   case eParam_out4Width :
-    filter_1p_lo_in(&(widthHzSlew[3]), v);
+    filter_1p_lo_blk_in(&(widthHzSlew[3]), v);
     break;
 
   case eParam_out1Wet :
-    filter_1p_lo_in(&(wetSlew[0]), v);
+    filter_1p_lo_blk_in(&(wetSlew[0]), v);
     break;
   case eParam_out2Wet :
-    filter_1p_lo_in(&(wetSlew[1]), v);
+    filter_1p_lo_blk_in(&(wetSlew[1]), v);
     break;
   case eParam_out3Wet :
-    filter_1p_lo_in(&(wetSlew[2]), v);
+    filter_1p_lo_blk_in(&(wetSlew[2]), v);
     break;
   case eParam_out4Wet :
-    filter_1p_lo_in(&(wetSlew[3]), v);
+    filter_1p_lo_blk_in(&(wetSlew[3]), v);
     break;
 
   case eParam_out1WetSlew :
-    filter_1p_lo_set_slew(&(wetSlew[0]), v);
+    filter_1p_lo_blk_set_slew(&(wetSlew[0]), v);
     break;
   case eParam_out2WetSlew :
-    filter_1p_lo_set_slew(&(wetSlew[1]), v);
+    filter_1p_lo_blk_set_slew(&(wetSlew[1]), v);
     break;
   case eParam_out3WetSlew :
-    filter_1p_lo_set_slew(&(wetSlew[2]), v);
+    filter_1p_lo_blk_set_slew(&(wetSlew[2]), v);
     break;
   case eParam_out4WetSlew :
-    filter_1p_lo_set_slew(&(wetSlew[3]), v);
+    filter_1p_lo_blk_set_slew(&(wetSlew[3]), v);
     break;
 
   default :
