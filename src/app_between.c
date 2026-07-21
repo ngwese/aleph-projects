@@ -21,6 +21,7 @@
 #include "render.h"
 #include "scaler_tables.h"
 #include "state.h"
+#include "meters.h"
 
 #ifndef VERSIONSTRING
 #define VERSIONSTRING "0.0.1"
@@ -56,6 +57,7 @@ u8 app_launch(eLaunchState state) {
   scaler_tables_init();
 
   init_app_timers();
+  meters_init();
   pages_init();
   assign_event_handlers();
 

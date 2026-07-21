@@ -486,13 +486,29 @@ body (six content rows; labels in dark grey, values in white):
   `abcd123-dirty` when the working tree was dirty at build time (`-` if
   unavailable).
 - rows 2–5: DSP xrun counters — `winRx`, `winTx`, `clashRx`, `clashTx` —
-  polled from the blackfin at ~2 Hz (same SPI path as spray).
+  polled from the blackfin at ~10 Hz with meters (same SPI path as spray).
 
 enc1 (and enc2/enc3) navigate the page ring; no softkey actions.
 
 xrun counters on the DSP are cleared when a module is loaded (`bfin_enable`
 → `audio_reset_xruns`). between also zeros its local cache and clears the
 header warning at that time.
+
+### audio meters
+
+between polls two meter banks over SPI (`MSG_GET_METER_COM`):
+
+| bank | id | channels |
+|------|----|----------|
+| IN | 0 | logical ADC 0..3 |
+| OUT | 1 | logical DAC 0..3 |
+
+values are absolute peak-hold `fract32` in `[0, FR32_MAX]` with block-rate
+decay on the DSP (opt-in via `MODULE_AUDIO_METER` in the module’s
+`module_custom.h`; mx44 enables it). poll rate is ~10 Hz on the main loop
+(via `kEventAppCustom`, never inside the soft-timer callback). cached
+levels draw as a strip of eight vertical bars on the **play** page
+(content y≈40): four IN then four OUT, dark-grey frame, white fill.
 
 ---
 

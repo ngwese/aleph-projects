@@ -42,7 +42,7 @@ static void midi_poll_timer_callback(void *obj) {
   midi_read();
 }
 
-/* post AppCustom so main loop can SPI-read xrun counters */
+/* post AppCustom so main loop can SPI-read xruns / meters */
 static void xrun_timer_callback(void *obj) {
   (void)obj;
   e.type = kEventAppCustom;
@@ -53,8 +53,8 @@ static void xrun_timer_callback(void *obj) {
 void init_app_timers(void) {
   timer_add(&screenTimer, 50, &screen_timer_callback, NULL);
   timer_add(&encTimer, 50, &enc_timer_callback, NULL);
-  /* ~2 Hz — low-rate DSP xrun poll (same as spray) */
-  timer_add(&xrunTimer, 500, &xrun_timer_callback, NULL);
+  /* ~10 Hz — meters feel alive; xrun SPI is cheap at this rate */
+  timer_add(&xrunTimer, 100, &xrun_timer_callback, NULL);
 }
 
 void timers_set_midi(void) {

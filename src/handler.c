@@ -9,6 +9,7 @@
 #include "events.h"
 
 #include "app_timers.h"
+#include "meters.h"
 #include "midi_between.h"
 #include "pages.h"
 #include "render.h"
@@ -47,10 +48,11 @@ static void handle_MidiPacket(s32 data) {
   between_midi_handle_packet((u32)data);
 }
 
-/* low-rate xrun counter poll (posted from xrunTimer) */
+/* xrun / meter SPI poll (posted from soft timer; run on main loop) */
 static void handle_AppCustom(s32 data) {
   (void)data;
   (void)xruns_poll();
+  (void)meters_poll();
 }
 
 void assign_event_handlers(void) {
