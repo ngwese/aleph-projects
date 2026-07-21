@@ -507,8 +507,7 @@ values are absolute peak-hold `fract32` in `[0, FR32_MAX]` with block-rate
 decay on the DSP (opt-in via `MODULE_AUDIO_METER` in the module’s
 `module_custom.h`; mx44 enables it). poll rate is ~10 Hz on the main loop
 (via `kEventAppCustom`, never inside the soft-timer callback). cached
-levels draw as a strip of eight vertical bars on the **play** page
-(content y≈40): four IN then four OUT, dark-grey frame, white fill.
+levels drive the header VU grid (see [header chrome](#header-midi--xrun-indicators)).
 
 ---
 
@@ -898,26 +897,27 @@ example: set slot B’s parameter index 3 to mid-scale — channel 2, NRPN
 
 all pages that draw the edit-mode header (and play mode when a header is
 shown) reserve space **immediately left of** the upper-right morph-position
-indicator for status glyphs:
+indicator for status chrome, left-to-right:
 
 ```text
-… title / name boxes …   [!!!]  [m]  [morph 8×8]
+… title / name boxes …   [!!!]  [m]  [vu]  [morph 8×8]
 ```
 
 **xrun warning (`!!!`):**
 
-- when any polled DSP xrun counter is **non-zero**, draw `!!!` in **dark
-  grey** immediately left of the MIDI `m` (with a small black gap).
-- when all counters are zero, omit `!!!` (leave that space black).
+- when any polled DSP xrun counter **increases** (including wrap), draw `!!!`
+  in **dark grey** immediately left of the MIDI `m` (with a small black gap).
+- if counters do not increase for **5 seconds**, clear `!!!` (leave that space
+  black). info-page counter values are unchanged.
 - title/name boxes shrink their max-x while the warning is shown so they
-  do not collide with the glyphs.
+  do not collide with the glyphs. titles always stop left of the MIDI column.
 
 **MIDI `m`:**
 
 - when a MIDI device is **connected** to the aleph, draw a lowercase `m` in
   **dark grey**.
 - when no MIDI device is connected, omit the `m` (leave that space black /
-  empty; do not shift the morph indicator).
+  empty; do not shift VU or morph).
 - when MIDI **traffic is received**, briefly flash the `m` in **light grey**,
   then return to dark grey while the device remains connected.
 
@@ -925,9 +925,23 @@ the flash should be short enough to read as activity (on the order of the
 diagnostic log clear time or shorter), and may retrigger on further messages
 without requiring the glyph to go dark between bursts.
 
-layout note: keep a 2px black gap between the `m` and the morph indicator box
-so the two reads stay distinct. neither glyph is drawn inside a white text
-box (unlike page titles); they sit on the black header background.
+**VU grid:**
+
+- a **4×2** grid of **2×2** pixel boxes: top row = logical inputs 0..3,
+  bottom row = logical outputs 0..3.
+- **1px** horizontal gap between columns, **2px** vertical gap between rows
+  (11×6 px total), vertically padded in the 8px header.
+- each box’s grey comes from a fixed **peak-threshold → grey** lookup
+  (search high→low for the first threshold the channel peak meets). silence
+  is black; near-full scale is white / light grey.
+
+**morph indicator:**
+
+- 8×8 mid-grey outline with a **2×2** white cursor mapped to the morph point.
+
+layout note: keep 2px black gaps between xrun/`m`, `m`/VU, and VU/morph so
+the reads stay distinct. none of these sit inside a white text box (unlike
+page titles); they sit on the black header background.
 
 ### slot NRPN status row
 
