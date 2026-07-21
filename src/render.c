@@ -4,6 +4,7 @@
 
 #include "app.h"
 #include "font.h"
+#include "meters.h"
 #include "morph2d.h"
 #include "region.h"
 #include "screen.h"
@@ -33,17 +34,41 @@ static region regFoot[4] = {
 #define HEAD_GAP_W 1
 #define HEAD_IND_W 8
 #define HEAD_IND_X (128 - HEAD_IND_W)
+/* right chrome L→R: [xrun] [midi] [vu] [morph] */
+#define HEAD_VU_BOX 2
+#define HEAD_VU_H_GAP 1
+#define HEAD_VU_V_GAP 2
+#define HEAD_VU_COLS 4
+#define HEAD_VU_W                                                             \
+  (HEAD_VU_COLS * HEAD_VU_BOX + (HEAD_VU_COLS - 1) * HEAD_VU_H_GAP)
+#define HEAD_VU_GAP_W 2 /* gap between VU and morph */
+#define HEAD_VU_X (HEAD_IND_X - HEAD_VU_GAP_W - HEAD_VU_W)
+#define HEAD_VU_Y0 1 /* 1px pad; rows at y=1 and y=5 */
 #define HEAD_MIDI_W FONT_CHARW
-#define HEAD_MIDI_GAP_W 2 /* black gap between m glyph and morph indicator */
-#define HEAD_MIDI_X (HEAD_IND_X - HEAD_MIDI_GAP_W - HEAD_MIDI_W)
+#define HEAD_MIDI_GAP_W 2 /* gap between m and VU */
+#define HEAD_MIDI_X (HEAD_VU_X - HEAD_MIDI_GAP_W - HEAD_MIDI_W)
 /* proportional "!!!": each ! is 1px + 1px advance (same as font_string) */
 #define HEAD_XRUN_W 6
 #define HEAD_XRUN_GAP_W 2 /* gap between !!! and m */
 #define HEAD_XRUN_X (HEAD_MIDI_X - HEAD_XRUN_GAP_W - HEAD_XRUN_W)
+/* titles stop left of midi (always reserved); further left when !!! shown */
 #define HEAD_TITLE_MAX_X_BASE (HEAD_MIDI_X - HEAD_GAP_W)
 #define HEAD_TITLE_MAX_X_XRUN (HEAD_XRUN_X - HEAD_GAP_W)
 #define HEAD_MARGIN 2
 #define HEAD_TEXT_X (HEAD_BAR_W + HEAD_GAP_W)
+
+/* peak threshold → grey; search high→low for first peak >= thresh */
+typedef struct {
+  fract32 thresh;
+  u8 grey;
+} head_vu_lut_t;
+
+static const head_vu_lut_t head_vu_lut[] = {
+    {(fract32)0x60000000, 0xf}, {(fract32)0x40000000, 0xc},
+    {(fract32)0x20000000, 0xa}, {(fract32)0x10000000, 0x7},
+    {(fract32)0x08000000, 0x5}, {(fract32)0x04000000, 0x3},
+    {(fract32)0x01000000, 0x2}, {(fract32)0x00000000, 0x0},
+};
 
 static char log_buf[22];
 static u8 log_active = 0;
@@ -318,28 +343,64 @@ static void head_draw_morph_indicator(void) {
     head_put_px((u8)(HEAD_IND_X + HEAD_IND_W - 1), iy, HEAD_GREY);
   }
 
-  /* 3×3 white cursor mapped into the inner (outline inset by 1) */
-  if(inner > 2) {
+  /* 2×2 white cursor mapped into the inner (outline inset by 1) */
+  if(inner > 1) {
     cx = (u8)(HEAD_IND_X + 1 +
-	      ((u32)g_slots.x * (inner - 2)) / MORPH2D_ONE);
-    cy = (u8)(1 + ((u32)g_slots.y * (inner - 2)) / MORPH2D_ONE);
+	      ((u32)g_slots.x * (inner - 1)) / MORPH2D_ONE);
+    cy = (u8)(1 + ((u32)g_slots.y * (inner - 1)) / MORPH2D_ONE);
   } else {
     cx = (u8)(HEAD_IND_X + 1);
     cy = 1;
   }
-  for(iy = 0; iy < 3; ++iy) {
-    for(ix = 0; ix < 3; ++ix) {
+  for(iy = 0; iy < 2; ++iy) {
+    for(ix = 0; ix < 2; ++ix) {
       head_put_px((u8)(cx + ix), (u8)(cy + iy), HEAD_WHITE);
     }
   }
 }
 
-static void head_draw_midi_m(void) {
+static u8 head_vu_grey(fract32 peak) {
+  u8 i;
+  if(peak < 0) {
+    peak = 0;
+  }
+  for(i = 0; i < (u8)(sizeof(head_vu_lut) / sizeof(head_vu_lut[0])); i++) {
+    if(peak >= head_vu_lut[i].thresh) {
+      return head_vu_lut[i].grey;
+    }
+  }
+  return 0;
+}
+
+static void head_fill_box2(u8 x, u8 y, u8 color) {
+  head_put_px(x, y, color);
+  head_put_px((u8)(x + 1), y, color);
+  head_put_px(x, (u8)(y + 1), color);
+  head_put_px((u8)(x + 1), (u8)(y + 1), color);
+}
+
+static void head_draw_vu(void) {
+  const bfin_meter_bank_t *in = meters_in();
+  const bfin_meter_bank_t *out = meters_out();
+  u8 i;
+  u8 x;
+  u8 y_in = HEAD_VU_Y0;
+  u8 y_out = (u8)(HEAD_VU_Y0 + HEAD_VU_BOX + HEAD_VU_V_GAP);
+
+  for(i = 0; i < HEAD_VU_COLS; i++) {
+    x = (u8)(HEAD_VU_X + i * (HEAD_VU_BOX + HEAD_VU_H_GAP));
+    head_fill_box2(x, y_in, head_vu_grey(in->ch[i]));
+    head_fill_box2(x, y_out, head_vu_grey(out->ch[i]));
+  }
+}
+
+/* right chrome left of morph: [xrun] [midi] [vu] */
+static void head_draw_status_glyphs(void) {
   u8 color;
   u8 *dst;
   u8 x;
 
-  /* always clear warn + m columns through the morph gap */
+  /* clear from xrun through the morph gap */
   for(x = HEAD_XRUN_X; x < HEAD_IND_X; ++x) {
     head_fill_col(x, 1, HEAD_BLACK);
   }
@@ -348,16 +409,16 @@ static void head_draw_midi_m(void) {
     font_string_region_clip(&regHead, "!!!", HEAD_XRUN_X, 0, HEAD_GREY_DARK,
 			    HEAD_BLACK);
   }
-  if(!midi_connected) {
-    return;
+  if(midi_connected) {
+    color = midi_flash ? HEAD_GREY_LIGHT : HEAD_GREY_DARK;
+    dst = regHead.data + HEAD_MIDI_X;
+    (void)font_glyph_fixed('m', dst, 128, color, HEAD_BLACK);
   }
-  color = midi_flash ? HEAD_GREY_LIGHT : HEAD_GREY_DARK;
-  dst = regHead.data + HEAD_MIDI_X;
-  (void)font_glyph_fixed('m', dst, 128, color, HEAD_BLACK);
+  head_draw_vu();
 }
 
 static void head_draw_right_chrome(void) {
-  head_draw_midi_m();
+  head_draw_status_glyphs();
   head_draw_morph_indicator();
 }
 
@@ -628,7 +689,7 @@ void render_log_tick(void) {
       midi_flash = 0;
       midi_flash_age_ms = 0;
       /* return to dark-grey m while still connected */
-      head_draw_midi_m();
+      head_draw_status_glyphs();
       regHead.dirty = 1;
     }
   }

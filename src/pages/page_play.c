@@ -8,7 +8,6 @@
 
 #include "module_load.h"
 #include "morph2d.h"
-#include "meters.h"
 #include "param_scaler.h"
 #include "play_maps.h"
 #include "render.h"
@@ -20,49 +19,6 @@
 #define PLAY_ENC_LINE_H 8
 #define PLAY_CONTENT_H 40
 #define PLAY_CONTENT_W 128
-
-#define PLAY_METER_Y 40
-#define PLAY_METER_H 7
-#define PLAY_METER_W 5
-#define PLAY_METER_GAP 2
-#define PLAY_METER_BANK_GAP 6
-
-static void draw_meter_bar(u8 x, fract32 level) {
-  u32 lvl;
-  u8 fill;
-
-  if(level < 0) {
-    level = 0;
-  }
-  lvl = (u32)level;
-  fill = (u8)((lvl >> 16) * PLAY_METER_H / 0x7fff);
-  if(fill > PLAY_METER_H) {
-    fill = PLAY_METER_H;
-  }
-  render_fill_rect(x, PLAY_METER_Y, PLAY_METER_W, PLAY_METER_H,
-		   RENDER_PLAY_GREY_DARK);
-  if(fill > 0) {
-    render_fill_rect(x, (u8)(PLAY_METER_Y + PLAY_METER_H - fill), PLAY_METER_W,
-		     fill, 0xf);
-  }
-}
-
-static void draw_meters(void) {
-  const bfin_meter_bank_t *in = meters_in();
-  const bfin_meter_bank_t *out = meters_out();
-  u8 i;
-  u8 x = 2;
-
-  for(i = 0; i < BFIN_METER_CH; i++) {
-    draw_meter_bar(x, in->ch[i]);
-    x = (u8)(x + PLAY_METER_W + PLAY_METER_GAP);
-  }
-  x = (u8)(x + PLAY_METER_BANK_GAP);
-  for(i = 0; i < BFIN_METER_CH; i++) {
-    draw_meter_bar(x, out->ch[i]);
-    x = (u8)(x + PLAY_METER_W + PLAY_METER_GAP);
-  }
-}
 
 static struct {
   u8 active;
@@ -320,8 +276,6 @@ static void redraw(void) {
   render_string_xy(col1_x, y_lab_bot, lab, RENDER_PLAY_GREY);
   enc_value_str(val, sizeof(val), &g_play_maps.enc[3]);
   render_string_xy(col1_x, y_val_bot, val, 0xf);
-
-  draw_meters();
 
   for(i = 0; i < 4; ++i) {
     play_maps_footer_sw(foot[i], sizeof(foot[i]), &g_play_maps.sw[i]);
