@@ -35,9 +35,10 @@ non-goals (v1):
 | **slot** | one of four live preset positions (a–d) at the corners of the morph plane. |
 | **morph point** | an (x, y) position in the unit square, stored as `u16` values in `[0, 65535]`, that selects the blend among the four slots. |
 | **effective parameters** | the interpolated parameter set currently sent to the module. |
-| **setup** | a performance configuration: module identity, which presets occupy which slots, and the initial morph point. |
+| **setup** | a performance configuration: module identity, which presets occupy which slots, the initial morph point, play bindings, and which parameters are excluded from morph. |
 | **play mode** | live performance: morph control and mappable encoders/switches dominate the front panel. |
 | **edit mode** | configuration and tuning: module, presets, slots, and parameters are browsed and changed. |
+| **morph exclusion** | a per-parameter setup flag: excluded params are not blended by the morph point (see [morph exclusion](#morph-exclusion)). |
 
 ---
 
@@ -80,7 +81,7 @@ treated as “hold last / ignore” — see [empty slots](#empty-slots).
 
 ### effective value
 
-for each continuous parameter `p`:
+for each continuous parameter `p` that is **not** morph-excluded:
 
 ```text
 p_eff = wa*pa + wb*pb + wc*pc + wd*pd
@@ -90,9 +91,17 @@ interpolation is performed in the parameter’s **native dsp domain** (32-bit
 module values), then written to the running module. discrete types do not
 blend; see [interpolation rules](#interpolation-rules).
 
-moving the morph point updates effective parameters continuously. editing a
-slot’s parameters updates that slot’s stored values and immediately
-recomputes the effective set, so tuning by ear works while morphing.
+**excluded** parameters are omitted from that blend: moving the morph point
+does not rewrite them. their audible value is whatever last wrote them
+(play control, MIDI, capture apply path, or a prior non-excluded morph).
+slot banks still store underlying values for presets / capture — exclusion
+is a morph/apply policy, not a wipe of slot data. see
+[morph exclusion](#morph-exclusion).
+
+moving the morph point updates effective parameters continuously (for
+non-excluded params). editing a slot’s parameters updates that slot’s
+stored values and immediately recomputes the effective set, so tuning by
+ear works while morphing.
 
 ### empty slots
 
@@ -117,6 +126,84 @@ preset **version** is advisory:
 - unknown parameters in the file are ignored; missing parameters keep the
   module default (or current value — decide at implementation; prefer
   module default on fresh load).
+
+### morph exclusion
+
+a setup may **exclude** parameters from morph blending. exclusion is owned
+by the **setup** (not the preset), so the same preset files can be reused
+across setups that differ in which params morph and which are driven by
+play controls.
+
+#### why
+
+1. **play-driven params stay put.** a parameter bound to a play encoder /
+   switch / CC must not be rewritten when the morph point moves. otherwise
+   the audible value diverges from the external control, the panel/MIDI
+   state stops being representative, and the UI would need takeover /
+   pickup strategies. exclusion keeps the play control as the source of
+   truth for that param.
+2. **preset reuse across control layouts.** different setups can share the
+   same four corner presets while morphing different subsets (e.g. one
+   setup binds `amp` to a play encoder and excludes it; another morphs
+   `amp` freely).
+
+#### sources of exclusion
+
+a parameter is morph-excluded if **either**:
+
+| source | meaning |
+|--------|---------|
+| **manual** | the user marked it excluded on a slot page (persisted in the setup). |
+| **play-bound** | any play map in this setup targets that parameter (derived; not duplicated in the exclude list). |
+
+**play-bound** applies when a play binding names the parameter, including:
+
+- encoder: slot-param or all-slots param
+- switch / footswitch: param set or param momentary (one slot or all slots)
+- MIDI CC: param map (`play.ccN`)
+
+morph x/y and snap-slot bindings do **not** imply exclusion.
+
+the effective exclude set is the **union** of manual and play-bound.
+play-bound exclusion is **forced** while the binding exists: the user
+cannot clear it from the slot page. clearing or retargeting the play
+binding removes the forced exclude; a separate manual exclude (if any)
+remains.
+
+when a play map is first bound to a parameter, that parameter becomes
+excluded immediately (and stays excluded for as long as any play map
+targets it).
+
+#### morph / apply behavior
+
+- `slots_apply` / morph-point updates **skip** excluded parameters.
+- play / MIDI paths that write a bound parameter still update the relevant
+  slot bank(s) and send that parameter to the module as today.
+- discrete and continuous types share the same exclude rule.
+
+#### persistence (setup file)
+
+manual exclusions are stored in the setup; play-bound exclusions are
+implied by `play.*` keys and recomputed on load.
+
+```text
+morph.exclude: amp0, cut0, res0
+```
+
+rules:
+
+1. `morph.exclude` — optional. comma-separated list of `.dsc` parameter
+   **labels** that are manually excluded. omit or empty = no manual
+   excludes. unknown labels on load are ignored.
+2. on setup save: write only the **manual** set (not play-bound-only
+   params).
+3. on setup load: restore manual excludes, then add play-bound excludes
+   from the loaded play maps.
+4. changing play maps in memory updates the derived exclude set without
+   requiring a setup rewrite until save.
+
+format version stays `1`; unknown keys remain ignored for forward
+compatibility.
 
 ---
 
@@ -192,6 +279,8 @@ play.enc2: morph.x
 play.enc3: morph.y
 play.cc1: param.amp
 play.cc2: -
+
+morph.exclude: cut0, res0
 ```
 
 the setup name is the file name without the `.txt` extension; it is not
@@ -213,9 +302,13 @@ rules:
    syntax as panel switches); `play.cc1` … `play.cc12` — MIDI CC maps
    (param label only; channel selects slot at apply time). omitted keys use
    defaults.
-5. loading a setup: if needed, replace the current module with the setup’s
-   module, load each referenced preset into its slot, set the morph point,
-   and apply the effective parameters.
+5. `morph.exclude` — optional comma-separated list of manually morph-excluded
+   parameter labels (see [morph exclusion](#morph-exclusion)). play-bound
+   exclusions are not listed here; they follow from `play.*` maps.
+6. loading a setup: if needed, replace the current module with the setup’s
+   module, load each referenced preset into its slot, restore play bindings
+   and manual excludes, derive play-bound excludes, set the morph point,
+   and apply the effective parameters (skipping excluded params).
 
 future setup keys (follow-on; reserved names):
 
@@ -239,13 +332,14 @@ notes:
 
 - no slew is applied by between itself beyond writing the blended values;
   modules may still have their own integrator/slew parameters, which are
-  themselves morphable like any other fix/integrator param.
+  themselves morphable like any other fix/integrator param unless
+  [morph-excluded](#morph-exclusion).
 - when **sending** the effective set to the module (`slots_apply`), between
   uses a **type-priority schedule** built at module load: integrator /
   integrator-short params are written first, then all other types in
-  descriptor index order. this affects SPI send order only — UI parameter
-  lists, capture into slot banks, and preset storage stay in descriptor
-  index order.
+  descriptor index order, **skipping morph-excluded parameters**. this
+  affects SPI send order only — UI parameter lists, capture into slot
+  banks, and preset storage stay in descriptor index order.
 - extremely nonlinear perceptual mappings (amp, note) will not feel
   perceptually linear in the middle of the square; that is accepted for v1.
   a later option could morph in “display/control” space instead.
@@ -385,8 +479,10 @@ no parameter list is shown. controls on an empty slot:
 when a preset is loaded, controls are:
 
 - enc0: select parameter
-- enc2: fine adjust selected parameter (slot value)
-- enc3: coarse / accelerated adjust
+- enc2: fine adjust selected parameter (slot value) — **no-op** when the
+  parameter is morph-excluded
+- enc3: coarse / accelerated adjust — **no-op** when morph-excluded
+  (unless alt is held; see below)
 - sw0 **save**: write current slot values to the assigned preset file
   (create file if the slot was filled from new/unsaved capture). if the
   slot has no file yet, behave like new then save.
@@ -403,24 +499,47 @@ when a preset is loaded, controls are:
   untouched if the name differs).
 - alt+sw1 **capture eff**: overwrite this slot’s in-memory values with the
   current effective blend (useful for “bake” a morph position into a
-  corner).
+  corner). **excluded parameters are still captured** — their underlying
+  slot/effective values are written into the bank even though the UI shows
+  `-` and encoders cannot edit them.
 - alt+sw2 **focus**: snap the morph point to this slot’s corner so live
   edits match the values on this page exactly.
+- **alt+enc3**: toggle **manual** morph exclusion for the selected
+  parameter while alt is held:
+  - turn **left** → enable exclusion (exclude from morph)
+  - turn **right** → disable exclusion (include in morph again)
+  - if the parameter is **play-bound** excluded, the forced exclude stays
+    on: encoder motion does not clear it, and the diagnostic status /
+    log shows that the parameter is bound to a play control (e.g.
+    `bound to play`).
+
+#### morph-excluded parameter display
+
+on the slot parameter list, an excluded parameter (manual or play-bound):
+
+- is drawn **greyed out** (label and value)
+- shows value **`-`** instead of the scaler string
+- does not respond to enc2 / enc3 value edits (see alt+enc3 above)
+
+the underlying slot bank value remains intact for save / reset / capture.
 
 generated preset names use the form `pNNN` and skip any stem already
 present on disk for the module or assigned to a slot in memory.
 **live update:** every encoder change to a slot parameter updates that
 slot’s in-memory values, recomputes the effective set for the current
-morph point, and sends parameters to the module immediately.
+morph point, and sends parameters to the module immediately (excluded
+params are omitted from morph recompute; see
+[morph exclusion](#morph-exclusion)).
 
 unsaved edits: show a light-grey `*` after the preset-name box in the
 header (1px black spacer). the upper-right header chrome always shows the
-current morph position (mid-grey outline, white 3×3 cursor); when MIDI is
+current morph position (mid-grey outline, white 2×2 cursor); when MIDI is
 connected, a dark-grey `m` sits immediately left of that indicator and
 flashes light grey on received traffic (see [midi](#midi)). on slot pages
 with a loaded preset, the status row above the diagnostic log shows dark-grey
 `nrpn ` / `value ` labels with light-grey `msb:lsb` readouts for the selected
-parameter’s NRPN address and absolute 14-bit data-entry value. leaving the
+parameter’s NRPN address and absolute 14-bit data-entry value (for excluded
+params, `value` may show `-` to match the list). leaving the
 page keeps in-memory dirty state until save or reset; setup save should warn
 if dirty.
 
@@ -472,6 +591,10 @@ setup `play.sw*` value). that value is what play mode applies on press.
 if no module is loaded, param-target bindings cannot be chosen (morph and
 snap targets remain available). changing module invalidates bindings that
 refer to missing param labels (clear or leave unbound until fixed).
+
+binding or unbinding a **param** play target updates the derived
+[morph exclusion](#morph-exclusion) set immediately (forced exclude while
+bound).
 
 ### info page
 
@@ -681,9 +804,10 @@ keep chrome minimal; play is for performing, not editing.
 
 encoder, switch, footswitch, and MIDI CC maps (target kind, slot if any,
 param label if any, set/momentary value if any) are stored **only** in the
-setup file. loading a setup replaces the in-memory play bindings; saving a
-setup writes the current bindings from the play page. see reserved setup
-keys (`play.enc*`, `play.sw*`, `play.fs*`, `play.cc*`).
+setup file, along with manual `morph.exclude` entries. loading a setup
+replaces the in-memory play bindings and exclude set; saving a setup writes
+the current bindings and manual excludes. see reserved setup keys
+(`play.enc*`, `play.sw*`, `play.fs*`, `play.cc*`, `morph.exclude`).
 
 ---
 
@@ -694,12 +818,12 @@ when creating or saving a preset:
 - **default (new / save from slot):** store **all** module parameters at
   their current slot (or effective, depending on action) values.
 - file always contains a complete parameter list for robust reload.
-- there is no bees-style include/exclude bit in v1; presets are complete
-  module captures.
+- morph exclusion does **not** omit parameters from preset files. capture
+  and save still write the underlying bank values for excluded params
+  (slot UI may show `-`, but the raw value is what is stored).
 
-this keeps the text format and mental model small. selective morphing
-(ignore some params) can be a follow-on via per-param lock or a second
-file section.
+selective morphing is setup-owned via [morph exclusion](#morph-exclusion),
+not a per-preset include bit.
 
 ---
 
@@ -1030,8 +1154,9 @@ unmapped.
 
 ### selective parameter morph
 
-- per-parameter lock to a single slot or to “fixed effective”.
-- allows static params while others morph.
+specified under [morph exclusion](#morph-exclusion): setup-owned manual
+excludes plus automatic exclude of play-bound parameters; slot-page UI
+greys excluded rows and uses alt+enc3 to toggle manual exclusion.
 
 ### morph curves
 
