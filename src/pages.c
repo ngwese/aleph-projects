@@ -1,7 +1,6 @@
 #include "pages.h"
 
 #include "app.h"
-#include "encoders.h"
 #include "events.h"
 
 #include "render.h"
@@ -58,10 +57,7 @@ void pages_set(PageId id) {
   if(id != ePagePlay) {
     last_edit_page = (s8)id;
   }
-  set_enc_thresh(0, 4);
-  set_enc_thresh(1, 32);
-  set_enc_thresh(2, 0);
-  set_enc_thresh(3, 4);
+  g_alt_mode = 0;
   g_pages[id].select_fn();
   /* footswitches only mapped in live play; clear when leaving */
   if(id != ePagePlay) {
