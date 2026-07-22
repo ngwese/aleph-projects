@@ -19,7 +19,9 @@ static u8 role_thresh(InputRole role) {
   case eInputRoleParamFine:
     return 0;
   case eInputRoleParamCoarse:
-    return 4;
+    /* same thresh as fine so posted tick counts reach the handler; step
+     * size is applied in the page (0x100 * data), matching live play. */
+    return 0;
   case eInputRoleUnmapped:
   default:
     return 4;
