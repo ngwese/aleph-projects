@@ -244,8 +244,18 @@ void slots_apply(Slots *s) {
   morph2d_weights(s->x, s->y, s->occupied, w);
   for(i = 0; i < s->apply_order_len; ++i) {
     u16 idx = s->apply_order[i];
+    if(idx < BETWEEN_PARAMS_MAX && s->exclude[idx]) {
+      continue;
+    }
     s->set_param(idx, effective_at(s, idx, w), s->set_param_ctx);
   }
+}
+
+void slots_send_param(Slots *s, u16 index, ParamValue value) {
+  if(s == NULL || s->set_param == NULL || index >= s->num_params) {
+    return;
+  }
+  s->set_param(index, value, s->set_param_ctx);
 }
 
 void slots_capture_effective(Slots *s, MorphSlot slot) {

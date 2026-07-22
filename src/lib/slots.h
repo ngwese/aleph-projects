@@ -30,6 +30,8 @@ typedef struct {
   /* send order for slots_apply only (descriptor index order elsewhere) */
   u16 apply_order[BETWEEN_PARAMS_MAX];
   u16 apply_order_len;
+  /* 1 = skip in slots_apply (morph exclusion); owned/filled by caller */
+  u8 exclude[BETWEEN_PARAMS_MAX];
   slots_set_param_fn set_param;
   void *set_param_ctx;
 } Slots;
@@ -54,8 +56,11 @@ ParamValue slots_get_value(const Slots *s, MorphSlot slot, u16 index);
 void slots_set_morph(Slots *s, u16 x, u16 y);
 void slots_snap_to(Slots *s, MorphSlot slot);
 
-/* recompute and send every parameter for current morph point. */
+/* recompute and send every non-excluded parameter for current morph point. */
 void slots_apply(Slots *s);
+
+/* send one parameter value to the module (play/MIDI path for excluded params). */
+void slots_send_param(Slots *s, u16 index, ParamValue value);
 
 /* bake current effective values into a slot bank. */
 void slots_capture_effective(Slots *s, MorphSlot slot);

@@ -153,11 +153,44 @@ void test_apply_order_integrators_first(void) {
   TEST_ASSERT_EQUAL_INT32(4, applied[3]);
 }
 
+void test_exclude_skips_apply(void) {
+  ParamDesc desc[NPARAMS];
+  ParamValue bank_a[NPARAMS];
+  ParamValue bank_b[NPARAMS];
+  ParamValue bank_c[NPARAMS];
+  ParamValue bank_d[NPARAMS];
+  ParamValue *banks[MORPH2D_SLOTS] = {bank_a, bank_b, bank_c, bank_d};
+  Slots s;
+  u16 i;
+
+  memset(desc, 0, sizeof(desc));
+  for(i = 0; i < NPARAMS; ++i) {
+    desc[i].type = eParamTypeFix;
+    bank_a[i] = 10;
+  }
+  slots_init(&s, NPARAMS, desc, banks, mock_set, NULL);
+  slots_set_num_params(&s, NPARAMS);
+  slots_assign_stem(&s, eMorphSlotA, "a");
+  s.exclude[1] = 1;
+  s.exclude[2] = 1;
+  slots_snap_to(&s, eMorphSlotA);
+  slots_apply(&s);
+  TEST_ASSERT_EQUAL_UINT16(2, apply_count);
+  TEST_ASSERT_EQUAL_INT32(10, applied[0]);
+  TEST_ASSERT_EQUAL_INT32(0, applied[1]);
+  TEST_ASSERT_EQUAL_INT32(0, applied[2]);
+  TEST_ASSERT_EQUAL_INT32(10, applied[3]);
+
+  slots_send_param(&s, 1, 99);
+  TEST_ASSERT_EQUAL_INT32(99, applied[1]);
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_morph_apply_corners);
   RUN_TEST(test_live_edit_and_discrete);
   RUN_TEST(test_empty_slots_no_apply);
   RUN_TEST(test_apply_order_integrators_first);
+  RUN_TEST(test_exclude_skips_apply);
   return UNITY_END();
 }
