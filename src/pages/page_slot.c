@@ -241,7 +241,7 @@ static void bump_param_scaled(io_t delta) {
   }
 }
 
-static void bump_param(io_t fine_or_coarse, u8 coarse) {
+static void bump_param(io_t delta, u8 coarse) {
   if(!g_slots.occupied[cur_slot] || g_slots.num_params == 0) {
     return;
   }
@@ -249,10 +249,12 @@ static void bump_param(io_t fine_or_coarse, u8 coarse) {
     return;
   }
   if(param_scaler_usable((u16)param_sel)) {
-    bump_param_scaled(fine_or_coarse);
+    bump_param_scaled(delta);
+  } else if(coarse) {
+    /* play uses ±0x100 per accumulated tick in the raw domain too */
+    bump_param_raw((s32)delta);
   } else {
-    bump_param_raw(coarse ? (fine_or_coarse > 0 ? 64 : -64)
-			  : (fine_or_coarse > 0 ? 1 : -1));
+    bump_param_raw(delta > 0 ? 1 : -1);
   }
   state_apply();
   redraw_slot(cur_slot);
@@ -264,6 +266,8 @@ static void handle_enc2(s32 data) {
 }
 
 static void handle_enc3(s32 data) {
+  s32 delta32;
+
   if(g_alt_mode) {
     /* left = enable exclusion; right = disable exclusion */
     u8 want_excl = (data < 0) ? 1 : 0;
@@ -284,8 +288,17 @@ static void handle_enc3(s32 data) {
     render_update();
     return;
   }
-  /* Bees-like coarse step in io_t domain */
-  bump_param(data > 0 ? (io_t)0x100 : (io_t)-0x100, 1);
+  /* same coarse accel as play: ±0x100 per accumulated encoder tick */
+  if(data == 0) {
+    return;
+  }
+  delta32 = (s32)0x100 * data;
+  if(delta32 > 32767) {
+    delta32 = 32767;
+  } else if(delta32 < -32768) {
+    delta32 = -32768;
+  }
+  bump_param((io_t)delta32, 1);
 }
 
 static void on_save_as_ok(const char *stem, void *ctx) {

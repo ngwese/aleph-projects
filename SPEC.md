@@ -517,7 +517,10 @@ when a preset is loaded, controls are:
 - enc0: select parameter
 - enc2: fine adjust selected parameter (slot value) — **no-op** when the
   parameter is morph-excluded
-- enc3: coarse / accelerated adjust — **no-op** when morph-excluded
+- enc3: coarse / accelerated adjust — **no-op** when morph-excluded.
+  uses the same step as play param encoders (`±0x100` in scaler io per
+  accumulated encoder tick) so fast turns keep pace; fine (enc2) is
+  unchanged (one small step per event, sign only).
   (unless alt is held; see below)
 - sw0 **save**: write current slot values to the assigned preset file
   (create file if the slot was filled from new/unsaved capture). if the
