@@ -2,8 +2,6 @@
 
 #include <string.h>
 
-#include "app.h"
-#include "events.h"
 #include "fix.h"
 
 #include "between_limits.h"
@@ -406,7 +404,7 @@ static void handle_sw2(s32 data) {
 }
 
 static void handle_sw3(s32 data) {
-  g_alt_mode = data > 0 ? 1 : 0;
+  (void)data;
   redraw_slot(cur_slot);
   render_update();
 }
@@ -418,13 +416,15 @@ static void select_slot(MorphSlot slot) {
     {eInputRoleParamFine, handle_enc2},
     {eInputRoleParamCoarse, handle_enc3},
   };
+  static const InputSwBinding sw[4] = {
+    {eInputSwRoleAction, handle_sw0},
+    {eInputSwRoleAction, handle_sw1},
+    {eInputSwRoleAction, handle_sw2},
+    {eInputSwRoleAlt, handle_sw3},
+  };
   cur_slot = slot;
   clamp_param_sel();
-  input_roles_bind(enc);
-  app_event_handlers[kEventSwitch0] = handle_sw0;
-  app_event_handlers[kEventSwitch1] = handle_sw1;
-  app_event_handlers[kEventSwitch2] = handle_sw2;
-  app_event_handlers[kEventSwitch3] = handle_sw3;
+  input_roles_bind(enc, sw);
 }
 
 void select_slot_a(void) { select_slot(eMorphSlotA); }

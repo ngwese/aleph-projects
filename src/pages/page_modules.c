@@ -2,9 +2,6 @@
 
 #include <string.h>
 
-#include "app.h"
-#include "events.h"
-
 #include "between_limits.h"
 #include "dirlist.h"
 #include "input_roles.h"
@@ -82,8 +79,6 @@ static void handle_sw0(s32 data) {
   render_update();
 }
 
-static void handle_sw_noop(s32 data) { (void)data; }
-
 static void handle_sw2(s32 data) {
   if(data <= 0 || !g_alt_mode) {
     return;
@@ -95,7 +90,7 @@ static void handle_sw2(s32 data) {
 }
 
 static void handle_sw3(s32 data) {
-  g_alt_mode = data > 0 ? 1 : 0;
+  (void)data;
   redraw();
   render_update();
 }
@@ -107,17 +102,19 @@ void select_modules(void) {
     {eInputRoleUnmapped, NULL},
     {eInputRoleUnmapped, NULL},
   };
+  static const InputSwBinding sw[4] = {
+    {eInputSwRoleAction, handle_sw0},
+    {eInputSwRoleUnmapped, NULL},
+    {eInputSwRoleAction, handle_sw2},
+    {eInputSwRoleAlt, handle_sw3},
+  };
   if(!scanned) {
     do_scan();
   }
   if(sel >= (s16)list.count) {
     sel = 0;
   }
-  input_roles_bind(enc);
-  app_event_handlers[kEventSwitch0] = handle_sw0;
-  app_event_handlers[kEventSwitch1] = handle_sw_noop;
-  app_event_handlers[kEventSwitch2] = handle_sw2;
-  app_event_handlers[kEventSwitch3] = handle_sw3;
+  input_roles_bind(enc, sw);
 }
 
 void page_modules_init(void) {

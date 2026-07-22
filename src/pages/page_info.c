@@ -1,7 +1,5 @@
 #include "pages.h"
 
-#include "app.h"
-#include "events.h"
 #include "font.h"
 #include "input_roles.h"
 #include "render.h"
@@ -19,8 +17,6 @@
 #ifndef GIT_HASH
 #define GIT_HASH ""
 #endif
-
-static void handle_noop(s32 data) { (void)data; }
 
 static void format_u32(char *buf, u8 buf_len, u32 val) {
   char reverse[10];
@@ -150,11 +146,13 @@ void select_info(void) {
     {eInputRoleUnmapped, NULL},
     {eInputRoleUnmapped, NULL},
   };
-  input_roles_bind(enc);
-  app_event_handlers[kEventSwitch0] = handle_noop;
-  app_event_handlers[kEventSwitch1] = handle_noop;
-  app_event_handlers[kEventSwitch2] = handle_noop;
-  app_event_handlers[kEventSwitch3] = handle_noop;
+  static const InputSwBinding sw[4] = {
+    {eInputSwRoleUnmapped, NULL},
+    {eInputSwRoleUnmapped, NULL},
+    {eInputSwRoleUnmapped, NULL},
+    {eInputSwRoleUnmapped, NULL},
+  };
+  input_roles_bind(enc, sw);
 }
 
 void page_info_init(void) {}
