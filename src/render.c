@@ -263,10 +263,10 @@ void render_charset_row(u8 row, const char *chars, u8 sel) {
     dst = regMain.data + x + (u32)128u * (u32)y0;
     if(i == sel) {
       (void)font_glyph_fixed(ch, dst, 128, 0x0, 0xf);
-      x = (u8)(x + FONT_CHARW + 1);
     } else {
-      x = (u8)(x + font_glyph(ch, dst, 128, 0xf, 0) + 1);
+      (void)font_glyph_fixed(ch, dst, 128, 0xf, 0);
     }
+    x = (u8)(x + FONT_CHARW + 1);
     ++i;
   }
   regMain.dirty = 1;

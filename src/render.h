@@ -39,7 +39,8 @@ void render_status_line(u8 row, const char *name);
 
 /* name entry: draw str on content row with inverse glyph at cursor. */
 void render_edit_string(u8 row, const char *str, u8 cursor);
-/* charset row: draw chars with inverse glyph at sel (0xff = none). */
+/* charset row: draw chars in fixed-width cells; inverse glyph at sel
+ * (0xff = none). */
 void render_charset_row(u8 row, const char *chars, u8 sel);
 
 /* edit-mode page header: mid-grey bar, title box(es), optional MIDI m,

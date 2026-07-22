@@ -9,15 +9,17 @@
 #include "pages.h"
 #include "render.h"
 
-/* a–o | p–z | 0–9 | -_ */
-static const char *const charset_rows[4] = {
+/* A–O | P–Z | a–o | p–z | 0–9-_ */
+static const char *const charset_rows[5] = {
+    "ABCDEFGHIJKLMNO",
+    "PQRSTUVWXYZ",
     "abcdefghijklmno",
     "pqrstuvwxyz",
-    "0123456789",
-    "-_",
+    "0123456789-_",
 };
 
-#define CHARSET_N 38 /* 26 + 10 + 2 */
+#define CHARSET_N 64 /* 26 + 26 + 10 + 2 */
+#define CHARSET_ROWS 5
 
 static char stem_buf[BETWEEN_NAME_LEN];
 static u8 cursor;
@@ -46,7 +48,7 @@ static char palette_char(u8 idx) {
   if(idx >= CHARSET_N) {
     return 'a';
   }
-  for(r = 0; r < 4; ++r) {
+  for(r = 0; r < CHARSET_ROWS; ++r) {
     len = (u8)strlen(charset_rows[r]);
     if(idx < off + len) {
       return charset_rows[r][idx - off];
@@ -61,7 +63,7 @@ static void row_sel_for_palette(u8 idx, u8 *out_row, u8 *out_sel) {
   u8 off = 0;
   u8 len;
 
-  for(r = 0; r < 4; ++r) {
+  for(r = 0; r < CHARSET_ROWS; ++r) {
     len = (u8)strlen(charset_rows[r]);
     if(idx < off + len) {
       *out_row = r;
@@ -87,7 +89,7 @@ static void redraw(void) {
 
   if(select_held) {
     row_sel_for_palette(palette_idx, &prow, &psel);
-    for(r = 0; r < 4; ++r) {
+    for(r = 0; r < CHARSET_ROWS; ++r) {
       render_charset_row((u8)(1 + r), charset_rows[r],
 			 (r == prow) ? psel : (u8)0xff);
     }
@@ -230,6 +232,18 @@ static void handle_sw3(s32 data) {
 }
 
 u8 name_edit_active(void) { return active; }
+
+/* abandon modal without calling done_fn; does not restore handlers — caller
+ * is about to install a new page bind. */
+void name_edit_abort(void) {
+  if(!active) {
+    return;
+  }
+  active = 0;
+  select_held = 0;
+  done_fn = NULL;
+  done_ctx = NULL;
+}
 
 void name_edit_open(NameEditKind kind, const char *initial,
 		    name_edit_done_fn on_ok, void *ctx) {
