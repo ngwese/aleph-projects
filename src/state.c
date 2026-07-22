@@ -14,6 +14,8 @@
 #include "setup_file.h"
 
 static ParamValue banks[MORPH2D_SLOTS][BETWEEN_PARAMS_MAX];
+static u8 g_exclude_manual[BETWEEN_PARAMS_MAX];
+static u8 g_exclude_bound[BETWEEN_PARAMS_MAX];
 Slots g_slots;
 PlayMaps g_play_maps;
 char g_setup_name[BETWEEN_NAME_LEN];
@@ -23,11 +25,142 @@ static void set_param_cb(u16 index, ParamValue value, void *ctx) {
   bfin_set_param((u8)index, value);
 }
 
+void state_exclude_rebuild(void) {
+  u16 i;
+  u16 n = g_slots.num_params;
+  if(n > BETWEEN_PARAMS_MAX) {
+    n = BETWEEN_PARAMS_MAX;
+  }
+  play_maps_fill_bound(&g_play_maps, g_module.desc, n, g_exclude_bound);
+  for(i = 0; i < BETWEEN_PARAMS_MAX; ++i) {
+    u8 man = (i < n) ? g_exclude_manual[i] : 0;
+    u8 bound = (i < n) ? g_exclude_bound[i] : 0;
+    g_slots.exclude[i] = (u8)(man | bound);
+  }
+}
+
+void state_exclude_clear(void) {
+  memset(g_exclude_manual, 0, sizeof(g_exclude_manual));
+  memset(g_exclude_bound, 0, sizeof(g_exclude_bound));
+  memset(g_slots.exclude, 0, sizeof(g_slots.exclude));
+}
+
+u8 state_param_excluded(u16 idx) {
+  if(idx >= g_slots.num_params || idx >= BETWEEN_PARAMS_MAX) {
+    return 0;
+  }
+  return g_slots.exclude[idx];
+}
+
+u8 state_param_play_bound(u16 idx) {
+  if(idx >= g_slots.num_params || idx >= BETWEEN_PARAMS_MAX) {
+    return 0;
+  }
+  return g_exclude_bound[idx];
+}
+
+u8 state_exclude_manual_set(u16 idx, u8 on) {
+  if(idx >= g_slots.num_params || idx >= BETWEEN_PARAMS_MAX) {
+    return 0;
+  }
+  if(!on && g_exclude_bound[idx]) {
+    /* play-bound force stays; cannot clear */
+    return 0;
+  }
+  g_exclude_manual[idx] = on ? 1 : 0;
+  g_slots.exclude[idx] = (u8)(g_exclude_manual[idx] | g_exclude_bound[idx]);
+  return 1;
+}
+
+void state_exclude_manual_from_list(const char *list) {
+  char tmp[SETUP_IO_LINE_MAX];
+  char *p;
+  char *tok;
+  u16 i;
+
+  memset(g_exclude_manual, 0, sizeof(g_exclude_manual));
+  if(list == NULL || list[0] == '\0') {
+    state_exclude_rebuild();
+    return;
+  }
+  strncpy(tmp, list, sizeof(tmp) - 1);
+  tmp[sizeof(tmp) - 1] = '\0';
+  p = tmp;
+  while(p != NULL && *p != '\0') {
+    while(*p == ' ' || *p == '\t') {
+      p++;
+    }
+    if(*p == '\0') {
+      break;
+    }
+    tok = p;
+    while(*p != '\0' && *p != ',') {
+      p++;
+    }
+    if(*p == ',') {
+      *p = '\0';
+      p++;
+    } else {
+      p = NULL;
+    }
+    /* trim trailing space on tok */
+    {
+      char *e = tok + strlen(tok);
+      while(e > tok && (e[-1] == ' ' || e[-1] == '\t')) {
+	*--e = '\0';
+      }
+    }
+    for(i = 0; i < g_module.num_params && i < BETWEEN_PARAMS_MAX; ++i) {
+      if(strncmp(g_module.desc[i].label, tok, PARAM_LABEL_LEN) == 0) {
+	g_exclude_manual[i] = 1;
+	break;
+      }
+    }
+  }
+  state_exclude_rebuild();
+}
+
+void state_exclude_manual_to_list(char *buf, u32 buf_size) {
+  u16 i;
+  u8 first = 1;
+  u32 len = 0;
+  if(buf == NULL || buf_size == 0) {
+    return;
+  }
+  buf[0] = '\0';
+  for(i = 0; i < g_module.num_params && i < BETWEEN_PARAMS_MAX; ++i) {
+    const char *lab;
+    u32 lab_len;
+    if(!g_exclude_manual[i]) {
+      continue;
+    }
+    lab = g_module.desc[i].label;
+    lab_len = (u32)strlen(lab);
+    if(len + lab_len + (first ? 0u : 2u) + 1u > buf_size) {
+      break;
+    }
+    if(!first) {
+      buf[len++] = ',';
+      buf[len++] = ' ';
+      buf[len] = '\0';
+    }
+    memcpy(buf + len, lab, lab_len);
+    len += lab_len;
+    buf[len] = '\0';
+    first = 0;
+  }
+}
+
+void state_send_param(u16 idx, ParamValue value) {
+  slots_send_param(&g_slots, idx, value);
+}
+
 void state_init(void) {
   ParamValue *ptrs[MORPH2D_SLOTS] = {banks[0], banks[1], banks[2], banks[3]};
   slots_init(&g_slots, BETWEEN_PARAMS_MAX, g_module.desc, ptrs, set_param_cb,
 	     NULL);
   play_maps_set_defaults(&g_play_maps);
+  state_exclude_clear();
   g_setup_name[0] = '\0';
 }
 
@@ -44,8 +177,10 @@ u8 state_load_module(const char *name, u8 keep_slots) {
   if(!keep_slots) {
     slots_clear_all(&g_slots);
     slots_set_morph(&g_slots, 0, 0);
+    state_exclude_clear();
   }
   play_maps_clear_invalid(&g_play_maps, g_module.desc, g_module.num_params);
+  state_exclude_rebuild();
   return 1;
 }
 
@@ -249,6 +384,7 @@ u8 state_load_setup(const char *stem) {
   slots_set_morph(&g_slots, data.x, data.y);
   g_play_maps = data.maps;
   play_maps_clear_invalid(&g_play_maps, g_module.desc, g_module.num_params);
+  state_exclude_manual_from_list(data.morph_exclude);
   state_apply();
   strncpy(g_setup_name, stem, BETWEEN_NAME_LEN - 1);
   g_setup_name[BETWEEN_NAME_LEN - 1] = '\0';
@@ -294,6 +430,7 @@ u8 state_save_setup(const char *stem) {
   data.module[MODULE_NAME_LEN - 1] = '\0';
   data.version = g_module.version;
   data.maps = g_play_maps;
+  state_exclude_manual_to_list(data.morph_exclude, sizeof(data.morph_exclude));
   log_writing_file(stem);
   if(setup_file_save(stem, &data) != eSetupIoOk) {
     return 0;

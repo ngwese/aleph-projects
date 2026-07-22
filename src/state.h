@@ -39,4 +39,19 @@ u8 state_read_last_setup(char *stem, u32 stem_size);
 
 void state_apply(void);
 
+/* morph exclusion (setup-owned; see SPEC). */
+void state_exclude_rebuild(void);
+void state_exclude_clear(void);
+u8 state_param_excluded(u16 idx);
+u8 state_param_play_bound(u16 idx);
+/* set/clear manual exclude; returns 0 if play-bound blocked clear. */
+u8 state_exclude_manual_set(u16 idx, u8 on);
+/* parse "a, b, c" into manual excludes (unknown labels ignored). */
+void state_exclude_manual_from_list(const char *list);
+/* format manual excludes into buf as comma-separated labels. */
+void state_exclude_manual_to_list(char *buf, u32 buf_size);
+
+/* send one param to the DSP (for play/MIDI writes of excluded params). */
+void state_send_param(u16 idx, ParamValue value);
+
 #endif
