@@ -351,13 +351,28 @@ notes:
 
 ## modes
 
-hardware **mode** switch (same as bees / `switch4`):
+hardware **mode** switch (same as bees / `switch4`). mode changes take
+effect on **release**, not press:
 
-- toggle between play and edit.
-- mode led on = play.
-- leaving play restores the last edit page.
+| gesture | hold time | from | to |
+|---------|-----------|------|----|
+| short release | &lt; 1 s | edit | play |
+| short release | &lt; 1 s | play | edit (last edit-ring page) |
+| short release | &lt; 1 s | inspect | mode active when inspect was entered (edit → last edit page; play → live play) |
+| long release | ≥ 1 s | edit or play | inspect |
+| long release | ≥ 1 s | inspect | stay on inspect (re-select) |
+
+- mode led **on** = play; **off** = edit or inspect (dedicated inspect cue TBD).
 - boot default: play if a last-used setup exists; otherwise edit on the
   setups page.
+
+### inspect mode
+
+dedicated page outside the edit ring. body shows **eight vertical peak
+bars** side-by-side: logical inputs 0..3, then outputs 0..3 (gap between
+groups), filled height from the same SPI meter banks as the header VU
+(~10 Hz). further inspect content is TBD. encoders and softkeys are
+unmapped.
 
 ---
 
@@ -728,7 +743,7 @@ notes:
 | sw3 | snap to slot d |
 | fs0 | unmapped |
 | fs1 | unmapped |
-| mode | return to edit |
+| mode | short release: edit; long release: inspect |
 
 ### default CC map
 

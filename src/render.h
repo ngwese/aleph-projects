@@ -78,4 +78,7 @@ void render_footer_slot_tri(u8 cell, MorphSlot slot);
 /* play morph square: light-gray frame + 3×3 white cursor in content area. */
 void render_play_morph(u16 x, u16 y);
 
+/* inspect mode: eight vertical IN/OUT peak bars side-by-side in content. */
+void render_inspect_vu_bars(void);
+
 #endif

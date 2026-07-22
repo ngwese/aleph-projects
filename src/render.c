@@ -359,7 +359,7 @@ static void head_draw_morph_indicator(void) {
   }
 }
 
-static u8 head_vu_grey(fract32 peak) {
+static u8 vu_peak_grey(fract32 peak) {
   u8 i;
   if(peak < 0) {
     peak = 0;
@@ -371,6 +371,8 @@ static u8 head_vu_grey(fract32 peak) {
   }
   return 0;
 }
+
+static u8 head_vu_grey(fract32 peak) { return vu_peak_grey(peak); }
 
 static void head_fill_box2(u8 x, u8 y, u8 color) {
   head_put_px(x, y, color);
@@ -656,6 +658,65 @@ void render_play_morph(u16 mx, u16 my) {
     }
   }
   regMain.dirty = 1;
+}
+
+void render_inspect_vu_bars(void) {
+  const bfin_meter_bank_t *in = meters_in();
+  const bfin_meter_bank_t *out = meters_out();
+  const u8 bar_h = 28;
+  const u8 bar_w = 8;
+  const u8 bar_gap = 3;
+  const u8 group_gap = 10;
+  const u8 y0 = 2;
+  const u8 label_y = (u8)(y0 + bar_h + 2);
+  const u8 group_w =
+    (u8)(BFIN_METER_CH * bar_w + (BFIN_METER_CH - 1) * bar_gap);
+  const u8 total_w = (u8)(group_w + group_gap + group_w);
+  const u8 x0 = (u8)((128 - total_w) / 2);
+  u8 i;
+  u8 x;
+  u8 fill_h;
+  u8 grey;
+  u32 peak_u;
+  char dig[2];
+
+  dig[1] = '\0';
+  for(i = 0; i < BFIN_METER_CH; ++i) {
+    x = (u8)(x0 + i * (bar_w + bar_gap));
+    peak_u = (u32)(in->ch[i] < 0 ? 0 : in->ch[i]);
+    if(peak_u > 0x7fffffffu) {
+      peak_u = 0x7fffffffu;
+    }
+    fill_h = (u8)((peak_u * (u32)bar_h) / 0x7fffffffu);
+    grey = vu_peak_grey(in->ch[i]);
+    render_fill_rect(x, y0, bar_w, bar_h, HEAD_GREY_DARK);
+    if(fill_h > 0) {
+      render_fill_rect(x, (u8)(y0 + bar_h - fill_h), bar_w, fill_h, grey);
+    }
+    dig[0] = (char)('0' + i);
+    render_string_xy((u8)(x + 1), label_y, dig, HEAD_GREY);
+  }
+  render_string_xy((u8)(x0 + (group_w / 2) - 4), (u8)(label_y + 8), "in",
+		   HEAD_GREY_DARK);
+
+  for(i = 0; i < BFIN_METER_CH; ++i) {
+    x = (u8)(x0 + group_w + group_gap + i * (bar_w + bar_gap));
+    peak_u = (u32)(out->ch[i] < 0 ? 0 : out->ch[i]);
+    if(peak_u > 0x7fffffffu) {
+      peak_u = 0x7fffffffu;
+    }
+    fill_h = (u8)((peak_u * (u32)bar_h) / 0x7fffffffu);
+    grey = vu_peak_grey(out->ch[i]);
+    render_fill_rect(x, y0, bar_w, bar_h, HEAD_GREY_DARK);
+    if(fill_h > 0) {
+      render_fill_rect(x, (u8)(y0 + bar_h - fill_h), bar_w, fill_h, grey);
+    }
+    dig[0] = (char)('0' + i);
+    render_string_xy((u8)(x + 1), label_y, dig, HEAD_GREY);
+  }
+  render_string_xy(
+    (u8)(x0 + group_w + group_gap + (group_w / 2) - 6), (u8)(label_y + 8),
+    "out", HEAD_GREY_DARK);
 }
 
 void render_log(const char *str) {

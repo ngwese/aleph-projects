@@ -1,20 +1,41 @@
 #include "pages.h"
 
 #include "app.h"
+#include "conf_board.h"
 #include "events.h"
+#include "gpio.h"
 
 #include "name_edit.h"
 #include "render.h"
 
 Page g_pages[eNumPages];
 s8 g_page_idx = ePageSetups;
-u8 g_play_mode = 0;
+AppMode g_app_mode = eAppModeEdit;
 u8 g_alt_mode = 0;
 u8 g_new_setup_flow = 0;
 
 static s8 last_edit_page = ePageSetups;
+static AppMode pre_inspect_mode = eAppModeEdit;
 
 static void handle_sw_noop(s32 data) { (void)data; }
+
+static u8 page_is_live_mode(PageId id) {
+  return (u8)(id == ePagePlay || id == ePageInspect);
+}
+
+static void app_mode_apply_led(void) {
+  if(g_app_mode == eAppModePlay) {
+    gpio_set_gpio_pin(LED_MODE_PIN);
+  } else {
+    gpio_clr_gpio_pin(LED_MODE_PIN);
+  }
+}
+
+u8 app_mode_is_play(void) { return (u8)(g_app_mode == eAppModePlay); }
+u8 app_mode_is_edit(void) { return (u8)(g_app_mode == eAppModeEdit); }
+u8 app_mode_is_inspect(void) {
+  return (u8)(g_app_mode == eAppModeInspect);
+}
 
 void pages_init(void) {
   page_setups_init();
@@ -24,6 +45,7 @@ void pages_init(void) {
   page_play_maps_init();
   page_info_init();
   page_play_init();
+  page_inspect_init();
 
   g_pages[ePageSetups] =
     (Page){.name = "setups", .select_fn = select_setups, .redraw_fn = redraw_setups};
@@ -45,8 +67,12 @@ void pages_init(void) {
     (Page){.name = "info", .select_fn = select_info, .redraw_fn = redraw_info};
   g_pages[ePagePlay] =
     (Page){.name = "play", .select_fn = select_play, .redraw_fn = redraw_play};
+  g_pages[ePageInspect] =
+    (Page){.name = "inspect", .select_fn = select_inspect,
+	   .redraw_fn = redraw_inspect};
 
   g_page_idx = ePageSetups;
+  g_app_mode = eAppModeEdit;
   pages_set(ePageSetups);
 }
 
@@ -59,7 +85,7 @@ void pages_set(PageId id) {
     name_edit_abort();
   }
   g_page_idx = (s8)id;
-  if(id != ePagePlay) {
+  if(!page_is_live_mode(id)) {
     last_edit_page = (s8)id;
   }
   g_alt_mode = 0;
@@ -75,11 +101,11 @@ void pages_set(PageId id) {
 
 void pages_next(s8 dir) {
   s8 next;
-  if(g_play_mode) {
+  if(!app_mode_is_edit()) {
     return;
   }
   next = g_page_idx + dir;
-  /* skip live play in edit ring; wrap at info */
+  /* skip live play / inspect in edit ring; wrap at info */
   if(next < ePageSetups) {
     next = ePageInfo;
   }
@@ -89,15 +115,45 @@ void pages_next(s8 dir) {
   pages_set((PageId)next);
 }
 
-u8 pages_toggle_play(void) {
-  if(g_play_mode) {
-    g_play_mode = 0;
-    pages_set((PageId)last_edit_page);
-    return 0;
-  }
-  g_play_mode = 1;
+void pages_enter_edit(void) {
+  g_app_mode = eAppModeEdit;
+  pages_set((PageId)last_edit_page);
+  app_mode_apply_led();
+}
+
+void pages_enter_play(void) {
+  g_app_mode = eAppModePlay;
   pages_set(ePagePlay);
-  return 1;
+  app_mode_apply_led();
+}
+
+void pages_enter_inspect(void) {
+  if(g_app_mode != eAppModeInspect) {
+    if(g_app_mode == eAppModePlay || g_app_mode == eAppModeEdit) {
+      pre_inspect_mode = g_app_mode;
+    } else {
+      pre_inspect_mode = eAppModeEdit;
+    }
+  }
+  g_app_mode = eAppModeInspect;
+  pages_set(ePageInspect);
+  app_mode_apply_led();
+}
+
+void pages_mode_short_release(void) {
+  if(g_app_mode == eAppModeInspect) {
+    if(pre_inspect_mode == eAppModePlay) {
+      pages_enter_play();
+    } else {
+      pages_enter_edit();
+    }
+    return;
+  }
+  if(g_app_mode == eAppModePlay) {
+    pages_enter_edit();
+  } else {
+    pages_enter_play();
+  }
 }
 
 void pages_redraw(void) {

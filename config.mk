@@ -40,6 +40,7 @@ CSRCS += \
 	$(APP_DIR)/src/pages/page_play_maps.c \
 	$(APP_DIR)/src/pages/page_play.c \
 	$(APP_DIR)/src/pages/page_info.c \
+	$(APP_DIR)/src/pages/page_inspect.c \
 	$(APP_DIR)/src/pages/name_edit.c \
 	$(APP_DIR)/src/midi_between.c \
 	$(APP_DIR)/src/module_load.c \

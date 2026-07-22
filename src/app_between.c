@@ -64,13 +64,10 @@ u8 app_launch(eLaunchState state) {
   have_setup = state_read_last_setup(last, sizeof(last));
   if(have_setup && state_load_setup(last)) {
     render_boot("setup loaded");
-    gpio_set_gpio_pin(LED_MODE_PIN);
-    g_play_mode = 0;
-    pages_toggle_play();
+    pages_enter_play();
   } else {
     render_boot("edit mode");
-    gpio_clr_gpio_pin(LED_MODE_PIN);
-    pages_set(ePageSetups);
+    pages_enter_edit();
   }
 
   (void)state;

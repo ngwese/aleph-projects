@@ -7,6 +7,7 @@
 #include "conf_board.h"
 #include "app.h"
 #include "events.h"
+#include "timers.h"
 
 #include "app_timers.h"
 #include "meters.h"
@@ -15,13 +16,28 @@
 #include "render.h"
 #include "xruns.h"
 
+#define MODE_LONG_MS 1000u
+
+static u8 mode_held;
+static u32 mode_press_ticks;
+
 static void handle_Switch4(s32 data) {
+  u32 held;
+
   if(data > 0) {
-    if(pages_toggle_play()) {
-      gpio_set_gpio_pin(LED_MODE_PIN);
-    } else {
-      gpio_clr_gpio_pin(LED_MODE_PIN);
-    }
+    mode_held = 1;
+    mode_press_ticks = time_now();
+    return;
+  }
+  if(!mode_held) {
+    return;
+  }
+  mode_held = 0;
+  held = time_now() - mode_press_ticks;
+  if(held >= MODE_LONG_MS) {
+    pages_enter_inspect();
+  } else {
+    pages_mode_short_release();
   }
 }
 

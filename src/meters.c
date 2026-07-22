@@ -1,5 +1,6 @@
 #include "meters.h"
 
+#include "pages.h"
 #include "render.h"
 
 static bfin_meter_bank_t g_meters_in = {{0, 0, 0, 0}};
@@ -42,8 +43,13 @@ u8 meters_poll(void) {
   g_meters_in = in;
   g_meters_out = out;
   if(changed) {
-    /* header VU only; avoid full page redraw */
-    render_header_midi_refresh();
+    if(app_mode_is_inspect()) {
+      pages_redraw();
+      render_update();
+    } else {
+      /* header VU only; avoid full page redraw */
+      render_header_midi_refresh();
+    }
   }
   return changed;
 }
