@@ -675,60 +675,71 @@ void render_play_morph(u16 mx, u16 my) {
 void render_inspect_vu_bars(void) {
   const bfin_meter_bank_t *in = meters_in();
   const bfin_meter_bank_t *out = meters_out();
-  const u8 bar_h = 28;
-  const u8 bar_w = 5;
-  const u8 bar_gap = 4;
-  const u8 group_gap = 12;
-  const u8 y0 = 2;
-  const u8 label_y = (u8)(y0 + bar_h + 2);
+  /* 3px-wide level bar; dark-grey 1px baseline above each digit. */
+  const u8 bar_w = 3;
+  const u8 baseline_w = 7;
+  const u8 col_pitch = 10;
+  const u8 group_gap = 14;
+  const u8 baseline_h = 1;
+  const u8 gap_h = 1;
+  const u8 label_y = 32;
+  const u8 baseline_y = (u8)(label_y - baseline_h);
+  /* 1px between meter base and the horizontal baseline line */
+  const u8 meter_base_y = (u8)(baseline_y - gap_h - 1);
+  const u8 bar_h_max = (u8)(meter_base_y - 1);
   const u8 group_w =
-    (u8)(BFIN_METER_CH * bar_w + (BFIN_METER_CH - 1) * bar_gap);
+    (u8)((BFIN_METER_CH - 1) * col_pitch + baseline_w);
   const u8 total_w = (u8)(group_w + group_gap + group_w);
   const u8 x0 = (u8)((128 - total_w) / 2);
   u8 i;
-  u8 x;
+  u8 x_base;
+  u8 x_bar;
   u8 fill_h;
-  u8 grey;
   u32 peak_u;
   fract32 peak;
   char dig[2];
 
   dig[1] = '\0';
   for(i = 0; i < BFIN_METER_CH; ++i) {
-    x = (u8)(x0 + i * (bar_w + bar_gap));
+    x_base = (u8)(x0 + i * col_pitch);
+    x_bar = (u8)(x_base + (baseline_w - bar_w) / 2);
     peak = in->ch[i];
     peak_u = (u32)(peak < 0 ? 0 : peak);
     if(peak_u > 0x7fffffffu) {
       peak_u = 0x7fffffffu;
     }
-    fill_h = (u8)((peak_u * (u32)bar_h) / 0x7fffffffu);
-    grey = head_vu_grey(peak);
-    /* dark-grey bounds; level fill from bottom using header VU greys */
-    render_fill_rect(x, y0, bar_w, bar_h, HEAD_GREY_DARK);
+    fill_h = (u8)((peak_u * (u32)bar_h_max) / 0x7fffffffu);
+    render_fill_rect(x_base, baseline_y, baseline_w, baseline_h,
+		     HEAD_GREY_DARK);
     if(fill_h > 0) {
-      render_fill_rect(x, (u8)(y0 + bar_h - fill_h), bar_w, fill_h, grey);
+      render_fill_rect(x_bar, (u8)(meter_base_y + 1 - fill_h), bar_w, fill_h,
+		       HEAD_GREY_LIGHT);
     }
     dig[0] = (char)('0' + i);
-    render_string_xy(x, label_y, dig, HEAD_GREY);
+    render_string_xy((u8)(x_base + (baseline_w - FONT_CHARW) / 2), label_y,
+		     dig, HEAD_GREY);
   }
   render_string_xy((u8)(x0 + (group_w / 2) - 4), (u8)(label_y + 8), "in",
 		   HEAD_GREY_DARK);
 
   for(i = 0; i < BFIN_METER_CH; ++i) {
-    x = (u8)(x0 + group_w + group_gap + i * (bar_w + bar_gap));
+    x_base = (u8)(x0 + group_w + group_gap + i * col_pitch);
+    x_bar = (u8)(x_base + (baseline_w - bar_w) / 2);
     peak = out->ch[i];
     peak_u = (u32)(peak < 0 ? 0 : peak);
     if(peak_u > 0x7fffffffu) {
       peak_u = 0x7fffffffu;
     }
-    fill_h = (u8)((peak_u * (u32)bar_h) / 0x7fffffffu);
-    grey = head_vu_grey(peak);
-    render_fill_rect(x, y0, bar_w, bar_h, HEAD_GREY_DARK);
+    fill_h = (u8)((peak_u * (u32)bar_h_max) / 0x7fffffffu);
+    render_fill_rect(x_base, baseline_y, baseline_w, baseline_h,
+		     HEAD_GREY_DARK);
     if(fill_h > 0) {
-      render_fill_rect(x, (u8)(y0 + bar_h - fill_h), bar_w, fill_h, grey);
+      render_fill_rect(x_bar, (u8)(meter_base_y + 1 - fill_h), bar_w, fill_h,
+		       HEAD_GREY_LIGHT);
     }
     dig[0] = (char)('0' + i);
-    render_string_xy(x, label_y, dig, HEAD_GREY);
+    render_string_xy((u8)(x_base + (baseline_w - FONT_CHARW) / 2), label_y,
+		     dig, HEAD_GREY);
   }
   render_string_xy(
     (u8)(x0 + group_w + group_gap + (group_w / 2) - 6), (u8)(label_y + 8),

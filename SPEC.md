@@ -369,12 +369,11 @@ effect on **release**, not press:
 ### inspect mode
 
 dedicated page outside the edit ring. body shows **eight vertical peak
-bars** side-by-side (5 px wide): logical inputs 0..3, then outputs 0..3
-(gap between groups). each bar is a dark-grey bounds rectangle; the live
-level is a bottom-up fill whose height scales with peak and whose grey
-uses the same threshold→grey LUT as the header VU chrome. meters refresh
-at ~10 Hz. further inspect content is TBD. encoders and softkeys are
-unmapped.
+bars** side-by-side: logical inputs 0..3, then outputs 0..3 (gap between
+groups). each channel has a dark-grey horizontal baseline (1 px line)
+above its digit label; the live level is a light-grey 3 px-wide bar above
+that baseline (1 px gap), height scaled to peak. meters refresh at ~10 Hz.
+further inspect content is TBD. encoders and softkeys are unmapped.
 
 ---
 
