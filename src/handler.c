@@ -16,7 +16,7 @@
 #include "render.h"
 #include "xruns.h"
 
-#define MODE_LONG_MS 1000u
+#define MODE_LONG_TICKS 200u
 
 static u8 mode_held;
 static u32 mode_press_ticks;
@@ -34,7 +34,7 @@ static void handle_Switch4(s32 data) {
   }
   mode_held = 0;
   held = time_now() - mode_press_ticks;
-  if(held >= MODE_LONG_MS) {
+  if(held >= MODE_LONG_TICKS) {
     pages_enter_inspect();
   } else {
     pages_mode_short_release();

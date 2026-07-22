@@ -56,6 +56,8 @@ static region regFoot[4] = {
 #define HEAD_TITLE_MAX_X_XRUN (HEAD_XRUN_X - HEAD_GAP_W)
 #define HEAD_MARGIN 2
 #define HEAD_TEXT_X (HEAD_BAR_W + HEAD_GAP_W)
+#define HEAD_DIRTY_GAP_W 2
+#define HEAD_DIRTY_DOT_W 3
 
 /* peak threshold → grey; search high→low for first peak >= thresh */
 typedef struct {
@@ -97,6 +99,28 @@ static void head_put_px(u8 x, u8 y, u8 color) {
   if(x < 128 && y < 8) {
     regHead.data[(u32)y * 128u + (u32)x] = color;
   }
+}
+
+/* light-grey 3×3 circle after a title/name box; x0 is the left edge. */
+static void head_draw_dirty_dot(u8 x0) {
+  const u8 y0 = 2;
+  head_put_px((u8)(x0 + 1), y0, HEAD_GREY_LIGHT);
+  head_put_px(x0, (u8)(y0 + 1), HEAD_GREY_LIGHT);
+  head_put_px((u8)(x0 + 1), (u8)(y0 + 1), HEAD_GREY_LIGHT);
+  head_put_px((u8)(x0 + 2), (u8)(y0 + 1), HEAD_GREY_LIGHT);
+  head_put_px((u8)(x0 + 1), (u8)(y0 + 2), HEAD_GREY_LIGHT);
+}
+
+static u8 head_draw_dirty_after(u8 x, u8 x_max, u8 dirty) {
+  if(!dirty) {
+    return x;
+  }
+  if((u16)x + HEAD_DIRTY_GAP_W + HEAD_DIRTY_DOT_W > x_max) {
+    return x;
+  }
+  x = (u8)(x + HEAD_DIRTY_GAP_W);
+  head_draw_dirty_dot(x);
+  return (u8)(x + HEAD_DIRTY_DOT_W);
 }
 
 void render_init(void) {
@@ -435,11 +459,7 @@ void render_header(const char *title, u8 dirty) {
   region_fill(&regHead, HEAD_BLACK);
   head_fill_col(0, HEAD_BAR_W, HEAD_GREY);
   x = head_draw_text_box(HEAD_TEXT_X, title, x_max);
-  /* dirty: 1px black spacer then light-grey "*" after the title box */
-  if(dirty && (u16)x + HEAD_GAP_W < x_max) {
-    x = (u8)(x + HEAD_GAP_W);
-    font_string_region_clip(&regHead, "*", x, 0, HEAD_GREY, HEAD_BLACK);
-  }
+  (void)head_draw_dirty_after(x, x_max, dirty);
   head_draw_right_chrome();
   regHead.dirty = 1;
 }
@@ -462,11 +482,7 @@ void render_header_with_name(const char *title, const char *name, u8 dirty) {
     x = (u8)(x + HEAD_GAP_W);
     x = head_draw_text_box(x, name, x_max);
   }
-  /* dirty: 1px black spacer then light-grey "*" after the name box */
-  if(dirty && (u16)x + HEAD_GAP_W < x_max) {
-    x = (u8)(x + HEAD_GAP_W);
-    font_string_region_clip(&regHead, "*", x, 0, HEAD_GREY, HEAD_BLACK);
-  }
+  (void)head_draw_dirty_after(x, x_max, dirty);
   head_draw_right_chrome();
   regHead.dirty = 1;
 }
@@ -487,11 +503,7 @@ void render_header_slot(char slot_letter, const char *preset, u8 dirty) {
     x = (u8)(x + HEAD_GAP_W);
     x = head_draw_text_box(x, preset, x_max);
   }
-  /* dirty: 1px black spacer then light-grey "*" after the name box */
-  if(dirty && (u16)x + HEAD_GAP_W < x_max) {
-    x = (u8)(x + HEAD_GAP_W);
-    font_string_region_clip(&regHead, "*", x, 0, HEAD_GREY, HEAD_BLACK);
-  }
+  (void)head_draw_dirty_after(x, x_max, dirty);
 
   head_draw_right_chrome();
   regHead.dirty = 1;
@@ -664,9 +676,9 @@ void render_inspect_vu_bars(void) {
   const bfin_meter_bank_t *in = meters_in();
   const bfin_meter_bank_t *out = meters_out();
   const u8 bar_h = 28;
-  const u8 bar_w = 8;
-  const u8 bar_gap = 3;
-  const u8 group_gap = 10;
+  const u8 bar_w = 5;
+  const u8 bar_gap = 4;
+  const u8 group_gap = 12;
   const u8 y0 = 2;
   const u8 label_y = (u8)(y0 + bar_h + 2);
   const u8 group_w =
@@ -678,41 +690,45 @@ void render_inspect_vu_bars(void) {
   u8 fill_h;
   u8 grey;
   u32 peak_u;
+  fract32 peak;
   char dig[2];
 
   dig[1] = '\0';
   for(i = 0; i < BFIN_METER_CH; ++i) {
     x = (u8)(x0 + i * (bar_w + bar_gap));
-    peak_u = (u32)(in->ch[i] < 0 ? 0 : in->ch[i]);
+    peak = in->ch[i];
+    peak_u = (u32)(peak < 0 ? 0 : peak);
     if(peak_u > 0x7fffffffu) {
       peak_u = 0x7fffffffu;
     }
     fill_h = (u8)((peak_u * (u32)bar_h) / 0x7fffffffu);
-    grey = vu_peak_grey(in->ch[i]);
+    grey = head_vu_grey(peak);
+    /* dark-grey bounds; level fill from bottom using header VU greys */
     render_fill_rect(x, y0, bar_w, bar_h, HEAD_GREY_DARK);
     if(fill_h > 0) {
       render_fill_rect(x, (u8)(y0 + bar_h - fill_h), bar_w, fill_h, grey);
     }
     dig[0] = (char)('0' + i);
-    render_string_xy((u8)(x + 1), label_y, dig, HEAD_GREY);
+    render_string_xy(x, label_y, dig, HEAD_GREY);
   }
   render_string_xy((u8)(x0 + (group_w / 2) - 4), (u8)(label_y + 8), "in",
 		   HEAD_GREY_DARK);
 
   for(i = 0; i < BFIN_METER_CH; ++i) {
     x = (u8)(x0 + group_w + group_gap + i * (bar_w + bar_gap));
-    peak_u = (u32)(out->ch[i] < 0 ? 0 : out->ch[i]);
+    peak = out->ch[i];
+    peak_u = (u32)(peak < 0 ? 0 : peak);
     if(peak_u > 0x7fffffffu) {
       peak_u = 0x7fffffffu;
     }
     fill_h = (u8)((peak_u * (u32)bar_h) / 0x7fffffffu);
-    grey = vu_peak_grey(out->ch[i]);
+    grey = head_vu_grey(peak);
     render_fill_rect(x, y0, bar_w, bar_h, HEAD_GREY_DARK);
     if(fill_h > 0) {
       render_fill_rect(x, (u8)(y0 + bar_h - fill_h), bar_w, fill_h, grey);
     }
     dig[0] = (char)('0' + i);
-    render_string_xy((u8)(x + 1), label_y, dig, HEAD_GREY);
+    render_string_xy(x, label_y, dig, HEAD_GREY);
   }
   render_string_xy(
     (u8)(x0 + group_w + group_gap + (group_w / 2) - 6), (u8)(label_y + 8),

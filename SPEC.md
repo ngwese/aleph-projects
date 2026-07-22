@@ -356,11 +356,11 @@ effect on **release**, not press:
 
 | gesture | hold time | from | to |
 |---------|-----------|------|----|
-| short release | &lt; 1 s | edit | play |
-| short release | &lt; 1 s | play | edit (last edit-ring page) |
-| short release | &lt; 1 s | inspect | mode active when inspect was entered (edit → last edit page; play → live play) |
-| long release | ≥ 1 s | edit or play | inspect |
-| long release | ≥ 1 s | inspect | stay on inspect (re-select) |
+| short release | &lt; 200 ticks | edit | play |
+| short release | &lt; 200 ticks | play | edit (last edit-ring page) |
+| short release | &lt; 200 ticks | inspect | mode active when inspect was entered (edit → last edit page; play → live play) |
+| long release | ≥ 200 ticks | edit or play | inspect |
+| long release | ≥ 200 ticks | inspect | stay on inspect (re-select) |
 
 - mode led **on** = play; **off** = edit or inspect (dedicated inspect cue TBD).
 - boot default: play if a last-used setup exists; otherwise edit on the
@@ -369,9 +369,11 @@ effect on **release**, not press:
 ### inspect mode
 
 dedicated page outside the edit ring. body shows **eight vertical peak
-bars** side-by-side: logical inputs 0..3, then outputs 0..3 (gap between
-groups), filled height from the same SPI meter banks as the header VU
-(~10 Hz). further inspect content is TBD. encoders and softkeys are
+bars** side-by-side (5 px wide): logical inputs 0..3, then outputs 0..3
+(gap between groups). each bar is a dark-grey bounds rectangle; the live
+level is a bottom-up fill whose height scales with peak and whose grey
+uses the same threshold→grey LUT as the header VU chrome. meters refresh
+at ~10 Hz. further inspect content is TBD. encoders and softkeys are
 unmapped.
 
 ---
@@ -407,8 +409,9 @@ keeps save/restore of handlers, and is aborted on any page change.
 - list of `.txt` files under `/data/between/setups/`.
 - header: page title box `setup` plus a second white box with the currently
   loaded setup name, or `none` (same dual-box pattern as the slot page
-  letter + preset name). unsaved setup state shows a light-grey `*` after
-  the name box (same glyph as dirty presets). the setup is dirty when
+  letter + preset name). unsaved setup state shows a light-grey 3×3 circle
+  after the name box with a 2 px gap (same mark as dirty presets). the setup
+  is dirty when
   setup-owned fields changed (module, slot assignments, morph point, play
   maps, manual excludes) **or** when any occupied slot’s preset is dirty.
 - the setup list fills the content rows above the log.
@@ -565,8 +568,8 @@ morph point, and sends parameters to the module immediately (excluded
 params are omitted from morph recompute; see
 [morph exclusion](#morph-exclusion)).
 
-unsaved edits: show a light-grey `*` after the preset-name box in the
-header (1px black spacer). the upper-right header chrome always shows the
+unsaved edits: show a light-grey 3×3 circle after the preset-name box in
+the header (2 px gap). the upper-right header chrome always shows the
 current morph position (mid-grey outline, white 2×2 cursor); when MIDI is
 connected, a dark-grey `m` sits immediately left of that indicator and
 flashes light grey on received traffic (see [midi](#midi)). on slot pages
@@ -584,8 +587,8 @@ bindings are properties of the current setup: edited here in memory, written
 on setup **save**, restored on setup **load**. they are not stored in preset
 files.
 
-header: `play` plus a light-grey `*` when the current setup is dirty (setup-
-owned edits or any dirty slot preset).
+header: `play` plus a light-grey 3×3 circle when the current setup is dirty
+(setup-owned edits or any dirty slot preset).
 
 body: a selectable list of the controls (`enc0`–`enc3`, `sw0`–`sw3`,
 `fs0`–`fs1`, `cc1`–`cc12`). each line shows a short summary of the current
@@ -799,8 +802,8 @@ play layout (128×64, bees-style footer cells for `sw0`–`sw3`):
 
 **header:** same chrome as edit mode — 2px mid-grey bar, gap, then the
 current setup name in a white text box (or `none` if unset), with a
-light-grey `*` when the setup is dirty. upper-right morph-position
-indicator and optional MIDI `m` as on other pages.
+light-grey 3×3 circle (2 px gap) when the setup is dirty. upper-right
+morph-position indicator and optional MIDI `m` as on other pages.
 
 **morph position (left):** a square region above the switch labels. a light
 gray square frame marks the unit morph plane; the current morph point is a
