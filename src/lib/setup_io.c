@@ -204,6 +204,11 @@ SetupIoStatus setup_io_read(LineIO *io, SetupData *out) {
       out->maps.cc[n - 1] = cc;
       continue;
     }
+    if(kvtext_key_eq(pair.key, "morph.exclude")) {
+      strncpy(out->morph_exclude, pair.val, SETUP_IO_LINE_MAX - 1);
+      out->morph_exclude[SETUP_IO_LINE_MAX - 1] = '\0';
+      continue;
+    }
     /* unknown keys ignored for forward compatibility */
   }
 
@@ -313,6 +318,14 @@ SetupIoStatus setup_io_write(LineIO *io, const SetupData *data) {
       if(!write_kv(io, cc_keys[i], val)) {
 	return eSetupIoWriteFail;
       }
+    }
+  }
+  if(data->morph_exclude[0] != '\0') {
+    if(!io->write_line("\n", io->ctx)) {
+      return eSetupIoWriteFail;
+    }
+    if(!write_kv(io, "morph.exclude", data->morph_exclude)) {
+      return eSetupIoWriteFail;
     }
   }
   return eSetupIoOk;

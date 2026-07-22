@@ -30,6 +30,8 @@ typedef struct {
   u16 x; /* 0..MORPH2D_ONE */
   u16 y;
   PlayMaps maps;
+  /* manual morph.exclude labels as stored (comma-separated); empty if none */
+  char morph_exclude[SETUP_IO_LINE_MAX];
 } SetupData;
 
 SetupIoStatus setup_io_read(LineIO *io, SetupData *out);

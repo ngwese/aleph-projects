@@ -127,10 +127,44 @@ void test_play_maps_roundtrip(void) {
   TEST_ASSERT_EQUAL_INT(42, out.maps.fs[1].value);
 }
 
+void test_morph_exclude_roundtrip(void) {
+  const char *path = "build/tmp_setup_excl.txt";
+  SetupData in;
+  SetupData out;
+  LineIO io;
+  FILE *fp;
+
+  memset(&in, 0, sizeof(in));
+  in.format = SETUP_IO_FORMAT;
+  strcpy(in.module, "waves");
+  in.version.maj = 0;
+  in.version.min = 1;
+  in.version.rev = 0;
+  in.slot_occupied[0] = 1;
+  strcpy(in.slot_stem[0], "a");
+  in.x = 0;
+  in.y = 0;
+  play_maps_set_defaults(&in.maps);
+  strcpy(in.morph_exclude, "amp0, cut0");
+
+  fp = fopen(path, "w");
+  TEST_ASSERT_NOT_NULL(fp);
+  host_lineio_init(&io, fp);
+  TEST_ASSERT_EQUAL_INT(eSetupIoOk, setup_io_write(&io, &in));
+  fclose(fp);
+
+  fp = fopen(path, "r");
+  host_lineio_init(&io, fp);
+  TEST_ASSERT_EQUAL_INT(eSetupIoOk, setup_io_read(&io, &out));
+  fclose(fp);
+  TEST_ASSERT_EQUAL_STRING("amp0, cut0", out.morph_exclude);
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_setup_roundtrip);
   RUN_TEST(test_unknown_keys_ignored);
   RUN_TEST(test_play_maps_roundtrip);
+  RUN_TEST(test_morph_exclude_roundtrip);
   return UNITY_END();
 }
