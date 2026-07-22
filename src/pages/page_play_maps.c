@@ -461,26 +461,39 @@ static void cycle_param_label(char *label, s8 dir, u8 coarse) {
   label[PARAM_LABEL_LEN - 1] = '\0';
 }
 
-static void bump_sw_value(PlaySwMap *m, s8 dir, u8 coarse) {
+static void bump_sw_value(PlaySwMap *m, s32 data, u8 coarse) {
   s16 idx = find_param(m->label);
   io_t delta;
+  s32 delta32;
 
-  if(idx < 0) {
+  if(idx < 0 || data == 0) {
     return;
   }
   if(param_scaler_usable((u16)idx)) {
     ParamScaler *sc = &g_scalers[idx];
     io_t io = scaler_get_in(sc, (s32)m->value);
     if(coarse) {
-      delta = (dir > 0) ? (io_t)0x100 : (io_t)-0x100;
+      delta32 = (s32)0x100 * data;
+      if(delta32 > 32767) {
+	delta32 = 32767;
+      } else if(delta32 < -32768) {
+	delta32 = -32768;
+      }
+      delta = (io_t)delta32;
     } else {
-      delta = (dir > 0) ? (io_t)1 : (io_t)-1;
+      delta = (data > 0) ? (io_t)1 : (io_t)-1;
     }
     m->value = (ParamValue)scaler_inc(sc, &io, delta);
   } else {
     ParamDesc *d = &g_module.desc[idx];
-    s32 step = coarse ? 64 : 1;
-    s32 v = (s32)m->value + (dir > 0 ? step : -step);
+    s32 step;
+    s32 v;
+    if(coarse) {
+      step = (s32)0x100 * data;
+    } else {
+      step = (data > 0) ? 1 : -1;
+    }
+    v = (s32)m->value + step;
     if(v < d->min) {
       v = d->min;
     }
@@ -563,8 +576,15 @@ static void handle_enc2(s32 data) {
 }
 
 static void handle_enc3(s32 data) {
-  /* bees-like coarse step (same as slot page) */
-  adjust_field(data > 0 ? 1 : -1, 1);
+  /* value field: same ±0x100 * ticks accel as play / slot coarse */
+  if(is_sw_like() && field == eFieldValue) {
+    bump_sw_value(cur_sw_map(), data, 1);
+    clamp_field();
+    state_exclude_rebuild();
+    state_setup_mark_dirty();
+  } else {
+    adjust_field(data > 0 ? 1 : -1, 1);
+  }
   redraw();
   render_update();
 }
