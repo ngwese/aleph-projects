@@ -19,6 +19,42 @@ static u8 g_exclude_bound[BETWEEN_PARAMS_MAX];
 Slots g_slots;
 PlayMaps g_play_maps;
 char g_setup_name[BETWEEN_NAME_LEN];
+static u8 g_setup_dirty;
+
+void state_setup_mark_dirty(void) { g_setup_dirty = 1; }
+
+void state_setup_clear_dirty(void) { g_setup_dirty = 0; }
+
+u8 state_setup_dirty(void) {
+  MorphSlot i;
+  if(g_setup_dirty) {
+    return 1;
+  }
+  for(i = 0; i < MORPH2D_SLOTS; ++i) {
+    if(g_slots.occupied[i] && g_slots.dirty[i]) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+void state_set_morph(u16 x, u16 y) {
+  u16 ox = g_slots.x;
+  u16 oy = g_slots.y;
+  slots_set_morph(&g_slots, x, y);
+  if(g_slots.x != ox || g_slots.y != oy) {
+    g_setup_dirty = 1;
+  }
+}
+
+void state_snap_to(MorphSlot slot) {
+  u16 ox = g_slots.x;
+  u16 oy = g_slots.y;
+  slots_snap_to(&g_slots, slot);
+  if(g_slots.x != ox || g_slots.y != oy) {
+    g_setup_dirty = 1;
+  }
+}
 
 static void set_param_cb(u16 index, ParamValue value, void *ctx) {
   (void)ctx;
@@ -67,7 +103,13 @@ u8 state_exclude_manual_set(u16 idx, u8 on) {
     /* play-bound force stays; cannot clear */
     return 0;
   }
-  g_exclude_manual[idx] = on ? 1 : 0;
+  {
+    u8 next = on ? 1 : 0;
+    if(g_exclude_manual[idx] != next) {
+      g_exclude_manual[idx] = next;
+      g_setup_dirty = 1;
+    }
+  }
   g_slots.exclude[idx] = (u8)(g_exclude_manual[idx] | g_exclude_bound[idx]);
   return 1;
 }
@@ -162,6 +204,7 @@ void state_init(void) {
   play_maps_set_defaults(&g_play_maps);
   state_exclude_clear();
   g_setup_name[0] = '\0';
+  g_setup_dirty = 0;
 }
 
 u8 state_load_module(const char *name, u8 keep_slots) {
@@ -181,6 +224,7 @@ u8 state_load_module(const char *name, u8 keep_slots) {
   }
   play_maps_clear_invalid(&g_play_maps, g_module.desc, g_module.num_params);
   state_exclude_rebuild();
+  g_setup_dirty = 1;
   return 1;
 }
 
@@ -204,10 +248,13 @@ u8 state_load_preset(MorphSlot slot, const char *stem) {
   PresetMeta meta;
   PresetLoadCtx ctx;
   u16 i;
+  u8 stem_changed;
 
   if(!g_module.loaded || stem == NULL) {
     return 0;
   }
+  stem_changed =
+    !g_slots.occupied[slot] || strcmp(g_slots.stem[slot], stem) != 0;
   ctx.slot = slot;
   /* start from defaults so missing params stay at module default */
   for(i = 0; i < g_module.num_params; ++i) {
@@ -223,6 +270,9 @@ u8 state_load_preset(MorphSlot slot, const char *stem) {
   }
   slots_assign_stem(&g_slots, slot, stem);
   g_slots.dirty[slot] = 0;
+  if(stem_changed) {
+    g_setup_dirty = 1;
+  }
   state_apply();
   return 1;
 }
@@ -281,6 +331,7 @@ u8 state_new_preset(MorphSlot slot, const char *stem) {
   if(!state_save_preset(slot, stem)) {
     return 0;
   }
+  g_setup_dirty = 1;
   state_apply();
   return 1;
 }
@@ -389,6 +440,7 @@ u8 state_load_setup(const char *stem) {
   strncpy(g_setup_name, stem, BETWEEN_NAME_LEN - 1);
   g_setup_name[BETWEEN_NAME_LEN - 1] = '\0';
   state_write_last_setup(stem);
+  g_setup_dirty = 0;
   return 1;
 }
 
@@ -438,6 +490,7 @@ u8 state_save_setup(const char *stem) {
   strncpy(g_setup_name, stem, BETWEEN_NAME_LEN - 1);
   g_setup_name[BETWEEN_NAME_LEN - 1] = '\0';
   state_write_last_setup(stem);
+  g_setup_dirty = 0;
   return 1;
 }
 

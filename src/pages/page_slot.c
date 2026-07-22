@@ -383,7 +383,7 @@ static void handle_sw2(s32 data) {
     return;
   }
   if(g_alt_mode) {
-    slots_snap_to(&g_slots, cur_slot);
+    state_snap_to(cur_slot);
     state_apply();
     render_log("focus");
     redraw_slot(cur_slot);

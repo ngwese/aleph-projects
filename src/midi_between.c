@@ -248,7 +248,7 @@ static void on_control_change(u8 ch, u8 num, u8 val) {
     return;
   }
 
-  slots_set_morph(&g_slots, x, y);
+  state_set_morph(x, y);
   state_apply();
   pages_redraw();
   render_update();

@@ -242,7 +242,7 @@ static void redraw(void) {
   show_value = (swm != NULL) && sw_has_value(swm);
 
   render_clear();
-  render_header("play", 0);
+  render_header("play", state_setup_dirty());
 
   /* always four list rows — status line shares row 4 with optional value */
   start = (sel > 3) ? (u16)(sel - 3) : 0;
@@ -540,6 +540,7 @@ static void adjust_field(s8 dir, u8 coarse) {
   }
   clamp_field();
   state_exclude_rebuild();
+  state_setup_mark_dirty();
 }
 
 static void handle_enc0(s32 data) {
@@ -594,6 +595,7 @@ static void handle_sw0(s32 data) {
       play_maps_reset_cc(&g_play_maps, cc_i());
     }
     state_exclude_rebuild();
+    state_setup_mark_dirty();
     field = eFieldKind;
     redraw();
     render_update();
@@ -609,6 +611,7 @@ static void handle_sw1(s32 data) {
   if(g_alt_mode) {
     play_maps_set_defaults(&g_play_maps);
     state_exclude_rebuild();
+    state_setup_mark_dirty();
     field = eFieldKind;
     redraw();
     render_update();

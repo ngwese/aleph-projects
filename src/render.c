@@ -423,14 +423,21 @@ static void head_draw_right_chrome(void) {
 }
 
 void render_header(const char *title, u8 dirty) {
-  (void)dirty;
+  u8 x;
+  u8 x_max = head_title_max_x();
+
   if(title == NULL) {
     title = "";
   }
 
   region_fill(&regHead, HEAD_BLACK);
   head_fill_col(0, HEAD_BAR_W, HEAD_GREY);
-  (void)head_draw_text_box(HEAD_TEXT_X, title, head_title_max_x());
+  x = head_draw_text_box(HEAD_TEXT_X, title, x_max);
+  /* dirty: 1px black spacer then light-grey "*" after the title box */
+  if(dirty && (u16)x + HEAD_GAP_W < x_max) {
+    x = (u8)(x + HEAD_GAP_W);
+    font_string_region_clip(&regHead, "*", x, 0, HEAD_GREY, HEAD_BLACK);
+  }
   head_draw_right_chrome();
   regHead.dirty = 1;
 }
@@ -439,7 +446,6 @@ void render_header_with_name(const char *title, const char *name, u8 dirty) {
   u8 x;
   u8 x_max = head_title_max_x();
 
-  (void)dirty;
   if(title == NULL) {
     title = "";
   }
@@ -452,7 +458,12 @@ void render_header_with_name(const char *title, const char *name, u8 dirty) {
   x = head_draw_text_box(HEAD_TEXT_X, title, x_max);
   if((u16)x + HEAD_GAP_W < x_max) {
     x = (u8)(x + HEAD_GAP_W);
-    (void)head_draw_text_box(x, name, x_max);
+    x = head_draw_text_box(x, name, x_max);
+  }
+  /* dirty: 1px black spacer then light-grey "*" after the name box */
+  if(dirty && (u16)x + HEAD_GAP_W < x_max) {
+    x = (u8)(x + HEAD_GAP_W);
+    font_string_region_clip(&regHead, "*", x, 0, HEAD_GREY, HEAD_BLACK);
   }
   head_draw_right_chrome();
   regHead.dirty = 1;

@@ -387,7 +387,10 @@ those roles. name-entry overlay keeps save/restore of handlers.
 - list of `.txt` files under `/data/between/setups/`.
 - header: page title box `setup` plus a second white box with the currently
   loaded setup name, or `none` (same dual-box pattern as the slot page
-  letter + preset name).
+  letter + preset name). unsaved setup state shows a light-grey `*` after
+  the name box (same glyph as dirty presets). the setup is dirty when
+  setup-owned fields changed (module, slot assignments, morph point, play
+  maps, manual excludes) **or** when any occupied slot’s preset is dirty.
 - the setup list fills the content rows above the log.
 - directory listing is scanned automatically the first time the page is
   entered; afterward only via hold alt, then sw2 **scan**.
@@ -557,8 +560,8 @@ bindings are properties of the current setup: edited here in memory, written
 on setup **save**, restored on setup **load**. they are not stored in preset
 files.
 
-header: `play` (plus dirty indicator if maps differ from the last saved
-setup, if that distinction is tracked).
+header: `play` plus a light-grey `*` when the current setup is dirty (setup-
+owned edits or any dirty slot preset).
 
 body: a selectable list of the controls (`enc0`–`enc3`, `sw0`–`sw3`,
 `fs0`–`fs1`, `cc1`–`cc12`). each line shows a short summary of the current
@@ -771,8 +774,9 @@ play layout (128×64, bees-style footer cells for `sw0`–`sw3`):
 ```
 
 **header:** same chrome as edit mode — 2px mid-grey bar, gap, then the
-current setup name in a white text box (or `none` if unset). upper-right
-morph-position indicator and optional MIDI `m` as on other pages.
+current setup name in a white text box (or `none` if unset), with a
+light-grey `*` when the setup is dirty. upper-right morph-position
+indicator and optional MIDI `m` as on other pages.
 
 **morph position (left):** a square region above the switch labels. a light
 gray square frame marks the unit morph plane; the current morph point is a

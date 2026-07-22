@@ -14,6 +14,15 @@ extern char g_setup_name[BETWEEN_NAME_LEN];
 
 void state_init(void);
 
+/* setup dirty: setup-owned edits, or any occupied slot preset dirty. */
+void state_setup_mark_dirty(void);
+void state_setup_clear_dirty(void);
+u8 state_setup_dirty(void);
+
+/* morph point (marks setup dirty when the position changes). */
+void state_set_morph(u16 x, u16 y);
+void state_snap_to(MorphSlot slot);
+
 /* load module into g_module and reset slots (unless keep_slots). */
 u8 state_load_module(const char *name, u8 keep_slots);
 

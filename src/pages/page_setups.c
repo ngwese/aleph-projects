@@ -38,7 +38,8 @@ static void redraw(void) {
   u16 i;
   char line[24];
   render_clear();
-  render_header_with_name("setup", g_setup_name[0] ? g_setup_name : NULL, 0);
+  render_header_with_name("setup", g_setup_name[0] ? g_setup_name : NULL,
+			  state_setup_dirty());
   if(list.count == 0) {
     render_line(0, "(none)");
   } else {
@@ -143,6 +144,7 @@ static void handle_sw2(s32 data) {
     render_update();
     return;
   }
+  state_setup_mark_dirty();
   g_new_setup_flow = 1;
   pages_set(ePageModules);
 }

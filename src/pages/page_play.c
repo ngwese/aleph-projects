@@ -235,7 +235,7 @@ static void redraw(void) {
   u8 y_val_bot;
 
   render_clear();
-  render_header(g_setup_name[0] ? g_setup_name : "none", 0);
+  render_header(g_setup_name[0] ? g_setup_name : "none", state_setup_dirty());
   render_play_morph(g_slots.x, g_slots.y);
 
   /* 2×2 encoder grid between morph and right edge, with side margins */
@@ -358,13 +358,13 @@ static void apply_enc(u8 i, s32 data) {
   case ePlayEncMorphX:
     x = g_slots.x;
     nudge_axis(&x, data);
-    slots_set_morph(&g_slots, x, g_slots.y);
+    state_set_morph(x, g_slots.y);
     state_apply();
     break;
   case ePlayEncMorphY:
     y = g_slots.y;
     nudge_axis(&y, data);
-    slots_set_morph(&g_slots, g_slots.x, y);
+    state_set_morph(g_slots.x, y);
     state_apply();
     break;
   case ePlayEncParamSlot:
@@ -494,7 +494,7 @@ static void apply_sw(u8 i, s32 data) {
 
   if(data > 0) {
     if(play_maps_sw_snap_slot(m->kind, &snap)) {
-      slots_snap_to(&g_slots, snap);
+      state_snap_to(snap);
       state_apply();
       redraw();
       render_update();

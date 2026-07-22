@@ -43,10 +43,11 @@ void render_edit_string(u8 row, const char *str, u8 cursor);
 void render_charset_row(u8 row, const char *chars, u8 sel);
 
 /* edit-mode page header: mid-grey bar, title box(es), optional MIDI m,
- * morph-position indicator. dirty is unused here. */
+ * morph-position indicator. dirty draws a light-grey "*" after the title. */
 void render_header(const char *title, u8 dirty);
 /* like render_header, plus a second white name box (uses "none" if name
- * is NULL/empty) — same pattern as the slot page preset box. */
+ * is NULL/empty) — same pattern as the slot page preset box. dirty draws
+ * "*" after the name box. */
 void render_header_with_name(const char *title, const char *name, u8 dirty);
 /* slot page: capital letter box, optional preset-name box, light-grey "*"
  * after the name when dirty, MIDI m + morph indicator. */

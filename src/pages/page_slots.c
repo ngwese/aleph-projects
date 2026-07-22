@@ -205,10 +205,12 @@ static void handle_sw2(s32 data) {
     }
   } else if(g_alt_mode) {
     slots_clear_all(&g_slots);
+    state_setup_mark_dirty();
     state_apply();
     render_log("cleared");
   } else {
     slots_clear_slot(&g_slots, sel_slot);
+    state_setup_mark_dirty();
     state_apply();
     render_log("slot empty");
   }
