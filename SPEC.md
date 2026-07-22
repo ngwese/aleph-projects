@@ -177,6 +177,9 @@ targets it).
 #### morph / apply behavior
 
 - `slots_apply` / morph-point updates **skip** excluded parameters.
+- after setup load, between **sends** excluded parameters once from the
+  relevant slot banks so the DSP matches the loaded preset (apply alone
+  would leave them at prior/default DSP values).
 - play / MIDI paths that write a bound parameter still update the relevant
   slot bank(s) and send that parameter to the module as today.
 - discrete and continuous types share the same exclude rule.
@@ -379,8 +382,10 @@ common conventions (align with bees):
 - footer labels the four switches for the current page
 
 edit pages bind encoders and panel switches through shared input roles
-(`input_roles_bind`); live play keeps its own map handlers and does not use
-those roles. name-entry overlay keeps save/restore of handlers.
+(`input_roles_bind`). live play uses the same binder with `ParamFine` /
+`Action` roles so thresholds and handlers replace any prior edit-page bind
+in one step (footswitches remain assigned directly). name-entry overlay
+keeps save/restore of handlers, and is aborted on any page change.
 
 ### setups page
 

@@ -3,9 +3,9 @@
 #include <string.h>
 
 #include "app.h"
-#include "encoders.h"
 #include "events.h"
 
+#include "input_roles.h"
 #include "module_load.h"
 #include "morph2d.h"
 #include "param_scaler.h"
@@ -545,20 +545,22 @@ static void handle_fs0(s32 data) { apply_sw(4, data); }
 static void handle_fs1(s32 data) { apply_sw(5, data); }
 
 void select_play(void) {
+  /* ParamFine → thresh 0 and forward to play map handlers (same install
+   * path as edit pages, so prior Unmapped/PageSelect wrappers cannot stick). */
+  static const InputEncBinding enc[4] = {
+    {eInputRoleParamFine, handle_enc0},
+    {eInputRoleParamFine, handle_enc1},
+    {eInputRoleParamFine, handle_enc2},
+    {eInputRoleParamFine, handle_enc3},
+  };
+  static const InputSwBinding sw[4] = {
+    {eInputSwRoleAction, handle_sw0},
+    {eInputSwRoleAction, handle_sw1},
+    {eInputSwRoleAction, handle_sw2},
+    {eInputSwRoleAction, handle_sw3},
+  };
   mom.active = 0;
-  /* responsive play knobs; edit mode restores its own thresholds via pages_set */
-  set_enc_thresh(0, 0);
-  set_enc_thresh(1, 0);
-  set_enc_thresh(2, 0);
-  set_enc_thresh(3, 0);
-  app_event_handlers[kEventEncoder0] = handle_enc0;
-  app_event_handlers[kEventEncoder1] = handle_enc1;
-  app_event_handlers[kEventEncoder2] = handle_enc2;
-  app_event_handlers[kEventEncoder3] = handle_enc3;
-  app_event_handlers[kEventSwitch0] = handle_sw0;
-  app_event_handlers[kEventSwitch1] = handle_sw1;
-  app_event_handlers[kEventSwitch2] = handle_sw2;
-  app_event_handlers[kEventSwitch3] = handle_sw3;
+  input_roles_bind(enc, sw);
   app_event_handlers[kEventSwitch6] = handle_fs0;
   app_event_handlers[kEventSwitch7] = handle_fs1;
   redraw();

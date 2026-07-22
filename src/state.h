@@ -62,5 +62,8 @@ void state_exclude_manual_to_list(char *buf, u32 buf_size);
 
 /* send one param to the DSP (for play/MIDI writes of excluded params). */
 void state_send_param(u16 idx, ParamValue value);
+/* after slots_apply skipped excludes, push bank values for excluded params
+ * so play-bound controls match the loaded preset (not stale DSP defaults). */
+void state_send_excluded(void);
 
 #endif

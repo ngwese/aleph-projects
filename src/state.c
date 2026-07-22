@@ -197,6 +197,45 @@ void state_send_param(u16 idx, ParamValue value) {
   slots_send_param(&g_slots, idx, value);
 }
 
+void state_send_excluded(void) {
+  u16 i;
+  MorphSlot s;
+  MorphSlot src;
+  u8 have;
+
+  if(!g_module.loaded) {
+    return;
+  }
+  for(i = 0; i < g_slots.num_params && i < BETWEEN_PARAMS_MAX; ++i) {
+    if(!g_slots.exclude[i]) {
+      continue;
+    }
+    have = 0;
+    src = eMorphSlotA;
+    for(s = 0; s < MORPH2D_SLOTS; ++s) {
+      if(g_slots.occupied[s]) {
+	src = s;
+	have = 1;
+	break;
+      }
+    }
+    if(!have) {
+      continue;
+    }
+    /* prefer a ParamSlot binding's slot when this label is play-mapped */
+    for(s = 0; s < PLAY_MAPS_ENC_COUNT; ++s) {
+      const PlayEncMap *m = &g_play_maps.enc[s];
+      if(m->kind == ePlayEncParamSlot &&
+	 strncmp(m->label, g_module.desc[i].label, PARAM_LABEL_LEN) == 0 &&
+	 g_slots.occupied[m->slot]) {
+	src = m->slot;
+	break;
+      }
+    }
+    slots_send_param(&g_slots, i, slots_get_value(&g_slots, src, i));
+  }
+}
+
 void state_init(void) {
   ParamValue *ptrs[MORPH2D_SLOTS] = {banks[0], banks[1], banks[2], banks[3]};
   slots_init(&g_slots, BETWEEN_PARAMS_MAX, g_module.desc, ptrs, set_param_cb,
@@ -437,6 +476,8 @@ u8 state_load_setup(const char *stem) {
   play_maps_clear_invalid(&g_play_maps, g_module.desc, g_module.num_params);
   state_exclude_manual_from_list(data.morph_exclude);
   state_apply();
+  /* play-bound / manual excludes were skipped by apply — seed DSP now */
+  state_send_excluded();
   strncpy(g_setup_name, stem, BETWEEN_NAME_LEN - 1);
   g_setup_name[BETWEEN_NAME_LEN - 1] = '\0';
   state_write_last_setup(stem);

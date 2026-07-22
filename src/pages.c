@@ -3,6 +3,7 @@
 #include "app.h"
 #include "events.h"
 
+#include "name_edit.h"
 #include "render.h"
 
 Page g_pages[eNumPages];
@@ -52,6 +53,10 @@ void pages_init(void) {
 void pages_set(PageId id) {
   if(id >= eNumPages) {
     return;
+  }
+  if(name_edit_active()) {
+    /* MODE / page change while naming: drop modal; select_fn rebinds. */
+    name_edit_abort();
   }
   g_page_idx = (s8)id;
   if(id != ePagePlay) {
