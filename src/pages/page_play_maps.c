@@ -7,6 +7,7 @@
 #include "fix.h"
 
 #include "font.h"
+#include "input_roles.h"
 #include "module_load.h"
 #include "param_scaler.h"
 #include "play_maps.h"
@@ -556,8 +557,6 @@ static void handle_enc0(s32 data) {
   render_update();
 }
 
-static void handle_enc1(s32 data) { pages_next(data > 0 ? 1 : -1); }
-
 static void handle_enc2(s32 data) {
   adjust_field(data > 0 ? 1 : -1, 0);
   redraw();
@@ -637,10 +636,13 @@ static void handle_sw3(s32 data) {
 }
 
 void select_play_maps(void) {
-  app_event_handlers[kEventEncoder0] = handle_enc0;
-  app_event_handlers[kEventEncoder1] = handle_enc1;
-  app_event_handlers[kEventEncoder2] = handle_enc2;
-  app_event_handlers[kEventEncoder3] = handle_enc3;
+  static const InputEncBinding enc[4] = {
+    {eInputRoleListSelect, handle_enc0},
+    {eInputRolePageSelect, NULL},
+    {eInputRoleParamFine, handle_enc2},
+    {eInputRoleParamCoarse, handle_enc3},
+  };
+  input_roles_bind(enc);
   app_event_handlers[kEventSwitch0] = handle_sw0;
   app_event_handlers[kEventSwitch1] = handle_sw1;
   app_event_handlers[kEventSwitch2] = handle_sw2;

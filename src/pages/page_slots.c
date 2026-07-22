@@ -8,8 +8,8 @@
 #include "between_limits.h"
 #include "dirlist.h"
 #include "font.h"
+#include "input_roles.h"
 #include "module_load.h"
-#include "morph2d.h"
 #include "preset_file.h"
 #include "render.h"
 #include "state.h"
@@ -144,41 +144,6 @@ static void handle_enc1(s32 data) {
   }
 }
 
-static void handle_enc2(s32 data) {
-  s32 step = (s32)(MORPH2D_ONE / 64) * data;
-  s32 nx = (s32)g_slots.x + step;
-  if(data == 0) {
-    return;
-  }
-  if(nx < 0) {
-    nx = 0;
-  }
-  if(nx > (s32)MORPH2D_ONE) {
-    nx = (s32)MORPH2D_ONE;
-  }
-  slots_set_morph(&g_slots, (u16)nx, g_slots.y);
-  state_apply();
-  redraw();
-  render_update();
-}
-
-static void handle_enc3(s32 data) {
-  s32 step = (s32)(MORPH2D_ONE / 64) * data;
-  s32 ny = (s32)g_slots.y + step;
-  if(data == 0) {
-    return;
-  }
-  if(ny < 0) {
-    ny = 0;
-  }
-  if(ny > (s32)MORPH2D_ONE) {
-    ny = (s32)MORPH2D_ONE;
-  }
-  slots_set_morph(&g_slots, g_slots.x, (u16)ny);
-  state_apply();
-  redraw();
-  render_update();
-}
 
 static void handle_sw0(s32 data) {
   if(data <= 0) {
@@ -261,11 +226,14 @@ static void handle_sw3(s32 data) {
 }
 
 void select_slots(void) {
+  static const InputEncBinding enc[4] = {
+    {eInputRoleListSelect, handle_enc0},
+    {eInputRolePageSelect, handle_enc1},
+    {eInputRoleUnmapped, NULL},
+    {eInputRoleUnmapped, NULL},
+  };
   modal = 0;
-  app_event_handlers[kEventEncoder0] = handle_enc0;
-  app_event_handlers[kEventEncoder1] = handle_enc1;
-  app_event_handlers[kEventEncoder2] = handle_enc2;
-  app_event_handlers[kEventEncoder3] = handle_enc3;
+  input_roles_bind(enc);
   app_event_handlers[kEventSwitch0] = handle_sw0;
   app_event_handlers[kEventSwitch1] = handle_sw1;
   app_event_handlers[kEventSwitch2] = handle_sw2;

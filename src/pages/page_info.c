@@ -3,6 +3,7 @@
 #include "app.h"
 #include "events.h"
 #include "font.h"
+#include "input_roles.h"
 #include "render.h"
 #include "xruns.h"
 
@@ -20,8 +21,6 @@
 #endif
 
 static void handle_noop(s32 data) { (void)data; }
-
-static void handle_enc1(s32 data) { pages_next(data > 0 ? 1 : -1); }
 
 static void format_u32(char *buf, u8 buf_len, u32 val) {
   char reverse[10];
@@ -145,10 +144,13 @@ void redraw_info(void) {
 }
 
 void select_info(void) {
-  app_event_handlers[kEventEncoder0] = handle_noop;
-  app_event_handlers[kEventEncoder1] = handle_enc1;
-  app_event_handlers[kEventEncoder2] = handle_enc1;
-  app_event_handlers[kEventEncoder3] = handle_enc1;
+  static const InputEncBinding enc[4] = {
+    {eInputRoleUnmapped, NULL},
+    {eInputRolePageSelect, NULL},
+    {eInputRoleUnmapped, NULL},
+    {eInputRoleUnmapped, NULL},
+  };
+  input_roles_bind(enc);
   app_event_handlers[kEventSwitch0] = handle_noop;
   app_event_handlers[kEventSwitch1] = handle_noop;
   app_event_handlers[kEventSwitch2] = handle_noop;

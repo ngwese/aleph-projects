@@ -7,6 +7,7 @@
 
 #include "between_limits.h"
 #include "dirlist.h"
+#include "input_roles.h"
 #include "name_edit.h"
 #include "render.h"
 #include "setup_file.h"
@@ -75,10 +76,6 @@ static void handle_enc0(s32 data) {
   }
   redraw();
   render_update();
-}
-
-static void handle_enc1(s32 data) {
-  pages_next(data > 0 ? 1 : -1);
 }
 
 static void handle_sw0(s32 data) {
@@ -160,16 +157,19 @@ static void handle_sw3(s32 data) {
 }
 
 void select_setups(void) {
+  static const InputEncBinding enc[4] = {
+    {eInputRoleListSelect, handle_enc0},
+    {eInputRolePageSelect, NULL},
+    {eInputRoleUnmapped, NULL},
+    {eInputRoleUnmapped, NULL},
+  };
   if(!scanned) {
     do_scan();
   }
   if(sel >= (s16)list.count) {
     sel = 0;
   }
-  app_event_handlers[kEventEncoder0] = handle_enc0;
-  app_event_handlers[kEventEncoder1] = handle_enc1;
-  app_event_handlers[kEventEncoder2] = handle_enc1;
-  app_event_handlers[kEventEncoder3] = handle_enc1;
+  input_roles_bind(enc);
   app_event_handlers[kEventSwitch0] = handle_sw0;
   app_event_handlers[kEventSwitch1] = handle_sw1;
   app_event_handlers[kEventSwitch2] = handle_sw2;
