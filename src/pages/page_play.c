@@ -375,7 +375,7 @@ static void apply_enc(u8 i, s32 data) {
     next = bump_one((u16)idx, slots_get_value(&g_slots, m->slot, (u16)idx),
 		    data);
     slots_set_value(&g_slots, m->slot, (u16)idx, next);
-    state_apply();
+    state_send_param((u16)idx, next);
     break;
   case ePlayEncParamAll:
     idx = module_find_param(m->label);
@@ -399,7 +399,7 @@ static void apply_enc(u8 i, s32 data) {
 	return;
       }
     }
-    state_apply();
+    state_send_param((u16)idx, next);
     break;
   default:
     return;
@@ -424,7 +424,7 @@ static void write_param_slots(MorphSlot slot, u8 all, const char *label,
   } else if(g_slots.occupied[slot]) {
     slots_set_value(&g_slots, slot, (u16)idx, v);
   }
-  state_apply();
+  state_send_param((u16)idx, v);
 }
 
 static void mom_press(u8 sw, MorphSlot slot, u8 all, const char *label,
@@ -451,13 +451,15 @@ static void mom_press(u8 sw, MorphSlot slot, u8 all, const char *label,
     mom.saved[slot] = slots_get_value(&g_slots, slot, (u16)idx);
     slots_set_value(&g_slots, slot, (u16)idx, v);
   }
-  state_apply();
+  state_send_param((u16)idx, v);
 }
 
 static void mom_release(u8 sw) {
   const PlaySwMap *m;
   s16 idx;
   MorphSlot s;
+  ParamValue send = 0;
+  u8 have = 0;
 
   if(!mom.active || mom.sw != sw) {
     return;
@@ -471,9 +473,15 @@ static void mom_release(u8 sw) {
   for(s = 0; s < MORPH2D_SLOTS; ++s) {
     if(mom.occupied[s]) {
       slots_set_value(&g_slots, s, (u16)idx, mom.saved[s]);
+      if(!have) {
+	send = mom.saved[s];
+	have = 1;
+      }
     }
   }
-  state_apply();
+  if(have) {
+    state_send_param((u16)idx, send);
+  }
 }
 
 static void apply_sw(u8 i, s32 data) {

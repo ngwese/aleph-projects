@@ -142,7 +142,7 @@ static void apply_play_cc(u8 ch, u8 cc_num, u8 val) {
   if(!wrote) {
     return;
   }
-  state_apply();
+  state_send_param((u16)idx, raw);
   pages_redraw();
   render_update();
 }
@@ -188,7 +188,7 @@ static void apply_nrpn_data(u8 ch) {
   if(!wrote) {
     return;
   }
-  state_apply();
+  state_send_param(idx, raw);
   pages_redraw();
   render_update();
 }
