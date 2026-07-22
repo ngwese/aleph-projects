@@ -32,6 +32,7 @@ CSRCS += \
 	$(APP_DIR)/src/handler.c \
 	$(APP_DIR)/src/render.c \
 	$(APP_DIR)/src/pages.c \
+	$(APP_DIR)/src/input_roles.c \
 	$(APP_DIR)/src/pages/page_setups.c \
 	$(APP_DIR)/src/pages/page_modules.c \
 	$(APP_DIR)/src/pages/page_slots.c \
