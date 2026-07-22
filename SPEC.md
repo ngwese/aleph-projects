@@ -369,11 +369,18 @@ setups → modules → slots → slot a → slot b → slot c → slot d → pla
 
 common conventions (align with bees):
 
-- enc0: primary selection / scroll
-- enc1: page navigation
-- enc2 / enc3: value edit (fine / coarse) where applicable
-- sw3: alt
+- enc0: primary selection / scroll (`listSelect`); unmapped when unused
+- enc1: page navigation (`pageSelect`) in the edit ring
+- enc2 / enc3: value edit (fine / coarse) **only when the page has a local
+  value to edit**; otherwise unmapped (never morph, never silent page-ring
+  walk)
+- sw0 / sw1 / sw2: softkey actions (`action`); unmapped when unused
+- sw3: alt (`alt`) — hold sets `g_alt_mode`; cleared on every page change
 - footer labels the four switches for the current page
+
+edit pages bind encoders and panel switches through shared input roles
+(`input_roles_bind`); live play keeps its own map handlers and does not use
+those roles. name-entry overlay keeps save/restore of handlers.
 
 ### setups page
 
@@ -430,8 +437,8 @@ noise-bed      soft-pad
 ```
 
 - enc0: select slot a–d (highlight).
-- enc2 / enc3: adjust morph x / y while editing (optional but useful for
-  auditioning blends).
+- enc2 / enc3: unmapped on the slots overview (morph stays in play mode /
+  MIDI / slot focus).
 - sw0 **preset**: open the preset selector for the selected slot.
 - sw1 **edit**: jump to the selected slot’s editor page.
 - sw2 **clear**: empty the selected slot (does not delete the preset file).
@@ -611,7 +618,8 @@ body (six content rows; labels in dark grey, values in white):
 - rows 2–5: DSP xrun counters — `winRx`, `winTx`, `clashRx`, `clashTx` —
   polled from the blackfin at ~10 Hz with meters (same SPI path as spray).
 
-enc1 (and enc2/enc3) navigate the page ring; no softkey actions.
+enc1 navigates the page ring; enc0 / enc2 / enc3 and all softkeys are
+unmapped.
 
 xrun counters on the DSP are cleared when a module is loaded (`bfin_enable`
 → `audio_reset_xruns`). between also zeros its local cache and clears the
