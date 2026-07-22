@@ -60,7 +60,13 @@ PresetIoStatus preset_file_save(const char *module, const char *stem,
   }
   lineio_fl_bind(&io, fp);
   st = preset_io_write(&io, meta, next_param, ctx);
-  fl_fclose(fp);
+  if(st == ePresetIoOk) {
+    if(!lineio_fl_close_written(fp)) {
+      st = ePresetIoWriteFail;
+    }
+  } else {
+    fl_fclose(fp);
+  }
   app_resume();
   return st;
 }

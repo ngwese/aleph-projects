@@ -2,6 +2,7 @@
 
 #include <string.h>
 
+#include "app.h"
 #include "preset_io.h"
 
 #include "bfin.h"
@@ -534,11 +535,15 @@ u8 state_save_setup(const char *stem) {
   if(!files_ensure_data_dirs()) {
     return 0;
   }
+  /* Hold pause across every file so fat_io_lib is not interleaved with UI /
+   * timers between preset/setup/state writes (single shared sector cache). */
+  app_pause();
   /* persist any modified slot presets before writing the setup */
   for(i = 0; i < MORPH2D_SLOTS; ++i) {
     if(g_slots.occupied[i] && g_slots.dirty[i] && g_slots.stem[i][0] != '\0') {
       log_writing_file(g_slots.stem[i]);
       if(!state_save_preset(i, g_slots.stem[i])) {
+	app_resume();
 	return 0;
       }
     }
@@ -552,12 +557,17 @@ u8 state_save_setup(const char *stem) {
   state_exclude_manual_to_list(data.morph_exclude, sizeof(data.morph_exclude));
   log_writing_file(stem);
   if(setup_file_save(stem, &data) != eSetupIoOk) {
+    app_resume();
     return 0;
   }
   strncpy(g_setup_name, stem, BETWEEN_NAME_LEN - 1);
   g_setup_name[BETWEEN_NAME_LEN - 1] = '\0';
-  state_write_last_setup(stem);
+  if(!state_write_last_setup(stem)) {
+    app_resume();
+    return 0;
+  }
   g_setup_dirty = 0;
+  app_resume();
   return 1;
 }
 

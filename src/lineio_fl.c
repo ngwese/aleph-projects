@@ -34,3 +34,16 @@ void lineio_fl_bind(LineIO *io, void *fp) {
   io->write_line = fl_write_line;
   io->ctx = fp;
 }
+
+u8 lineio_fl_close_written(void *fp) {
+  if(fp == NULL) {
+    return 0;
+  }
+  /* push the current file sector before fclose's fat_purge / next open */
+  if(fl_fflush(fp) != 0) {
+    fl_fclose(fp);
+    return 0;
+  }
+  fl_fclose(fp);
+  return 1;
+}

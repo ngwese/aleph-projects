@@ -222,7 +222,8 @@ PresetIoStatus preset_io_write(LineIO *io, const PresetMeta *meta,
       if(value < 0) {
 	num[pos++] = '-';
 	num[pos] = '\0';
-	mag = (u32)(-value);
+	/* avoid signed overflow on INT_MIN */
+	mag = (u32)(-(value + 1)) + 1u;
       } else {
 	mag = (u32)value;
       }

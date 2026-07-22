@@ -77,7 +77,13 @@ SetupIoStatus setup_file_save(const char *stem, const SetupData *data) {
   }
   lineio_fl_bind(&io, fp);
   st = setup_io_write(&io, data);
-  fl_fclose(fp);
+  if(st == eSetupIoOk) {
+    if(!lineio_fl_close_written(fp)) {
+      st = eSetupIoWriteFail;
+    }
+  } else {
+    fl_fclose(fp);
+  }
   app_resume();
   return st;
 }
@@ -133,8 +139,15 @@ u8 setup_file_write_state(const char *stem) {
   strcpy(line, "setup:");
   strcat(line, stem);
   strcat(line, "\n");
-  io.write_line(line, io.ctx);
-  fl_fclose(fp);
+  if(!io.write_line(line, io.ctx)) {
+    fl_fclose(fp);
+    app_resume();
+    return 0;
+  }
+  if(!lineio_fl_close_written(fp)) {
+    app_resume();
+    return 0;
+  }
   app_resume();
   return 1;
 }
