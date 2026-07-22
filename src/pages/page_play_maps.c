@@ -540,6 +540,7 @@ static void adjust_field(s8 dir, u8 coarse) {
     }
   }
   clamp_field();
+  state_exclude_rebuild();
 }
 
 static void handle_enc0(s32 data) {
@@ -595,6 +596,7 @@ static void handle_sw0(s32 data) {
     } else {
       play_maps_reset_cc(&g_play_maps, cc_i());
     }
+    state_exclude_rebuild();
     field = eFieldKind;
     redraw();
     render_update();
@@ -609,6 +611,7 @@ static void handle_sw1(s32 data) {
   }
   if(g_alt_mode) {
     play_maps_set_defaults(&g_play_maps);
+    state_exclude_rebuild();
     field = eFieldKind;
     redraw();
     render_update();
