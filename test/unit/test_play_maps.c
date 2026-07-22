@@ -168,6 +168,33 @@ void test_footer_and_snap(void) {
   TEST_ASSERT_EQUAL_INT(eMorphSlotC, slot);
 }
 
+void test_fill_bound(void) {
+  PlayMaps m;
+  ParamDesc desc[3];
+  u8 bound[3];
+
+  memset(&m, 0, sizeof(m));
+  memset(desc, 0, sizeof(desc));
+  strcpy(desc[0].label, "amp");
+  strcpy(desc[1].label, "cut");
+  strcpy(desc[2].label, "res");
+  play_maps_set_defaults(&m);
+  m.enc[0].kind = ePlayEncParamSlot;
+  strcpy(m.enc[0].label, "amp");
+  m.sw[0].kind = ePlaySwSetAll;
+  strcpy(m.sw[0].label, "cut");
+  m.cc[0].kind = ePlayCcParam;
+  strcpy(m.cc[0].label, "res");
+  /* morph / snap must not mark */
+  m.enc[2].kind = ePlayEncMorphX;
+  m.sw[1].kind = ePlaySwSnapA;
+
+  play_maps_fill_bound(&m, desc, 3, bound);
+  TEST_ASSERT_EQUAL_UINT8(1, bound[0]);
+  TEST_ASSERT_EQUAL_UINT8(1, bound[1]);
+  TEST_ASSERT_EQUAL_UINT8(1, bound[2]);
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_defaults);
@@ -176,5 +203,6 @@ int main(void) {
   RUN_TEST(test_cc_roundtrip);
   RUN_TEST(test_clear_invalid);
   RUN_TEST(test_footer_and_snap);
+  RUN_TEST(test_fill_bound);
   return UNITY_END();
 }

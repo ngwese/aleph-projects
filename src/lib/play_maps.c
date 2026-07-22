@@ -1,5 +1,7 @@
 #include "play_maps.h"
 
+#include "between_limits.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -643,4 +645,56 @@ void play_maps_reset_fs(PlayMaps *m, u8 idx) {
   }
   play_maps_set_defaults(&d);
   m->fs[idx] = d.fs[idx];
+}
+
+static void mark_label(const char *label, const ParamDesc *desc, u16 n,
+		       u8 *out) {
+  u16 i;
+  if(label == NULL || label[0] == '\0' || desc == NULL || out == NULL) {
+    return;
+  }
+  for(i = 0; i < n; ++i) {
+    if(strncmp(desc[i].label, label, PARAM_LABEL_LEN) == 0) {
+      out[i] = 1;
+      return;
+    }
+  }
+}
+
+void play_maps_fill_bound(const PlayMaps *m, const ParamDesc *desc,
+			  u16 num_params, u8 *out) {
+  u8 i;
+  if(out == NULL) {
+    return;
+  }
+  if(num_params > BETWEEN_PARAMS_MAX) {
+    num_params = BETWEEN_PARAMS_MAX;
+  }
+  memset(out, 0, num_params);
+  if(m == NULL || desc == NULL || num_params == 0) {
+    return;
+  }
+  for(i = 0; i < PLAY_MAPS_ENC_COUNT; ++i) {
+    if(m->enc[i].kind == ePlayEncParamSlot ||
+       m->enc[i].kind == ePlayEncParamAll) {
+      mark_label(m->enc[i].label, desc, num_params, out);
+    }
+  }
+  for(i = 0; i < PLAY_MAPS_SW_COUNT; ++i) {
+    if(m->sw[i].kind == ePlaySwSetSlot || m->sw[i].kind == ePlaySwMomSlot ||
+       m->sw[i].kind == ePlaySwSetAll || m->sw[i].kind == ePlaySwMomAll) {
+      mark_label(m->sw[i].label, desc, num_params, out);
+    }
+  }
+  for(i = 0; i < PLAY_MAPS_FS_COUNT; ++i) {
+    if(m->fs[i].kind == ePlaySwSetSlot || m->fs[i].kind == ePlaySwMomSlot ||
+       m->fs[i].kind == ePlaySwSetAll || m->fs[i].kind == ePlaySwMomAll) {
+      mark_label(m->fs[i].label, desc, num_params, out);
+    }
+  }
+  for(i = 0; i < PLAY_MAPS_CC_COUNT; ++i) {
+    if(m->cc[i].kind == ePlayCcParam) {
+      mark_label(m->cc[i].label, desc, num_params, out);
+    }
+  }
 }

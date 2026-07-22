@@ -105,4 +105,9 @@ void play_maps_reset_sw(PlayMaps *m, u8 idx);
 void play_maps_reset_fs(PlayMaps *m, u8 idx);
 void play_maps_reset_cc(PlayMaps *m, u8 idx);
 
+/* mark out[i]=1 for each param index targeted by a play param binding.
+ * out must be length >= num_params (cleared by this function for 0..n-1). */
+void play_maps_fill_bound(const PlayMaps *m, const ParamDesc *desc,
+			  u16 num_params, u8 *out);
+
 #endif
