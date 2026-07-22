@@ -1,3 +1,3 @@
 maj=0
-min=1
+min=9
 rev=0
