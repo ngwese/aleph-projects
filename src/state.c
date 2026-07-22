@@ -441,6 +441,9 @@ u8 state_load_setup(const char *stem) {
   SetupData data;
   SetupIoStatus st;
   MorphSlot i;
+  u8 fail_mask;
+  char msg[22];
+  u8 n;
 
   st = setup_file_load(stem, &data);
   if(st != eSetupIoOk) {
@@ -464,10 +467,12 @@ u8 state_load_setup(const char *stem) {
     }
   }
   slots_from_setup_meta(&g_slots, &data);
+  fail_mask = 0;
   for(i = 0; i < MORPH2D_SLOTS; ++i) {
     if(data.slot_occupied[i]) {
       if(!state_load_preset(i, data.slot_stem[i])) {
 	slots_clear_slot(&g_slots, i);
+	fail_mask |= (u8)(1u << i);
       }
     }
   }
@@ -482,6 +487,27 @@ u8 state_load_setup(const char *stem) {
   g_setup_name[BETWEEN_NAME_LEN - 1] = '\0';
   state_write_last_setup(stem);
   g_setup_dirty = 0;
+  if(fail_mask != 0) {
+    /* e.g. "fail a,c" — caller should not auto-enter play */
+    n = 0;
+    msg[n++] = 'f';
+    msg[n++] = 'a';
+    msg[n++] = 'i';
+    msg[n++] = 'l';
+    msg[n++] = ' ';
+    for(i = 0; i < MORPH2D_SLOTS; ++i) {
+      if((fail_mask & (u8)(1u << i)) == 0) {
+	continue;
+      }
+      if(n > 5) {
+	msg[n++] = ',';
+      }
+      msg[n++] = (char)('a' + i);
+    }
+    msg[n] = '\0';
+    render_log(msg);
+    return 0;
+  }
   return 1;
 }
 

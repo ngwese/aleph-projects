@@ -419,6 +419,10 @@ keeps save/restore of handlers, and is aborted on any page change.
     module, replacing the current module.
   - load the referenced presets into the four slots, set the saved morph
     point, and apply the effective parameters.
+  - if one or more occupied presets fail to load, clear those slots, log
+    `fail` plus the failed slot letters (e.g. `fail a,c`), and treat the
+    load as failed (no automatic switch to play mode on boot). successful
+    slots and the rest of the setup still apply.
 - sw1 **save**: write the current configuration to the current setup name
   (`g_setup_name` / header name box), creating that file if needed (module,
   slots, morph point, and play bindings). if no name is set yet, allocate a
