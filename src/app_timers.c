@@ -1,5 +1,6 @@
 #include "app_timers.h"
 
+#include "adc_poll.h"
 #include "encoders.h"
 #include "events.h"
 #include "midi.h"
@@ -12,6 +13,7 @@ static softTimer_t screenTimer = {.next = NULL, .prev = NULL};
 static softTimer_t encTimer = {.next = NULL, .prev = NULL};
 static softTimer_t midiPollTimer = {.next = NULL, .prev = NULL};
 static softTimer_t xrunTimer = {.next = NULL, .prev = NULL};
+static softTimer_t adcPollTimer = {.next = NULL, .prev = NULL};
 
 static void screen_timer_callback(void *obj) {
   (void)obj;
@@ -50,6 +52,11 @@ static void xrun_timer_callback(void *obj) {
   event_post(&e);
 }
 
+static void adc_poll_timer_callback(void *obj) {
+  (void)obj;
+  adc_poll();
+}
+
 void init_app_timers(void) {
   timer_add(&screenTimer, 50, &screen_timer_callback, NULL);
   timer_add(&encTimer, 50, &enc_timer_callback, NULL);
@@ -63,4 +70,12 @@ void timers_set_midi(void) {
 
 void timers_unset_midi(void) {
   timer_remove(&midiPollTimer);
+}
+
+void timers_set_adc(u32 period) {
+  timer_add(&adcPollTimer, period, &adc_poll_timer_callback, NULL);
+}
+
+void timers_unset_adc(void) {
+  timer_remove(&adcPollTimer);
 }

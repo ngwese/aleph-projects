@@ -10,6 +10,7 @@
 #define PLAY_MAPS_ENC_COUNT 4
 #define PLAY_MAPS_SW_COUNT 4
 #define PLAY_MAPS_FS_COUNT 2
+#define PLAY_MAPS_CV_COUNT 4
 /* MIDI CC numbers 1..12 (array index 0 → CC1). */
 #define PLAY_MAPS_CC_COUNT 12
 /* panel sw0–3 then footswitches fs0–1 (logical index for play apply). */
@@ -63,6 +64,7 @@ typedef struct {
   PlayEncMap enc[PLAY_MAPS_ENC_COUNT];
   PlaySwMap sw[PLAY_MAPS_SW_COUNT];
   PlaySwMap fs[PLAY_MAPS_FS_COUNT]; /* footswitches; same targets as sw */
+  PlayEncMap cv[PLAY_MAPS_CV_COUNT]; /* CV jacks; same kinds as encoders */
   PlayCcMap cc[PLAY_MAPS_CC_COUNT]; /* MIDI CC 1..12 */
 } PlayMaps;
 
@@ -76,7 +78,7 @@ void play_maps_set_defaults(PlayMaps *m);
 void play_maps_clear_invalid(PlayMaps *m, const ParamDesc *desc,
 			     u16 num_params);
 
-/* parse/format value portion of play.encN / play.swN / play.ccN (no key). */
+/* parse/format value portion of play.encN / play.cvN / play.swN / play.ccN. */
 u8 play_maps_parse_enc(const char *val, PlayEncMap *out);
 u8 play_maps_parse_sw(const char *val, PlaySwMap *out);
 u8 play_maps_parse_cc(const char *val, PlayCcMap *out);
@@ -103,7 +105,11 @@ u8 play_maps_sw_snap_slot(PlaySwKind kind, MorphSlot *out);
 void play_maps_reset_enc(PlayMaps *m, u8 idx);
 void play_maps_reset_sw(PlayMaps *m, u8 idx);
 void play_maps_reset_fs(PlayMaps *m, u8 idx);
+void play_maps_reset_cv(PlayMaps *m, u8 idx);
 void play_maps_reset_cc(PlayMaps *m, u8 idx);
+
+/* 1 if any play.cvN is bound (not ePlayEncNone). */
+u8 play_maps_cv_any_bound(const PlayMaps *m);
 
 /* mark out[i]=1 for each param index targeted by a play param binding.
  * out must be length >= num_params (cleared by this function for 0..n-1). */

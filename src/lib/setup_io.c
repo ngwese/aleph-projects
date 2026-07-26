@@ -184,6 +184,16 @@ SetupIoStatus setup_io_read(LineIO *io, SetupData *out) {
       out->maps.fs[idx] = sw;
       continue;
     }
+    if(strncmp(pair.key, "play.cv", 7) == 0 && pair.key[7] >= '0' &&
+       pair.key[7] <= '3' && pair.key[8] == '\0') {
+      PlayEncMap cv;
+      u8 idx = (u8)(pair.key[7] - '0');
+      if(!play_maps_parse_enc(pair.val, &cv)) {
+	return eSetupIoMalformed;
+      }
+      out->maps.cv[idx] = cv;
+      continue;
+    }
     if(strncmp(pair.key, "play.cc", 7) == 0) {
       PlayCcMap cc;
       u8 n = 0;
@@ -282,6 +292,8 @@ SetupIoStatus setup_io_write(LineIO *io, const SetupData *data) {
     static const char *sw_keys[PLAY_MAPS_SW_COUNT] = {
       "play.sw0", "play.sw1", "play.sw2", "play.sw3"};
     static const char *fs_keys[PLAY_MAPS_FS_COUNT] = {"play.fs0", "play.fs1"};
+    static const char *cv_keys[PLAY_MAPS_CV_COUNT] = {
+      "play.cv0", "play.cv1", "play.cv2", "play.cv3"};
     static const char *cc_keys[PLAY_MAPS_CC_COUNT] = {
       "play.cc1",  "play.cc2",  "play.cc3",  "play.cc4",  "play.cc5",
       "play.cc6",  "play.cc7",  "play.cc8",  "play.cc9",  "play.cc10",
@@ -308,6 +320,14 @@ SetupIoStatus setup_io_write(LineIO *io, const SetupData *data) {
 	return eSetupIoWriteFail;
       }
       if(!write_kv(io, fs_keys[i], val)) {
+	return eSetupIoWriteFail;
+      }
+    }
+    for(i = 0; i < PLAY_MAPS_CV_COUNT; ++i) {
+      if(!play_maps_format_enc(val, sizeof(val), &data->maps.cv[i])) {
+	return eSetupIoWriteFail;
+      }
+      if(!write_kv(io, cv_keys[i], val)) {
 	return eSetupIoWriteFail;
       }
     }

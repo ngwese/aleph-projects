@@ -15,6 +15,7 @@
 
 #include "app_timers.h"
 #include "between_limits.h"
+#include "cv_in.h"
 #include "files_ensure.h"
 #include "handler.h"
 #include "pages.h"
@@ -58,6 +59,7 @@ u8 app_launch(eLaunchState state) {
 
   init_app_timers();
   meters_init();
+  cv_in_init();
   pages_init();
   assign_event_handlers();
 
@@ -69,6 +71,7 @@ u8 app_launch(eLaunchState state) {
     render_boot("edit mode");
     pages_enter_edit();
   }
+  cv_in_sync_poll();
 
   (void)state;
   return 1;

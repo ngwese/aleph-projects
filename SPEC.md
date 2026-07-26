@@ -280,6 +280,7 @@ y: 39321
 
 play.enc2: morph.x
 play.enc3: morph.y
+play.cv0: morph.x
 play.cc1: param.amp
 play.cc2: -
 
@@ -302,9 +303,10 @@ rules:
    (full scale = unit square corners).
 4. `play.enc0` … `play.enc3` — encoder maps; `play.sw0` … `play.sw3` —
    panel switch maps; `play.fs0`, `play.fs1` — footswitch maps (same value
-   syntax as panel switches); `play.cc1` … `play.cc12` — MIDI CC maps
-   (param label only; channel selects slot at apply time). omitted keys use
-   defaults.
+   syntax as panel switches); `play.cv0` … `play.cv3` — CV jack maps (same
+   value syntax as encoders; absolute); `play.cc1` … `play.cc12` — MIDI CC
+   maps (param label only; channel selects slot at apply time). omitted keys
+   use defaults.
 5. `morph.exclude` — optional comma-separated list of manually morph-excluded
    parameter labels (see [morph exclusion](#morph-exclusion)). play-bound
    exclusions are not listed here; they follow from `play.*` maps.
@@ -368,12 +370,18 @@ effect on **release**, not press:
 
 ### inspect mode
 
-dedicated page outside the edit ring. body shows **eight vertical peak
-bars** side-by-side: logical inputs 0..3, then outputs 0..3 (gap between
-groups). each channel has a dark-grey horizontal baseline (1 px line)
-above its digit label; the live level is a light-grey 3 px-wide bar above
-that baseline (1 px gap), height scaled to peak. meters refresh at ~10 Hz.
-further inspect content is TBD. encoders and softkeys are unmapped.
+dedicated page outside the edit ring. body shows:
+
+1. **CV inputs** — four lines `cv0`…`cv3` with the live sample as a
+   **fract32** hex value. full-scale (`0x7fffffff`) means **10 V**; `0` means
+   0 V (12-bit ADC `[0, 4095]` scaled into that range).
+2. **audio peak bars** — eight vertical IN/OUT meters (channels 0..3 then
+   0..3) compressed below the CV lines.
+
+ADC soft-timer polling runs while **any** `play.cvN` is bound, **or** while
+inspect is showing (temporary enable if maps alone would not poll). leaving
+inspect restores map-gated polling. meters refresh at ~10 Hz; CV samples at
+~20 Hz when polling. encoders and softkeys are unmapped.
 
 ---
 
@@ -584,28 +592,29 @@ if dirty.
 
 ### play page
 
-edit-mode page for configuring **play bindings** (encoder and switch maps).
-bindings are properties of the current setup: edited here in memory, written
-on setup **save**, restored on setup **load**. they are not stored in preset
-files.
+edit-mode page for configuring **play bindings** (encoder, switch, CV, and
+MIDI CC maps). bindings are properties of the current setup: edited here in
+memory, written on setup **save**, restored on setup **load**. they are not
+stored in preset files.
 
 header: `play` plus a light-grey 3×3 circle when the current setup is dirty
 (setup-owned edits or any dirty slot preset).
 
 body: a selectable list of the controls (`enc0`–`enc3`, `sw0`–`sw3`,
-`fs0`–`fs1`, `cc1`–`cc12`). each line shows a short summary of the current
-binding with a space after the colon (e.g. `enc2: morph.x`, `sw0: snap.a`,
-`fs0: set.all/in1`, `cc3: amp`). the list is always four rows. the status
-row under it shows dark-grey `edit ` plus the focused field name in light
-grey; for set/momentary switch maps the same row also shows dark-grey
-`value ` and the stored binding value in light grey at the slot-page value
-column (`x=64`).
+`fs0`–`fs1`, `cv0`–`cv3`, `cc1`–`cc12`). each line shows a short summary of
+the current binding with a space after the colon (e.g. `enc2: morph.x`,
+`sw0: snap.a`, `fs0: set.all/in1`, `cv0: morph.x`, `cc3: amp`). the list is
+always four rows. the status row under it shows dark-grey `edit ` plus the
+focused field name in light grey; for set/momentary switch maps the same
+row also shows dark-grey `value ` and the stored binding value in light
+grey at the slot-page value column (`x=64`).
 
 field focus starts at **kind** when a control is selected. softkeys jump to
 slot / param / value when those fields apply to the current binding; encoders
 adjust the focused field. MIDI CC bindings have only **kind** (`none` /
 `param`) and **param** (label) — no slot or stored value (channel and CC
-value supply those at play time).
+value supply those at play time). CV bindings use the same kind / slot /
+param fields as encoders (absolute apply from the ADC).
 
 controls:
 
@@ -619,8 +628,8 @@ controls:
 - sw2 **value**: focus the value field (set/momentary switch maps only)
 - sw3: alt
 - alt+sw0 **reset**: restore the selected control to its default
-  (encoders / switches / footswitches / CC maps)
-- alt+sw1 **rst all**: restore all play controls (enc, sw, fs, cc1–cc12)
+  (encoders / switches / footswitches / CV / CC maps)
+- alt+sw1 **rst all**: restore all play controls (enc, sw, fs, cv, cc1–cc12)
   to defaults
 
 set/momentary switch bindings always carry a stored param value (seeded from
@@ -680,13 +689,18 @@ play remaps the front panel away from menu navigation. encoders and
 switches are **mappable** to internal play targets. all play bindings are
 owned by the **setup**: configure them on the edit-mode [play page](#play-page),
 persist them with setup save/load (see `play.enc*` / `play.sw*` /
-`play.fs*` / `play.cc*` keys).
+`play.fs*` / `play.cv*` / `play.cc*` keys).
 
 encoder and switch indices match bees / hardware (`enc0`–`enc3`,
 `sw0`–`sw3`). footswitches are `fs0` / `fs1` (hardware `Switch6` /
 `Switch7`); they use the same target kinds as panel switches and are
-configured as `play.fs0` / `play.fs1`. MIDI continuous controllers
+configured as `play.fs0` / `play.fs1`. CV jacks `cv0`–`cv3` use the same
+target kinds as encoders but apply **absolutely** (12-bit ADC → morph or
+param), persisted as `play.cv0` … `play.cv3`. MIDI continuous controllers
 `cc1`–`cc12` are setup play maps as well (`play.cc1` … `play.cc12`).
+
+ADC polling for CV runs only while at least one `play.cvN` is bound, or
+while inspect mode is open (temporary).
 
 ### encoder targets
 
@@ -843,12 +857,12 @@ keep chrome minimal; play is for performing, not editing.
 
 ### persistence
 
-encoder, switch, footswitch, and MIDI CC maps (target kind, slot if any,
+encoder, switch, footswitch, CV, and MIDI CC maps (target kind, slot if any,
 param label if any, set/momentary value if any) are stored **only** in the
 setup file, along with manual `morph.exclude` entries. loading a setup
 replaces the in-memory play bindings and exclude set; saving a setup writes
 the current bindings and manual excludes. see reserved setup keys
-(`play.enc*`, `play.sw*`, `play.fs*`, `play.cc*`, `morph.exclude`).
+(`play.enc*`, `play.sw*`, `play.fs*`, `play.cv*`, `play.cc*`, `morph.exclude`).
 
 ---
 
@@ -1170,8 +1184,10 @@ unmapped.
 
 ### cv control of (x, y)
 
-- map aleph cv inputs to x and y with attenuversion / bias.
-- combine with panel encoders (sum, or cv replaces encoder when connected).
+- absolute CV → morph / param via `play.cv0`…`play.cv3` is implemented
+  (see play mode / setup keys).
+- follow-on: attenuversion / bias via reserved `cv.x` / `cv.y` keys;
+  combine with panel encoders (sum, or cv replaces encoder when connected).
 
 ### front-panel play maps
 

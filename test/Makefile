@@ -29,6 +29,7 @@ TEST_RESULTS = $(addprefix $(BUILD_DIR)/,$(addsuffix .txt,$(basename $(UNIT_TEST
 
 LIB_SRCS = \
 	$(LIB_DIR)/kvtext.c \
+	$(LIB_DIR)/cv_scale.c \
 	$(LIB_DIR)/midi_nrpn.c \
 	$(LIB_DIR)/morph2d.c \
 	$(LIB_DIR)/play_maps.c \

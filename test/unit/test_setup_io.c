@@ -73,6 +73,7 @@ void test_unknown_keys_ignored(void) {
   TEST_ASSERT_EQUAL_INT(ePlaySwSnapA, out.maps.sw[0].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwNone, out.maps.fs[0].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwNone, out.maps.fs[1].kind);
+  TEST_ASSERT_EQUAL_INT(ePlayEncNone, out.maps.cv[0].kind);
 }
 
 void test_play_maps_roundtrip(void) {
@@ -101,6 +102,10 @@ void test_play_maps_roundtrip(void) {
   in.maps.fs[1].kind = ePlaySwMomAll;
   strcpy(in.maps.fs[1].label, "amp");
   in.maps.fs[1].value = 42;
+  in.maps.cv[0].kind = ePlayEncMorphX;
+  in.maps.cv[2].kind = ePlayEncParamSlot;
+  in.maps.cv[2].slot = eMorphSlotC;
+  strcpy(in.maps.cv[2].label, "cut");
 
   fp = fopen(path, "w");
   TEST_ASSERT_NOT_NULL(fp);
@@ -125,6 +130,11 @@ void test_play_maps_roundtrip(void) {
   TEST_ASSERT_EQUAL_INT(ePlaySwMomAll, out.maps.fs[1].kind);
   TEST_ASSERT_EQUAL_STRING("amp", out.maps.fs[1].label);
   TEST_ASSERT_EQUAL_INT(42, out.maps.fs[1].value);
+  TEST_ASSERT_EQUAL_INT(ePlayEncMorphX, out.maps.cv[0].kind);
+  TEST_ASSERT_EQUAL_INT(ePlayEncNone, out.maps.cv[1].kind);
+  TEST_ASSERT_EQUAL_INT(ePlayEncParamSlot, out.maps.cv[2].kind);
+  TEST_ASSERT_EQUAL_INT(eMorphSlotC, out.maps.cv[2].slot);
+  TEST_ASSERT_EQUAL_STRING("cut", out.maps.cv[2].label);
 }
 
 void test_morph_exclude_roundtrip(void) {

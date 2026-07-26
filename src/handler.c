@@ -10,6 +10,7 @@
 #include "timers.h"
 
 #include "app_timers.h"
+#include "cv_in.h"
 #include "meters.h"
 #include "midi_between.h"
 #include "pages.h"
@@ -71,6 +72,11 @@ static void handle_AppCustom(s32 data) {
   (void)meters_poll();
 }
 
+static void handle_Adc0(s32 data) { cv_in_handle_adc(0, (u16)data); }
+static void handle_Adc1(s32 data) { cv_in_handle_adc(1, (u16)data); }
+static void handle_Adc2(s32 data) { cv_in_handle_adc(2, (u16)data); }
+static void handle_Adc3(s32 data) { cv_in_handle_adc(3, (u16)data); }
+
 void assign_event_handlers(void) {
   /* page select installs enc/sw0-3; keep mode + power + MIDI global */
   app_event_handlers[kEventSwitch4] = handle_Switch4;
@@ -79,4 +85,8 @@ void assign_event_handlers(void) {
   app_event_handlers[kEventMidiDisconnect] = handle_MidiDisconnect;
   app_event_handlers[kEventMidiPacket] = handle_MidiPacket;
   app_event_handlers[kEventAppCustom] = handle_AppCustom;
+  app_event_handlers[kEventAdc0] = handle_Adc0;
+  app_event_handlers[kEventAdc1] = handle_Adc1;
+  app_event_handlers[kEventAdc2] = handle_Adc2;
+  app_event_handlers[kEventAdc3] = handle_Adc3;
 }

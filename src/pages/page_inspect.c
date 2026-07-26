@@ -8,6 +8,7 @@
 static void redraw(void) {
   render_clear();
   render_header("inspect", 0);
+  render_inspect_cv_values();
   render_inspect_vu_bars();
   render_footer("-", "-", "-", "-");
 }

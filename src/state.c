@@ -8,6 +8,7 @@
 #include "bfin.h"
 
 #include "files_ensure.h"
+#include "cv_in.h"
 #include "module_load.h"
 #include "play_maps.h"
 #include "preset_file.h"
@@ -481,6 +482,7 @@ u8 state_load_setup(const char *stem) {
   g_play_maps = data.maps;
   play_maps_clear_invalid(&g_play_maps, g_module.desc, g_module.num_params);
   state_exclude_manual_from_list(data.morph_exclude);
+  cv_in_sync_poll();
   state_apply();
   /* play-bound / manual excludes were skipped by apply — seed DSP now */
   state_send_excluded();

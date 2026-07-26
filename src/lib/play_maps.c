@@ -175,6 +175,15 @@ void play_maps_clear_invalid(PlayMaps *m, const ParamDesc *desc,
       }
     }
   }
+  for(i = 0; i < PLAY_MAPS_CV_COUNT; ++i) {
+    if(m->cv[i].kind == ePlayEncParamSlot ||
+       m->cv[i].kind == ePlayEncParamAll) {
+      if(!label_known(m->cv[i].label, desc, num_params)) {
+	memset(&m->cv[i], 0, sizeof(m->cv[i]));
+	m->cv[i].kind = ePlayEncNone;
+      }
+    }
+  }
   for(i = 0; i < PLAY_MAPS_CC_COUNT; ++i) {
     if(m->cc[i].kind == ePlayCcParam) {
       if(!label_known(m->cc[i].label, desc, num_params)) {
@@ -647,6 +656,27 @@ void play_maps_reset_fs(PlayMaps *m, u8 idx) {
   m->fs[idx] = d.fs[idx];
 }
 
+void play_maps_reset_cv(PlayMaps *m, u8 idx) {
+  if(m == NULL || idx >= PLAY_MAPS_CV_COUNT) {
+    return;
+  }
+  memset(&m->cv[idx], 0, sizeof(m->cv[idx]));
+  m->cv[idx].kind = ePlayEncNone;
+}
+
+u8 play_maps_cv_any_bound(const PlayMaps *m) {
+  u8 i;
+  if(m == NULL) {
+    return 0;
+  }
+  for(i = 0; i < PLAY_MAPS_CV_COUNT; ++i) {
+    if(m->cv[i].kind != ePlayEncNone) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
 static void mark_label(const char *label, const ParamDesc *desc, u16 n,
 		       u8 *out) {
   u16 i;
@@ -690,6 +720,12 @@ void play_maps_fill_bound(const PlayMaps *m, const ParamDesc *desc,
     if(m->fs[i].kind == ePlaySwSetSlot || m->fs[i].kind == ePlaySwMomSlot ||
        m->fs[i].kind == ePlaySwSetAll || m->fs[i].kind == ePlaySwMomAll) {
       mark_label(m->fs[i].label, desc, num_params, out);
+    }
+  }
+  for(i = 0; i < PLAY_MAPS_CV_COUNT; ++i) {
+    if(m->cv[i].kind == ePlayEncParamSlot ||
+       m->cv[i].kind == ePlayEncParamAll) {
+      mark_label(m->cv[i].label, desc, num_params, out);
     }
   }
   for(i = 0; i < PLAY_MAPS_CC_COUNT; ++i) {

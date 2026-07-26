@@ -5,6 +5,7 @@
 #include "events.h"
 #include "gpio.h"
 
+#include "cv_in.h"
 #include "name_edit.h"
 #include "render.h"
 
@@ -116,12 +117,14 @@ void pages_next(s8 dir) {
 }
 
 void pages_enter_edit(void) {
+  cv_in_set_inspect(0);
   g_app_mode = eAppModeEdit;
   pages_set((PageId)last_edit_page);
   app_mode_apply_led();
 }
 
 void pages_enter_play(void) {
+  cv_in_set_inspect(0);
   g_app_mode = eAppModePlay;
   pages_set(ePagePlay);
   app_mode_apply_led();
@@ -136,6 +139,7 @@ void pages_enter_inspect(void) {
     }
   }
   g_app_mode = eAppModeInspect;
+  cv_in_set_inspect(1);
   pages_set(ePageInspect);
   app_mode_apply_led();
 }

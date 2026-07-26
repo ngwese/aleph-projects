@@ -4,6 +4,7 @@
 
 #include "fix.h"
 
+#include "cv_in.h"
 #include "font.h"
 #include "input_roles.h"
 #include "module_load.h"
@@ -21,12 +22,13 @@ enum {
   eFieldValue
 };
 
-/* 0..3 = enc, 4..7 = sw, 8..9 = fs, 10..21 = cc1..cc12 */
+/* 0..3 = enc, 4..7 = sw, 8..9 = fs, 10..13 = cv, 14..25 = cc1..cc12 */
 #define PLAY_MAPS_CTRL_COUNT                                                     \
   (PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT + PLAY_MAPS_FS_COUNT +               \
-   PLAY_MAPS_CC_COUNT)
-#define PLAY_MAPS_CC_BASE                                                        \
-  (PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT + PLAY_MAPS_FS_COUNT)
+   PLAY_MAPS_CV_COUNT + PLAY_MAPS_CC_COUNT)
+#define PLAY_MAPS_FS_BASE (PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT)
+#define PLAY_MAPS_CV_BASE (PLAY_MAPS_FS_BASE + PLAY_MAPS_FS_COUNT)
+#define PLAY_MAPS_CC_BASE (PLAY_MAPS_CV_BASE + PLAY_MAPS_CV_COUNT)
 
 static s16 sel;
 static u8 field;
@@ -40,20 +42,32 @@ static u8 is_panel_sw(void) {
 	 sel < (PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT);
 }
 static u8 is_fs(void) {
-  return sel >= (PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT) &&
-	 sel < PLAY_MAPS_CC_BASE;
+  return sel >= PLAY_MAPS_FS_BASE && sel < PLAY_MAPS_CV_BASE;
+}
+static u8 is_cv(void) {
+  return sel >= PLAY_MAPS_CV_BASE && sel < PLAY_MAPS_CC_BASE;
 }
 static u8 is_sw_like(void) { return is_panel_sw() || is_fs(); }
 static u8 is_cc(void) { return sel >= PLAY_MAPS_CC_BASE; }
 
 static PlaySwMap *cur_sw_map(void) {
-  if(is_enc() || is_cc()) {
+  if(!is_sw_like()) {
     return NULL;
   }
   if(is_panel_sw()) {
     return &g_play_maps.sw[sel - PLAY_MAPS_ENC_COUNT];
   }
-  return &g_play_maps.fs[sel - PLAY_MAPS_ENC_COUNT - PLAY_MAPS_SW_COUNT];
+  return &g_play_maps.fs[sel - PLAY_MAPS_FS_BASE];
+}
+
+static PlayEncMap *cur_enc_like_map(void) {
+  if(is_enc()) {
+    return &g_play_maps.enc[sel];
+  }
+  if(is_cv()) {
+    return &g_play_maps.cv[sel - PLAY_MAPS_CV_BASE];
+  }
+  return NULL;
 }
 
 static PlayCcMap *cur_cc_map(void) {
@@ -64,6 +78,7 @@ static PlayCcMap *cur_cc_map(void) {
 }
 
 static u8 enc_i(void) { return (u8)sel; }
+static u8 cv_i(void) { return (u8)(sel - PLAY_MAPS_CV_BASE); }
 static u8 cc_i(void) { return (u8)(sel - PLAY_MAPS_CC_BASE); }
 
 static u8 param_scaler_usable(u16 idx) {
@@ -113,6 +128,12 @@ static void seed_sw_value(PlaySwMap *m) {
   m->value = g_module.defaults[idx];
 }
 
+static void maps_changed(void) {
+  state_exclude_rebuild();
+  state_setup_mark_dirty();
+  cv_in_sync_poll();
+}
+
 static u8 field_ok(u8 f) {
   if(f == eFieldKind) {
     return 1;
@@ -138,7 +159,8 @@ static u8 field_ok(u8 f) {
       return 0;
     }
   } else {
-    PlayEncKind k = g_play_maps.enc[enc_i()].kind;
+    PlayEncMap *em = cur_enc_like_map();
+    PlayEncKind k = (em != NULL) ? em->kind : ePlayEncNone;
     switch(f) {
     case eFieldSlot:
       return k == ePlayEncParamSlot;
@@ -262,7 +284,7 @@ static void redraw(void) {
       }
       strcat(line, ": ");
       play_maps_summary_enc(sum, sizeof(sum), &g_play_maps.enc[idx]);
-    } else if(idx < PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT) {
+    } else if(idx < PLAY_MAPS_FS_BASE) {
       strcat(line, "sw");
       {
 	char n[2] = {(char)('0' + (idx - PLAY_MAPS_ENC_COUNT)), '\0'};
@@ -271,18 +293,24 @@ static void redraw(void) {
       strcat(line, ": ");
       play_maps_summary_sw(sum, sizeof(sum),
 			   &g_play_maps.sw[idx - PLAY_MAPS_ENC_COUNT]);
-    } else if(idx < PLAY_MAPS_CC_BASE) {
+    } else if(idx < PLAY_MAPS_CV_BASE) {
       strcat(line, "fs");
       {
-	char n[2] = {
-	  (char)('0' + (idx - PLAY_MAPS_ENC_COUNT - PLAY_MAPS_SW_COUNT)),
-	  '\0'};
+	char n[2] = {(char)('0' + (idx - PLAY_MAPS_FS_BASE)), '\0'};
 	strcat(line, n);
       }
       strcat(line, ": ");
-      play_maps_summary_sw(
-	sum, sizeof(sum),
-	&g_play_maps.fs[idx - PLAY_MAPS_ENC_COUNT - PLAY_MAPS_SW_COUNT]);
+      play_maps_summary_sw(sum, sizeof(sum),
+			   &g_play_maps.fs[idx - PLAY_MAPS_FS_BASE]);
+    } else if(idx < PLAY_MAPS_CC_BASE) {
+      strcat(line, "cv");
+      {
+	char n[2] = {(char)('0' + (idx - PLAY_MAPS_CV_BASE)), '\0'};
+	strcat(line, n);
+      }
+      strcat(line, ": ");
+      play_maps_summary_enc(sum, sizeof(sum),
+			    &g_play_maps.cv[idx - PLAY_MAPS_CV_BASE]);
     } else {
       u8 cc_n = (u8)(idx - PLAY_MAPS_CC_BASE + 1);
       strcat(line, "cc");
@@ -536,7 +564,10 @@ static void adjust_field(s8 dir, u8 coarse) {
       break;
     }
   } else {
-    PlayEncMap *m = &g_play_maps.enc[enc_i()];
+    PlayEncMap *m = cur_enc_like_map();
+    if(m == NULL) {
+      return;
+    }
     switch(field) {
     case eFieldKind:
       cycle_enc_kind(m, dir);
@@ -552,8 +583,7 @@ static void adjust_field(s8 dir, u8 coarse) {
     }
   }
   clamp_field();
-  state_exclude_rebuild();
-  state_setup_mark_dirty();
+  maps_changed();
 }
 
 static void handle_enc0(s32 data) {
@@ -580,8 +610,7 @@ static void handle_enc3(s32 data) {
   if(is_sw_like() && field == eFieldValue) {
     bump_sw_value(cur_sw_map(), data, 1);
     clamp_field();
-    state_exclude_rebuild();
-    state_setup_mark_dirty();
+    maps_changed();
   } else {
     adjust_field(data > 0 ? 1 : -1, 1);
   }
@@ -608,14 +637,13 @@ static void handle_sw0(s32 data) {
     } else if(is_panel_sw()) {
       play_maps_reset_sw(&g_play_maps, (u8)(sel - PLAY_MAPS_ENC_COUNT));
     } else if(is_fs()) {
-      play_maps_reset_fs(
-	&g_play_maps,
-	(u8)(sel - PLAY_MAPS_ENC_COUNT - PLAY_MAPS_SW_COUNT));
+      play_maps_reset_fs(&g_play_maps, (u8)(sel - PLAY_MAPS_FS_BASE));
+    } else if(is_cv()) {
+      play_maps_reset_cv(&g_play_maps, cv_i());
     } else {
       play_maps_reset_cc(&g_play_maps, cc_i());
     }
-    state_exclude_rebuild();
-    state_setup_mark_dirty();
+    maps_changed();
     field = eFieldKind;
     redraw();
     render_update();
@@ -630,8 +658,7 @@ static void handle_sw1(s32 data) {
   }
   if(g_alt_mode) {
     play_maps_set_defaults(&g_play_maps);
-    state_exclude_rebuild();
-    state_setup_mark_dirty();
+    maps_changed();
     field = eFieldKind;
     redraw();
     render_update();

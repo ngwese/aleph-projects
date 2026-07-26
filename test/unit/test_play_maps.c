@@ -20,8 +20,11 @@ void test_defaults(void) {
   TEST_ASSERT_EQUAL_INT(ePlaySwSnapD, m.sw[3].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwNone, m.fs[0].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwNone, m.fs[1].kind);
+  TEST_ASSERT_EQUAL_INT(ePlayEncNone, m.cv[0].kind);
+  TEST_ASSERT_EQUAL_INT(ePlayEncNone, m.cv[3].kind);
   TEST_ASSERT_EQUAL_INT(ePlayCcNone, m.cc[0].kind);
   TEST_ASSERT_EQUAL_INT(ePlayCcNone, m.cc[11].kind);
+  TEST_ASSERT_FALSE(play_maps_cv_any_bound(&m));
 }
 
 void test_enc_roundtrip(void) {
@@ -129,6 +132,11 @@ void test_clear_invalid(void) {
   strcpy(m.cc[0].label, "amp");
   m.cc[1].kind = ePlayCcParam;
   strcpy(m.cc[1].label, "nope");
+  m.cv[0].kind = ePlayEncParamAll;
+  strcpy(m.cv[0].label, "amp");
+  m.cv[1].kind = ePlayEncParamSlot;
+  m.cv[1].slot = eMorphSlotA;
+  strcpy(m.cv[1].label, "missing");
 
   play_maps_clear_invalid(&m, desc, 2);
   TEST_ASSERT_EQUAL_INT(ePlayEncParamSlot, m.enc[0].kind);
@@ -139,12 +147,15 @@ void test_clear_invalid(void) {
   TEST_ASSERT_EQUAL_INT(ePlaySwNone, m.fs[1].kind);
   TEST_ASSERT_EQUAL_INT(ePlayCcParam, m.cc[0].kind);
   TEST_ASSERT_EQUAL_INT(ePlayCcNone, m.cc[1].kind);
+  TEST_ASSERT_EQUAL_INT(ePlayEncParamAll, m.cv[0].kind);
+  TEST_ASSERT_EQUAL_INT(ePlayEncNone, m.cv[1].kind);
   /* snaps and morph defaults untouched */
   TEST_ASSERT_EQUAL_INT(ePlayEncMorphX, m.enc[2].kind);
   TEST_ASSERT_EQUAL_INT(ePlaySwSnapC, m.sw[2].kind);
   TEST_ASSERT_EQUAL_PTR(&m.sw[0], play_maps_sw_total_at(&m, 0));
   TEST_ASSERT_EQUAL_PTR(&m.fs[0], play_maps_sw_total_at(&m, 4));
   TEST_ASSERT_EQUAL_PTR(&m.fs[1], play_maps_sw_total_at(&m, 5));
+  TEST_ASSERT_TRUE(play_maps_cv_any_bound(&m));
 }
 
 void test_footer_and_snap(void) {
@@ -185,6 +196,8 @@ void test_fill_bound(void) {
   strcpy(m.sw[0].label, "cut");
   m.cc[0].kind = ePlayCcParam;
   strcpy(m.cc[0].label, "res");
+  m.cv[2].kind = ePlayEncParamAll;
+  strcpy(m.cv[2].label, "amp");
   /* morph / snap must not mark */
   m.enc[2].kind = ePlayEncMorphX;
   m.sw[1].kind = ePlaySwSnapA;
@@ -193,6 +206,15 @@ void test_fill_bound(void) {
   TEST_ASSERT_EQUAL_UINT8(1, bound[0]);
   TEST_ASSERT_EQUAL_UINT8(1, bound[1]);
   TEST_ASSERT_EQUAL_UINT8(1, bound[2]);
+}
+
+void test_cv_reset(void) {
+  PlayMaps m;
+  play_maps_set_defaults(&m);
+  m.cv[1].kind = ePlayEncMorphY;
+  play_maps_reset_cv(&m, 1);
+  TEST_ASSERT_EQUAL_INT(ePlayEncNone, m.cv[1].kind);
+  TEST_ASSERT_FALSE(play_maps_cv_any_bound(&m));
 }
 
 int main(void) {
@@ -204,5 +226,6 @@ int main(void) {
   RUN_TEST(test_clear_invalid);
   RUN_TEST(test_footer_and_snap);
   RUN_TEST(test_fill_bound);
+  RUN_TEST(test_cv_reset);
   return UNITY_END();
 }

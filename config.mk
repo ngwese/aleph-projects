@@ -43,6 +43,7 @@ CSRCS += \
 	$(APP_DIR)/src/pages/page_inspect.c \
 	$(APP_DIR)/src/pages/name_edit.c \
 	$(APP_DIR)/src/midi_between.c \
+	$(APP_DIR)/src/cv_in.c \
 	$(APP_DIR)/src/module_load.c \
 	$(APP_DIR)/src/meters.c \
 	$(APP_DIR)/src/xruns.c \
@@ -66,6 +67,7 @@ CSRCS += \
 	$(APP_DIR)/src/scalers/scaler_short.c \
 	$(APP_DIR)/src/scalers/scaler_svf_fc.c \
 	$(APP_DIR)/src/lib/kvtext.c \
+	$(APP_DIR)/src/lib/cv_scale.c \
 	$(APP_DIR)/src/lib/midi_nrpn.c \
 	$(APP_DIR)/src/lib/morph2d.c \
 	$(APP_DIR)/src/lib/play_maps.c \
