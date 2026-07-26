@@ -4,6 +4,7 @@
 #include "param_common.h"
 
 #define PARAM_AMP_MAX 0x7fffffff
+#define PARAM_CV_MAX 0x7fffffff
 #define PARAM_SLEW_MAX 0x7fffffff
 #define PARAM_SLEW_MIN 0
 
@@ -25,7 +26,8 @@
   order matches SPEC.md suggested enum grouping (1-based labels):
   in1..in4, in1Slew..in4Slew,
   inX-1..inX-4 + inXMixSlew per input,
-  per output Y: outY, outYSlew, outYBase, outYWidth, outYWet, outYWetSlew
+  per output Y: outY, outYSlew, outYBase, outYWidth, outYWet, outYWetSlew,
+  cv1..cv4, cvSlew1..cvSlew4
 */
 enum params {
   eParam_in1,
@@ -89,6 +91,16 @@ enum params {
   eParam_out4Width,
   eParam_out4Wet,
   eParam_out4WetSlew,
+
+  eParam_cv1,
+  eParam_cv2,
+  eParam_cv3,
+  eParam_cv4,
+
+  eParam_cvSlew1,
+  eParam_cvSlew2,
+  eParam_cvSlew3,
+  eParam_cvSlew4,
 
   eParamNumParams
 };

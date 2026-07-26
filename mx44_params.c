@@ -32,6 +32,14 @@ static void fill_hz(ParamDesc *d, const char *label, ParamValue min,
   d->radix = 16;
 }
 
+static void fill_cv(ParamDesc *d, const char *label) {
+  strcpy(d->label, label);
+  d->type = eParamTypeFix;
+  d->min = 0x00000000;
+  d->max = PARAM_CV_MAX;
+  d->radix = 16;
+}
+
 void fill_param_desc(ParamDesc *desc) {
   fill_amp(&desc[eParam_in1], "in1");
   fill_amp(&desc[eParam_in2], "in2");
@@ -98,4 +106,14 @@ void fill_param_desc(ParamDesc *desc) {
 	  PARAM_WIDTH_MAX);
   fill_amp(&desc[eParam_out4Wet], "out4Wet");
   fill_slew(&desc[eParam_out4WetSlew], "out4WetSlew");
+
+  fill_cv(&desc[eParam_cv1], "cv1");
+  fill_cv(&desc[eParam_cv2], "cv2");
+  fill_cv(&desc[eParam_cv3], "cv3");
+  fill_cv(&desc[eParam_cv4], "cv4");
+
+  fill_slew(&desc[eParam_cvSlew1], "cvSlew1");
+  fill_slew(&desc[eParam_cvSlew2], "cvSlew2");
+  fill_slew(&desc[eParam_cvSlew3], "cvSlew3");
+  fill_slew(&desc[eParam_cvSlew4], "cvSlew4");
 }

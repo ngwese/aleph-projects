@@ -6,6 +6,7 @@
 
   adc[i] * in[i+1] → bus; bus * in[i+1]-[j+1] summed into out mix j;
   bpf (HP base Hz, LP base+width Hz) dry/wet-mixed, then * out → dac.
+  cv1..cv4 drive panel CV DACs (slewed, once-per-block commit).
   parameter labels are 1-based; arrays stay 0-based.
   each amplitude has a 1-pole slew (block-rate filter_1p_lo_blk);
   matrix sends from input X share inXMixSlew.
@@ -15,6 +16,7 @@
 #include <string.h>
 
 #include "audio_channels.h"
+#include "cv.h"
 #include "filter_1p_blk.h"
 #include "filter_bp_blk.h"
 #include "fract_math.h"
@@ -38,6 +40,7 @@ static filter_1p_lo_blk mixSlew[4][4]; /* [in][out], 0-based */
 static filter_1p_lo_blk baseHzSlew[4];
 static filter_1p_lo_blk widthHzSlew[4];
 static filter_1p_lo_blk wetSlew[4];
+static filter_1p_lo_blk cvSlew[4];
 static filter_bp_blk outFilt[4];
 
 static fract32 inVal[4];
@@ -46,6 +49,7 @@ static fract32 mixVal[4][4];
 static fract32 baseHzVal[4];
 static fract32 widthHzVal[4];
 static fract32 wetVal[4];
+static fract32 cvVal[4];
 
 static inline void param_setup(u32 id, ParamValue v) {
   gModuleData->paramData[id].value = v;
@@ -87,6 +91,7 @@ void module_init(void) {
   for(x = 0; x < 4; ++x) {
     filter_1p_lo_blk_init(&(inSlew[x]), 0, MODULE_BLOCKSIZE);
     filter_1p_lo_blk_init(&(outSlew[x]), 0, MODULE_BLOCKSIZE);
+    filter_1p_lo_blk_init(&(cvSlew[x]), 0, MODULE_BLOCKSIZE);
     filter_1p_lo_blk_init(&(baseHzSlew[x]), PARAM_BASE_DEFAULT, MODULE_BLOCKSIZE);
     filter_1p_lo_blk_init(&(widthHzSlew[x]), PARAM_WIDTH_DEFAULT,
 			 MODULE_BLOCKSIZE);
@@ -161,6 +166,16 @@ void module_init(void) {
   param_setup(eParam_out4Width, PARAM_WIDTH_DEFAULT);
   param_setup(eParam_out4Wet, PARAM_WET_DEFAULT);
   param_setup(eParam_out4WetSlew, PARAM_SLEW_DEFAULT);
+
+  param_setup(eParam_cv1, 0);
+  param_setup(eParam_cv2, 0);
+  param_setup(eParam_cv3, 0);
+  param_setup(eParam_cv4, 0);
+
+  param_setup(eParam_cvSlew1, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_cvSlew2, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_cvSlew3, PARAM_SLEW_DEFAULT);
+  param_setup(eParam_cvSlew4, PARAM_SLEW_DEFAULT);
 }
 
 void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
@@ -235,6 +250,14 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
       outCh[y][frame] = mult_fr1x32x32(sig, outVal[y]);
     }
   }
+
+  /* CV: slew once per block, then one hardware flush (cv1→ch0 … cv4→ch3) */
+  for(x = 0; x < 4; ++x) {
+    filter_1p_lo_blk_prepare(&(cvSlew[x]));
+    cvVal[x] = filter_1p_lo_blk_next(&(cvSlew[x]));
+    cv_set(x, cvVal[x]);
+  }
+  cv_commit();
 }
 
 void module_set_param(u32 idx, ParamValue v) {
@@ -405,6 +428,32 @@ void module_set_param(u32 idx, ParamValue v) {
     break;
   case eParam_out4WetSlew :
     filter_1p_lo_blk_set_slew(&(wetSlew[3]), v);
+    break;
+
+  case eParam_cv1 :
+    filter_1p_lo_blk_in(&(cvSlew[0]), v);
+    break;
+  case eParam_cv2 :
+    filter_1p_lo_blk_in(&(cvSlew[1]), v);
+    break;
+  case eParam_cv3 :
+    filter_1p_lo_blk_in(&(cvSlew[2]), v);
+    break;
+  case eParam_cv4 :
+    filter_1p_lo_blk_in(&(cvSlew[3]), v);
+    break;
+
+  case eParam_cvSlew1 :
+    filter_1p_lo_blk_set_slew(&(cvSlew[0]), v);
+    break;
+  case eParam_cvSlew2 :
+    filter_1p_lo_blk_set_slew(&(cvSlew[1]), v);
+    break;
+  case eParam_cvSlew3 :
+    filter_1p_lo_blk_set_slew(&(cvSlew[2]), v);
+    break;
+  case eParam_cvSlew4 :
+    filter_1p_lo_blk_set_slew(&(cvSlew[3]), v);
     break;
 
   default :

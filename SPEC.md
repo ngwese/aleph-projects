@@ -8,16 +8,19 @@ dry so the mixer boots as an unfiltered matrix).
 four ADC inputs feed four internal input buses; each input bus is sent to
 four output mix buses through independent matrix levels; each output mix
 bus is dry/wet-blended with its bandpass, then drives one DAC through an
-output level. every amplitude control has 1-pole slewing (`filter_1p_lo_blk` in
-`dsp_block`). slews advance **once per audio block** (`MODULE_BLOCKSIZE`
-frames); bees still send per-sample integrator coeffs, converted with
-`c → c^N` so convergence time stays equivalent. matrix send slews share
-one time constant per **input** (all four sends from that input use the
-same slew). filter cutoffs use a fixed internal slew (not exposed).
+output level. four panel CV DAC outs (`cv1`…`cv4`) are independent of the
+audio matrix, each with its own slew. every amplitude / CV control has
+1-pole slewing (`filter_1p_lo_blk` in `dsp_block`). slews advance **once per
+audio block** (`MODULE_BLOCKSIZE` frames); bees still send per-sample
+integrator coeffs, converted with `c → c^N` so convergence time stays
+equivalent. matrix send slews share one time constant per **input** (all
+four sends from that input use the same slew). filter cutoffs use a fixed
+internal slew (not exposed).
 
-parameter labels are **1-based** (`in1`…`in4`, `out1`…`out4`). ADC/DAC
-hardware channels remain 0-based (`adc0`…`adc3`, `dac0`…`dac3`);
-`in1` / `out1` map to channel 0, `in4` / `out4` to channel 3.
+parameter labels are **1-based** (`in1`…`in4`, `out1`…`out4`, `cv1`…`cv4`).
+ADC/DAC/CV hardware channels remain 0-based (`adc0`…`adc3`, `dac0`…`dac3`,
+`cv_set(0..3)`); `in1` / `out1` / `cv1` map to channel 0, `in4` / `out4` /
+`cv4` to channel 3.
 
 ---
 
@@ -60,7 +63,12 @@ for each output Y in 1..4:
   outYWidth    — bandwidth in Hz; LP cutoff = base + width
   outYWet      — dry/wet: 0 = dry mix, max = full bandpass (slew: outYWetSlew)
   outY         — level from blended mix bus Y to dac(Y-1) (slew: outYSlew)
+for each CV channel N in 1..4:
+  cvN          — panel CV DAC level 0…10 V as fract32 (slew: cvSlewN)
 ```
+
+CV is flushed once per block via `cv_set` + `cv_commit` (see
+`bfin_lib_block/SPEC_CV.md`).
 
 signal equation (per sample / frame inside the block), after slewed gains
 have been **prepared once for the block**. arrays below are **0-based**
@@ -97,7 +105,9 @@ overflow: use saturating / guarded accumulation consistent with other
 | matrix sends | 16 | `inX-Y` (X,Y ∈ 1…4) | amp |
 | matrix send slews | 4 | `in1MixSlew`…`in4MixSlew` | integrator |
 | output (per out Y) | 6×4 | `outY`, `outYSlew`, `outYBase`, `outYWidth`, `outYWet`, `outYWetSlew` | amp / integrator / fix / fix / amp / integrator |
-| **total** | **52** | | |
+| CV levels | 4 | `cv1`…`cv4` | fix |
+| CV slews | 4 | `cvSlew1`…`cvSlew4` | integrator |
+| **total** | **60** | | |
 
 amp params: `0`…`PARAM_AMP_MAX` (`0x7fffffff`), displayed as dB in bees.
 integrator (slew) params: `0`…`PARAM_SLEW_MAX`, displayed as seconds-to-
@@ -113,10 +123,15 @@ filter wet: amp; `0` = full dry, `PARAM_AMP_MAX` = full wet. default `0`
 so boot matches classic unfiltered mx44. each wet has its own slew
 (`outYWetSlew`, default `PARAM_SLEW_DEFAULT`).
 
+CV levels: `eParamTypeFix`, `0`…`PARAM_CV_MAX` (`0x7fffffff` = 10 V), radix
+16. default `0`. each has `cvSlewN` (integrator, default
+`PARAM_SLEW_DEFAULT`).
+
 suggested startup: identity matrix (`inX-X` = unity, other sends = 0),
 `in*` / `out*` = unity, `in*Slew` / `out*Slew` = min (`0`), matrix send
 slews = `PARAM_SLEW_DEFAULT`, filter base/width as above, `out*Wet` = 0,
-`out*WetSlew` = `PARAM_SLEW_DEFAULT`.
+`out*WetSlew` = `PARAM_SLEW_DEFAULT`, `cv*` = 0, `cvSlew*` =
+`PARAM_SLEW_DEFAULT`.
 
 ---
 
@@ -180,6 +195,14 @@ internal (1-based labels).
 | `out4Width` | — | `bpf4` | output 4 bandwidth (Hz) |
 | `out4Wet` | — | `bpf4` | output 4 filter dry/wet (0 = dry) |
 | `out4WetSlew` | — | `out4Wet` | slew time for `out4Wet` |
+| `cv1` | — | `cvOut0` | panel CV out 1 (0…10 V) |
+| `cv2` | — | `cvOut1` | panel CV out 2 (0…10 V) |
+| `cv3` | — | `cvOut2` | panel CV out 3 (0…10 V) |
+| `cv4` | — | `cvOut3` | panel CV out 4 (0…10 V) |
+| `cvSlew1` | — | `cv1` | slew time for `cv1` |
+| `cvSlew2` | — | `cv2` | slew time for `cv2` |
+| `cvSlew3` | — | `cv3` | slew time for `cv3` |
+| `cvSlew4` | — | `cv4` | slew time for `cv4` |
 
 ---
 
@@ -195,10 +218,12 @@ internal (1-based labels).
   `hzToDimensionless`. BPF always advances; `outYWet` (slewed) linear-
   crossfades dry `mix` and wet `filt`.
 - param labels must fit `PARAM_LABEL_LEN` (16); names above are ≤11 chars.
-- no CV DAC surface (block lib has no `cv_*` API); audio matrix only.
+- CV outs use `bfin_lib_block` `cv_set` / `cv_commit` once per block after
+  audio; `cv1`→hw ch 0 … `cv4`→hw ch 3.
 - keep enum order stable once published; bees / between / ctl apps key off
   indices and labels. output params are grouped **per output** (level, slew,
-  base, width, wet, wet slew).
+  base, width, wet, wet slew). CV params are appended after outs so earlier
+  audio indices stay stable.
 
 ### suggested enum grouping
 
@@ -213,6 +238,8 @@ out1, out1Slew, out1Base, out1Width, out1Wet, out1WetSlew
 out2, out2Slew, out2Base, out2Width, out2Wet, out2WetSlew
 out3, out3Slew, out3Base, out3Width, out3Wet, out3WetSlew
 out4, out4Slew, out4Base, out4Width, out4Wet, out4WetSlew
+cv1..cv4
+cvSlew1..cvSlew4
 ```
 
 (exact C enum names can use underscores, e.g. `eParam_in1_2` for label
