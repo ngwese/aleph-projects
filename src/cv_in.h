@@ -4,7 +4,6 @@
 #define BETWEEN_CV_IN_H
 
 #include "cv_scale.h"
-#include "types.h"
 
 void cv_in_init(void);
 void cv_in_handle_adc(u8 ch, u16 adc12);
