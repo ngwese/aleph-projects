@@ -58,8 +58,7 @@ static void handle_enc0(s32 data) {
   if(sel >= (s16)list.count) {
     sel = (s16)list.count - 1;
   }
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw0(s32 data) {
@@ -75,8 +74,7 @@ static void handle_sw0(s32 data) {
   } else {
     render_log("load fail");
   }
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw2(s32 data) {
@@ -85,14 +83,12 @@ static void handle_sw2(s32 data) {
   }
   do_scan();
   render_log("scanned");
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw3(s32 data) {
   (void)data;
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 void select_modules(void) {

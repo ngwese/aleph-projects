@@ -595,14 +595,12 @@ static void handle_enc0(s32 data) {
     sel = (s16)(PLAY_MAPS_CTRL_COUNT - 1);
   }
   field = eFieldKind;
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_enc2(s32 data) {
   adjust_field(data > 0 ? 1 : -1, 0);
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_enc3(s32 data) {
@@ -614,8 +612,7 @@ static void handle_enc3(s32 data) {
   } else {
     adjust_field(data > 0 ? 1 : -1, 1);
   }
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void select_field_btn(u8 f) {
@@ -623,8 +620,7 @@ static void select_field_btn(u8 f) {
     return;
   }
   field = f;
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw0(s32 data) {
@@ -645,8 +641,7 @@ static void handle_sw0(s32 data) {
     }
     maps_changed();
     field = eFieldKind;
-    redraw();
-    render_update();
+    render_mark_dirty();
     return;
   }
   select_field_btn(eFieldSlot);
@@ -660,8 +655,7 @@ static void handle_sw1(s32 data) {
     play_maps_set_defaults(&g_play_maps);
     maps_changed();
     field = eFieldKind;
-    redraw();
-    render_update();
+    render_mark_dirty();
     return;
   }
   select_field_btn(eFieldParam);
@@ -679,8 +673,7 @@ static void handle_sw2(s32 data) {
 
 static void handle_sw3(s32 data) {
   (void)data;
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 void select_play_maps(void) {
@@ -697,8 +690,7 @@ void select_play_maps(void) {
     {eInputSwRoleAlt, handle_sw3},
   };
   input_roles_bind(enc, sw);
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 void page_play_maps_init(void) {

@@ -404,8 +404,7 @@ static void apply_enc(u8 i, s32 data) {
   default:
     return;
   }
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void write_param_slots(MorphSlot slot, u8 all, const char *label,
@@ -496,30 +495,25 @@ static void apply_sw(u8 i, s32 data) {
     if(play_maps_sw_snap_slot(m->kind, &snap)) {
       state_snap_to(snap);
       state_apply();
-      redraw();
-      render_update();
+      render_mark_dirty();
       return;
     }
     switch(m->kind) {
     case ePlaySwSetSlot:
       write_param_slots(m->slot, 0, m->label, m->value);
-      redraw();
-      render_update();
+      render_mark_dirty();
       break;
     case ePlaySwSetAll:
       write_param_slots(0, 1, m->label, m->value);
-      redraw();
-      render_update();
+      render_mark_dirty();
       break;
     case ePlaySwMomSlot:
       mom_press(i, m->slot, 0, m->label, m->value);
-      redraw();
-      render_update();
+      render_mark_dirty();
       break;
     case ePlaySwMomAll:
       mom_press(i, 0, 1, m->label, m->value);
-      redraw();
-      render_update();
+      render_mark_dirty();
       break;
     default:
       break;
@@ -527,8 +521,7 @@ static void apply_sw(u8 i, s32 data) {
   } else if(data <= 0) {
     if(m->kind == ePlaySwMomSlot || m->kind == ePlaySwMomAll) {
       mom_release(i);
-      redraw();
-      render_update();
+      render_mark_dirty();
     }
   }
 }
@@ -563,8 +556,7 @@ void select_play(void) {
   input_roles_bind(enc, sw);
   app_event_handlers[kEventSwitch6] = handle_fs0;
   app_event_handlers[kEventSwitch7] = handle_fs1;
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 void page_play_init(void) { mom.active = 0; }

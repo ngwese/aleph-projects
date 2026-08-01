@@ -44,8 +44,7 @@ u8 meters_poll(void) {
   g_meters_out = out;
   if(changed) {
     if(app_mode_is_inspect()) {
-      pages_redraw();
-      render_update();
+      render_mark_dirty();
     } else {
       /* header VU only; avoid full page redraw */
       render_header_midi_refresh();

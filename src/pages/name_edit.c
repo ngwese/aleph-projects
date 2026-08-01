@@ -6,6 +6,7 @@
 #include "events.h"
 
 #include "between_limits.h"
+#include "modal.h"
 #include "pages.h"
 #include "render.h"
 
@@ -25,12 +26,9 @@ static char stem_buf[BETWEEN_NAME_LEN];
 static u8 cursor;
 static u8 palette_idx;
 static u8 select_held;
-static u8 active;
 static NameEditKind edit_kind;
 static name_edit_done_fn done_fn;
 static void *done_ctx;
-
-static void (*saved_handlers[8])(s32 data);
 
 static u8 stem_len(void) {
   u8 n = 0;
@@ -98,33 +96,32 @@ static void redraw(void) {
   render_footer("select", "clear", "cancel", "ok");
 }
 
-static void restore_handlers(void) {
-  app_event_handlers[kEventEncoder0] = saved_handlers[0];
-  app_event_handlers[kEventEncoder1] = saved_handlers[1];
-  app_event_handlers[kEventEncoder2] = saved_handlers[2];
-  app_event_handlers[kEventEncoder3] = saved_handlers[3];
-  app_event_handlers[kEventSwitch0] = saved_handlers[4];
-  app_event_handlers[kEventSwitch1] = saved_handlers[5];
-  app_event_handlers[kEventSwitch2] = saved_handlers[6];
-  app_event_handlers[kEventSwitch3] = saved_handlers[7];
+/* drop state without touching input; modal_abort() owns the registry side. */
+static void name_edit_reset(void) {
+  select_held = 0;
+  done_fn = NULL;
+  done_ctx = NULL;
 }
+
+static const Modal name_edit_modal = {
+  .name = "name",
+  .redraw_fn = redraw,
+  .abort_fn = name_edit_reset,
+};
 
 static void close_modal(u8 ok) {
   name_edit_done_fn fn = done_fn;
   void *ctx = done_ctx;
   char stem[BETWEEN_NAME_LEN];
 
-  active = 0;
-  select_held = 0;
-  restore_handlers();
+  name_edit_reset();
+  /* restores the enc/sw bindings captured by modal_open */
+  modal_close();
 
   if(ok && fn != NULL) {
     strncpy(stem, stem_buf, BETWEEN_NAME_LEN - 1);
     stem[BETWEEN_NAME_LEN - 1] = '\0';
     fn(stem, ctx);
-  } else {
-    pages_redraw();
-    render_update();
   }
 }
 
@@ -182,16 +179,14 @@ static void handle_enc2(s32 data) {
       }
     }
   }
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw0(s32 data) {
   /* select: hold shows palette; release inserts */
   if(data > 0) {
     select_held = 1;
-    redraw();
-    render_update();
+    render_mark_dirty();
     return;
   }
   if(!select_held) {
@@ -199,8 +194,7 @@ static void handle_sw0(s32 data) {
   }
   select_held = 0;
   insert_char(palette_char(palette_idx));
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw1(s32 data) {
@@ -209,8 +203,7 @@ static void handle_sw1(s32 data) {
   }
   stem_buf[0] = '\0';
   cursor = 0;
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw2(s32 data) {
@@ -231,20 +224,6 @@ static void handle_sw3(s32 data) {
   close_modal(1);
 }
 
-u8 name_edit_active(void) { return active; }
-
-/* abandon modal without calling done_fn; does not restore handlers — caller
- * is about to install a new page bind. */
-void name_edit_abort(void) {
-  if(!active) {
-    return;
-  }
-  active = 0;
-  select_held = 0;
-  done_fn = NULL;
-  done_ctx = NULL;
-}
-
 void name_edit_open(NameEditKind kind, const char *initial,
 		    name_edit_done_fn on_ok, void *ctx) {
   edit_kind = kind;
@@ -261,14 +240,7 @@ void name_edit_open(NameEditKind kind, const char *initial,
     stem_buf[BETWEEN_NAME_LEN - 1] = '\0';
   }
 
-  saved_handlers[0] = app_event_handlers[kEventEncoder0];
-  saved_handlers[1] = app_event_handlers[kEventEncoder1];
-  saved_handlers[2] = app_event_handlers[kEventEncoder2];
-  saved_handlers[3] = app_event_handlers[kEventEncoder3];
-  saved_handlers[4] = app_event_handlers[kEventSwitch0];
-  saved_handlers[5] = app_event_handlers[kEventSwitch1];
-  saved_handlers[6] = app_event_handlers[kEventSwitch2];
-  saved_handlers[7] = app_event_handlers[kEventSwitch3];
+  modal_open(&name_edit_modal);
 
   app_event_handlers[kEventEncoder0] = handle_enc0;
   app_event_handlers[kEventEncoder1] = handle_enc1;
@@ -279,7 +251,5 @@ void name_edit_open(NameEditKind kind, const char *initial,
   app_event_handlers[kEventSwitch2] = handle_sw2;
   app_event_handlers[kEventSwitch3] = handle_sw3;
 
-  active = 1;
-  redraw();
-  render_update();
+  render_mark_dirty();
 }

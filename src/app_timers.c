@@ -15,10 +15,12 @@ static softTimer_t midiPollTimer = {.next = NULL, .prev = NULL};
 static softTimer_t xrunTimer = {.next = NULL, .prev = NULL};
 static softTimer_t adcPollTimer = {.next = NULL, .prev = NULL};
 
+/* runs in the TC ISR: post only, so the screen SPI stays on the main loop */
 static void screen_timer_callback(void *obj) {
   (void)obj;
-  render_log_tick();
-  render_update();
+  e.type = kEventScreenRefresh;
+  e.data = 0;
+  event_post(&e);
 }
 
 static void enc_timer_callback(void *obj) {

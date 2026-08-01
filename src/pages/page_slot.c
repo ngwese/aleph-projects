@@ -197,8 +197,7 @@ static void handle_enc0(s32 data) {
   }
   param_sel += (data > 0) ? 1 : -1;
   clamp_param_sel();
-  redraw_slot(cur_slot);
-  render_update();
+  render_mark_dirty();
 }
 
 static void bump_param_raw(s32 inc) {
@@ -257,8 +256,7 @@ static void bump_param(io_t delta, u8 coarse) {
     bump_param_raw(delta > 0 ? 1 : -1);
   }
   state_apply();
-  redraw_slot(cur_slot);
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_enc2(s32 data) {
@@ -284,8 +282,7 @@ static void handle_enc3(s32 data) {
       }
       return;
     }
-    redraw_slot(cur_slot);
-    render_update();
+    render_mark_dirty();
     return;
   }
   /* same coarse accel as play: ±0x100 per accumulated encoder tick */
@@ -308,8 +305,7 @@ static void on_save_as_ok(const char *stem, void *ctx) {
   } else {
     render_log("save fail");
   }
-  redraw_slot(slot);
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw0(s32 data) {
@@ -332,8 +328,7 @@ static void handle_sw0(s32 data) {
     } else {
       render_log("new fail");
     }
-    redraw_slot(cur_slot);
-    render_update();
+    render_mark_dirty();
     return;
   }
   if(g_alt_mode) {
@@ -360,8 +355,7 @@ static void handle_sw0(s32 data) {
   } else {
     render_log("save fail");
   }
-  redraw_slot(cur_slot);
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw1(s32 data) {
@@ -371,8 +365,7 @@ static void handle_sw1(s32 data) {
   if(g_alt_mode) {
     slots_capture_effective(&g_slots, cur_slot);
     render_log("captured");
-    redraw_slot(cur_slot);
-    render_update();
+    render_mark_dirty();
     return;
   }
   if(!g_slots.stem[cur_slot][0]) {
@@ -383,8 +376,7 @@ static void handle_sw1(s32 data) {
   } else {
     render_log("reset fail");
   }
-  redraw_slot(cur_slot);
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw2(s32 data) {
@@ -399,8 +391,7 @@ static void handle_sw2(s32 data) {
     state_snap_to(cur_slot);
     state_apply();
     render_log("focus");
-    redraw_slot(cur_slot);
-    render_update();
+    render_mark_dirty();
     return;
   }
   if(!state_unique_preset_stem(stem, sizeof(stem))) {
@@ -412,14 +403,12 @@ static void handle_sw2(s32 data) {
   } else {
     render_log("new fail");
   }
-  redraw_slot(cur_slot);
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw3(s32 data) {
   (void)data;
-  redraw_slot(cur_slot);
-  render_update();
+  render_mark_dirty();
 }
 
 static void select_slot(MorphSlot slot) {

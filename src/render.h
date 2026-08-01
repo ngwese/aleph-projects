@@ -10,10 +10,19 @@
 #define RENDER_LOG_CLEAR_MS 2000
 #define RENDER_TICK_MS 50
 #define RENDER_MIDI_FLASH_MS 150
+/* frame rate cap; screen updates no faster than this. */
+#define RENDER_MIN_FRAME_MS 50
 
 void render_init(void);
 void render_boot(const char *str);
+/* flush dirty regions to the screen. */
 void render_update(void);
+
+/* current page content is stale; coalesced into the next frame. */
+void render_mark_dirty(void);
+/* run one frame if anything is pending and the min interval has elapsed.
+ * called from the screen-refresh event and from main-loop idle. */
+void render_frame_service(void);
 
 /* clear content area only (does not clear header, log, or footer). */
 void render_clear(void);
@@ -68,8 +77,8 @@ void render_footer(const char *a, const char *b, const char *c, const char *d);
 /* diagnostic log on the line above the footer; redrawn immediately. */
 void render_log(const char *str);
 void render_log_clear(void);
-/* call from the screen timer; clears log after RENDER_LOG_CLEAR_MS idle;
- * ages MIDI activity flash. */
+/* call once per screen-refresh event; clears log after RENDER_LOG_CLEAR_MS
+ * idle; ages MIDI activity flash. */
 void render_log_tick(void);
 
 /* footer triangle for single-slot param targets (morph corner). */

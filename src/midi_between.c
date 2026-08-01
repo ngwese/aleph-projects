@@ -143,8 +143,7 @@ static void apply_play_cc(u8 ch, u8 cc_num, u8 val) {
     return;
   }
   state_send_param((u16)idx, raw);
-  pages_redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void apply_nrpn_data(u8 ch) {
@@ -189,8 +188,7 @@ static void apply_nrpn_data(u8 ch) {
     return;
   }
   state_send_param(idx, raw);
-  pages_redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void on_control_change(u8 ch, u8 num, u8 val) {
@@ -250,8 +248,7 @@ static void on_control_change(u8 ch, u8 num, u8 val) {
 
   state_set_morph(x, y);
   state_apply();
-  pages_redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static midi_behavior_t g_midi_beh = {

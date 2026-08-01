@@ -29,8 +29,7 @@ void select_inspect(void) {
     {eInputSwRoleUnmapped, NULL},
   };
   input_roles_bind(enc, sw);
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 void page_inspect_init(void) {}

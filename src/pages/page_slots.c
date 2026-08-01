@@ -112,8 +112,7 @@ static void open_modal(void) {
   preset_sel = 0;
   rescan_presets();
   modal = 1;
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_enc0(s32 data) {
@@ -131,8 +130,7 @@ static void handle_enc0(s32 data) {
   } else {
     sel_slot = (MorphSlot)((sel_slot + (data > 0 ? 1 : 3)) % 4);
   }
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_enc1(s32 data) {
@@ -169,8 +167,7 @@ static void handle_sw0(s32 data) {
     open_modal();
     return;
   }
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw1(s32 data) {
@@ -183,8 +180,7 @@ static void handle_sw1(s32 data) {
     pages_set((PageId)(ePageSlotA + sel_slot));
     return;
   }
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw2(s32 data) {
@@ -214,14 +210,12 @@ static void handle_sw2(s32 data) {
     state_apply();
     render_log("slot empty");
   }
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw3(s32 data) {
   (void)data;
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 void select_slots(void) {

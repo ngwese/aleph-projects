@@ -14,8 +14,14 @@
 #define CV_IN_ADC_MAX 4095u
 #define CV_IN_FR32_MAX 0x7fffffffu
 #define CV_IN_POLL_MS 50u
+/* the low bits of the AD7923 reading dither constantly. applying a map costs
+ * a param SPI write, and a morph map costs a full state_apply() sweep, so
+ * ignore movement below this many counts. */
+#define CV_IN_DEADBAND 8
 
 static fract32 g_cv_fr[PLAY_MAPS_CV_COUNT];
+static u16 g_cv_applied[PLAY_MAPS_CV_COUNT];
+static u8 g_cv_have[PLAY_MAPS_CV_COUNT];
 static u8 g_inspect_hold;
 static u8 g_adc_running;
 
@@ -107,6 +113,8 @@ void cv_in_init(void) {
   u8 i;
   for(i = 0; i < PLAY_MAPS_CV_COUNT; ++i) {
     g_cv_fr[i] = 0;
+    g_cv_applied[i] = 0;
+    g_cv_have[i] = 0;
   }
   g_inspect_hold = 0;
   g_adc_running = 0;
@@ -133,17 +141,36 @@ void cv_in_set_inspect(u8 on) {
   cv_in_sync_poll();
 }
 
+/* movement since the last value we acted on, in ADC counts */
+static u8 past_deadband(u8 ch, u16 adc12) {
+  u16 prev;
+
+  if(!g_cv_have[ch]) {
+    return 1;
+  }
+  prev = g_cv_applied[ch];
+  if(adc12 > prev) {
+    return (u8)((adc12 - prev) >= CV_IN_DEADBAND);
+  }
+  return (u8)((prev - adc12) >= CV_IN_DEADBAND);
+}
+
 void cv_in_handle_adc(u8 ch, u16 adc12) {
   fract32 fr;
   if(ch >= PLAY_MAPS_CV_COUNT) {
     return;
   }
+  adc12 = (u16)(adc12 & 0xfffu);
+  if(!past_deadband(ch, adc12)) {
+    return;
+  }
+  g_cv_applied[ch] = adc12;
+  g_cv_have[ch] = 1;
+
   fr = cv_in_adc_to_fr32(adc12);
   g_cv_fr[ch] = fr;
   apply_map(ch, adc12, fr);
-  /* adc_poll posts ch 0..3 together; redraw once per frame */
-  if(app_mode_is_inspect() && ch == (PLAY_MAPS_CV_COUNT - 1)) {
-    pages_redraw();
-    render_update();
+  if(app_mode_is_inspect()) {
+    render_mark_dirty();
   }
 }

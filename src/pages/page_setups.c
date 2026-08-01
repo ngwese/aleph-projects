@@ -30,8 +30,7 @@ static void on_save_as_ok(const char *stem, void *ctx) {
   } else {
     render_log("save fail");
   }
-  redraw_setups();
-  render_update();
+  render_mark_dirty();
 }
 
 static void redraw(void) {
@@ -72,8 +71,7 @@ static void handle_enc0(s32 data) {
   if(sel >= (s16)list.count) {
     sel = (s16)list.count - 1;
   }
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw0(s32 data) {
@@ -90,8 +88,7 @@ static void handle_sw0(s32 data) {
     }
     /* on failure state_load_setup already logged a specific reason */
   }
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw1(s32 data) {
@@ -123,8 +120,7 @@ static void handle_sw1(s32 data) {
   } else {
     render_log("save fail");
   }
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 static void handle_sw2(s32 data) {
@@ -134,14 +130,12 @@ static void handle_sw2(s32 data) {
   if(g_alt_mode) {
     do_scan();
     render_log("scanned");
-    redraw();
-    render_update();
+    render_mark_dirty();
     return;
   }
   if(!state_unique_setup_stem(g_setup_name, sizeof(g_setup_name))) {
     render_log("name fail");
-    redraw();
-    render_update();
+    render_mark_dirty();
     return;
   }
   state_setup_mark_dirty();
@@ -151,8 +145,7 @@ static void handle_sw2(s32 data) {
 
 static void handle_sw3(s32 data) {
   (void)data;
-  redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 void select_setups(void) {

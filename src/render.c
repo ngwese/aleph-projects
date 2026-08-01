@@ -7,10 +7,12 @@
 #include "font.h"
 #include "meters.h"
 #include "morph2d.h"
+#include "pages.h"
 #include "play_maps.h"
 #include "region.h"
 #include "screen.h"
 #include "state.h"
+#include "timers.h"
 
 static region bootScrollRegion = {.w = 128, .h = 64, .x = 0, .y = 0};
 static scroll bootScroll;
@@ -82,6 +84,10 @@ static u8 midi_connected = 0;
 static u8 midi_flash = 0;
 static u32 midi_flash_age_ms = 0;
 static u8 xrun_warn = 0;
+
+/* frame scheduler: page content stale, and time of the last flush */
+static u8 page_dirty = 0;
+static u32 last_frame_ticks = 0;
 
 static u8 head_title_max_x(void) {
   return xrun_warn ? HEAD_TITLE_MAX_X_XRUN : HEAD_TITLE_MAX_X_BASE;
@@ -799,11 +805,8 @@ void render_log_clear(void) {
   log_age_ms = 0;
   region_fill(&regLog, 0);
   regLog.dirty = 0;
-  /* restore content row under the log overlay */
+  /* restore content row under the log overlay; flushed by the next frame */
   regMain.dirty = 1;
-  app_pause();
-  region_draw(&regMain);
-  app_resume();
 }
 
 void render_log_tick(void) {
@@ -849,4 +852,37 @@ void render_update(void) {
     }
   }
   app_resume();
+}
+
+static u8 any_region_dirty(void) {
+  u8 i;
+  if(regHead.dirty || regMain.dirty || (log_active && regLog.dirty)) {
+    return 1;
+  }
+  for(i = 0; i < 4; ++i) {
+    if(regFoot[i].dirty) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+void render_mark_dirty(void) { page_dirty = 1; }
+
+void render_frame_service(void) {
+  u32 now;
+
+  if(!page_dirty && !any_region_dirty()) {
+    return;
+  }
+  now = time_now();
+  if((now - last_frame_ticks) < RENDER_MIN_FRAME_MS) {
+    return;
+  }
+  last_frame_ticks = now;
+  if(page_dirty) {
+    page_dirty = 0;
+    pages_redraw();
+  }
+  render_update();
 }

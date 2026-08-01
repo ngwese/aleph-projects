@@ -33,8 +33,7 @@ static void xrun_set_warn(u8 on) {
   }
   g_xrun_warn = next;
   render_xrun_set_warn(next);
-  pages_redraw();
-  render_update();
+  render_mark_dirty();
 }
 
 u8 xruns_poll(void) {
@@ -68,8 +67,7 @@ u8 xruns_poll(void) {
   }
 
   if(changed && g_page_idx == ePageInfo) {
-    pages_redraw();
-    render_update();
+    render_mark_dirty();
   }
   return changed;
 }

@@ -6,7 +6,7 @@
 #include "gpio.h"
 
 #include "cv_in.h"
-#include "name_edit.h"
+#include "modal.h"
 #include "render.h"
 
 Page g_pages[eNumPages];
@@ -81,9 +81,9 @@ void pages_set(PageId id) {
   if(id >= eNumPages) {
     return;
   }
-  if(name_edit_active()) {
-    /* MODE / page change while naming: drop modal; select_fn rebinds. */
-    name_edit_abort();
+  if(modal_active()) {
+    /* MODE / page change while a modal is up: drop it; select_fn rebinds. */
+    modal_abort();
   }
   g_page_idx = (s8)id;
   if(!page_is_live_mode(id)) {
@@ -96,8 +96,7 @@ void pages_set(PageId id) {
     app_event_handlers[kEventSwitch6] = handle_sw_noop;
     app_event_handlers[kEventSwitch7] = handle_sw_noop;
   }
-  g_pages[id].redraw_fn();
-  render_update();
+  render_mark_dirty();
 }
 
 void pages_next(s8 dir) {
@@ -161,6 +160,11 @@ void pages_mode_short_release(void) {
 }
 
 void pages_redraw(void) {
+  const Modal *m = modal_current();
+  if(m != NULL) {
+    m->redraw_fn();
+    return;
+  }
   if(g_page_idx >= 0 && g_page_idx < eNumPages) {
     g_pages[g_page_idx].redraw_fn();
   }
