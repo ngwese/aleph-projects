@@ -32,7 +32,8 @@ static u16 fr32_to_morph(fract32 fr) {
   if((u32)fr >= CV_IN_FR32_MAX) {
     return MORPH2D_ONE;
   }
-  return (u16)(((u32)fr * (u32)MORPH2D_ONE) / CV_IN_FR32_MAX);
+  /* shift so (fr>>15)*MORPH2D_ONE fits in u32 */
+  return (u16)((((u32)fr >> 15) * MORPH2D_ONE) / (CV_IN_FR32_MAX >> 15));
 }
 
 static u16 adc_to_v14(u16 adc12) {
@@ -79,12 +80,14 @@ static void apply_param(const PlayEncMap *m, u16 adc12) {
   }
 }
 
-static void apply_map(u8 ch, u16 adc12, fract32 fr) {
+/* returns non-zero when the sample drove a mapped target, so the caller
+ * knows the on-screen morph point / values are now stale. */
+static u8 apply_map(u8 ch, u16 adc12, fract32 fr) {
   const PlayEncMap *m;
   u16 axis;
 
   if(ch >= PLAY_MAPS_CV_COUNT) {
-    return;
+    return 0;
   }
   m = &g_play_maps.cv[ch];
   switch(m->kind) {
@@ -94,19 +97,20 @@ static void apply_map(u8 ch, u16 adc12, fract32 fr) {
     axis = fr32_to_morph(fr);
     state_set_morph(axis, g_slots.y);
     state_apply();
-    break;
+    return 1;
   case ePlayEncMorphY:
     axis = fr32_to_morph(fr);
     state_set_morph(g_slots.x, axis);
     state_apply();
-    break;
+    return 1;
   case ePlayEncParamSlot:
   case ePlayEncParamAll:
     apply_param(m, adc12);
-    break;
+    return 1;
   default:
     break;
   }
+  return 0;
 }
 
 void cv_in_init(void) {
@@ -157,6 +161,8 @@ static u8 past_deadband(u8 ch, u16 adc12) {
 
 void cv_in_handle_adc(u8 ch, u16 adc12) {
   fract32 fr;
+  u8 applied;
+
   if(ch >= PLAY_MAPS_CV_COUNT) {
     return;
   }
@@ -169,10 +175,14 @@ void cv_in_handle_adc(u8 ch, u16 adc12) {
 
   fr = cv_in_adc_to_fr32(adc12);
   g_cv_fr[ch] = fr;
-  apply_map(ch, adc12, fr);
+  applied = apply_map(ch, adc12, fr);
   if(app_mode_is_inspect()) {
     /* 0–7 px spark height; keep history warm on both inspect subpages */
-    inspect_cv_hist_push(ch, (u8)(((u32)fr * 7u) / 0x7fffffffu));
+    inspect_cv_hist_push(
+	ch, (u8)((((u32)fr >> 10) * 7u) / (0x7fffffffu >> 10)));
+    render_mark_dirty();
+  } else if(applied) {
+    /* morph point / play values moved; frame service is rate-capped */
     render_mark_dirty();
   }
 }

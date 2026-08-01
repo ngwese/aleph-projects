@@ -34,8 +34,9 @@ static void fmt_volts(char *dst, fract32 fr) {
     dst[5] = '\0';
     return;
   }
-  /* hundredths of a volt: 0..1000 → 0.00..10.00 */
-  h = ((u32)fr * 1000u) / 0x7fffffffu;
+  /* hundredths of a volt: 0..1000 → 0.00..10.00.
+   * shift both sides so (fr>>10)*1000 fits in u32 (no 64-bit mul). */
+  h = (((u32)fr >> 10) * 1000u) / (0x7fffffffu >> 10);
   if(h > 1000u) {
     h = 1000u;
   }
