@@ -15,6 +15,7 @@ ldr_name = $(module_name)-$(version).ldr
 module_obj = mx44_module.o \
 	$(audio_block)/filter_1p_blk.o \
 	$(audio_block)/filter_bp_blk.o \
+	$(audio_block)/filter_bp_alpha_tab.o \
 	$(audio_block)/peak_meter_blk.o
 
 # -----  below here, probably dont need to customize.

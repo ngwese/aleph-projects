@@ -11,22 +11,38 @@
 /* something pretty fast, but noticeable (matrix send slews) */
 #define PARAM_SLEW_DEFAULT 0x7ffecccc
 
-/* output base-width filter cutoffs (fix16 Hz, integer in high 16 bits) */
-#define PARAM_HZ_MIN (20 << 16)
-#define PARAM_HZ_MAX (20000 << 16)
-#define PARAM_BASE_DEFAULT (20 << 16)
-#define PARAM_WIDTH_DEFAULT (20000 << 16)
-#define PARAM_WIDTH_MIN 0
-#define PARAM_WIDTH_MAX (20000 << 16)
+/*
+  output base-width filter cutoffs, in fix16 semitones above a 1 Hz root
+  (f = 2^(st/12) Hz). the log axis keeps the band a constant number of
+  octaves wide as base sweeps, and lets both ends reach identity
+  coefficients: base 0 leaves the HP open, width max leaves the LP open.
 
-/* filter dry/wet: 0 = full dry (unfiltered), MAX = full wet */
-#define PARAM_WET_DEFAULT 0
+  radix 10 (rather than 16) so between's linear fix scaler steps 0.5
+  semitone per fine detent and 4 semitones per coarse tick, while still
+  displaying the value in semitones.
+
+  the limits mirror the coefficient tables in dsp_block; that header is not
+  included here because this file is also compiled on the host to build the
+  descriptor. mx44_module.c asserts the two agree.
+*/
+#define PARAM_ST_RADIX 10
+#define PARAM_BASE_ST_MAX 156  /* 8192 Hz */
+#define PARAM_WIDTH_ST_MAX 192 /* 65536 Hz, the open end of the LP table */
+
+#define PARAM_BASE_MIN 0
+#define PARAM_BASE_MAX (PARAM_BASE_ST_MAX << 16)
+#define PARAM_WIDTH_MIN 0
+#define PARAM_WIDTH_MAX (PARAM_WIDTH_ST_MAX << 16)
+
+/* boot fully open: HP at the identity end, LP at the identity end */
+#define PARAM_BASE_DEFAULT PARAM_BASE_MIN
+#define PARAM_WIDTH_DEFAULT PARAM_WIDTH_MAX
 
 /*
   order matches SPEC.md suggested enum grouping (1-based labels):
   in1..in4, in1Slew..in4Slew,
   inX-1..inX-4 + inXMixSlew per input,
-  per output Y: outY, outYSlew, outYBase, outYWidth, outYWet, outYWetSlew,
+  per output Y: outY, outYSlew, outYBase, outYWidth,
   cv1..cv4, cvSlew1..cvSlew4
 */
 enum params {
@@ -68,29 +84,21 @@ enum params {
   eParam_out1Slew,
   eParam_out1Base,
   eParam_out1Width,
-  eParam_out1Wet,
-  eParam_out1WetSlew,
 
   eParam_out2,
   eParam_out2Slew,
   eParam_out2Base,
   eParam_out2Width,
-  eParam_out2Wet,
-  eParam_out2WetSlew,
 
   eParam_out3,
   eParam_out3Slew,
   eParam_out3Base,
   eParam_out3Width,
-  eParam_out3Wet,
-  eParam_out3WetSlew,
 
   eParam_out4,
   eParam_out4Slew,
   eParam_out4Base,
   eParam_out4Width,
-  eParam_out4Wet,
-  eParam_out4WetSlew,
 
   eParam_cv1,
   eParam_cv2,

@@ -5,12 +5,13 @@
   mx44 — 4×4 matrix mixer for bfin_lib_block.
 
   adc[i] * in[i+1] → bus; bus * in[i+1]-[j+1] summed into out mix j;
-  bpf (HP base Hz, LP base+width Hz) dry/wet-mixed, then * out → dac.
+  base-width bpf (HP at base, LP at base+width), then * out → dac.
   cv1..cv4 drive panel CV DACs (slewed, once-per-block commit).
   parameter labels are 1-based; arrays stay 0-based.
   each amplitude has a 1-pole slew (block-rate filter_1p_lo_blk);
   matrix sends from input X share inXMixSlew.
-  filter cutoffs use a fixed internal slew; BPF always runs (warm).
+  filter cutoffs are semitones and use a fixed internal slew; fully open
+  (base min, width max) is transparent, so there is no dry/wet control.
 */
 
 #include <string.h>
@@ -18,15 +19,22 @@
 #include "audio_channels.h"
 #include "cv.h"
 #include "filter_1p_blk.h"
+#include "filter_bp_alpha_tab.h"
 #include "filter_bp_blk.h"
 #include "fract_math.h"
 #include "module.h"
 #include "module_custom.h"
 #include "mx44_params.h"
 
-/* fixed internal slew for filter Hz params (medium, avoids zipper) */
-#define FILT_HZ_SLEW PARAM_SLEW_DEFAULT
-#define FILT_LP_HZ_MAX 20000
+/* fixed internal slew for filter cutoff params (medium, avoids zipper) */
+#define FILT_ST_SLEW PARAM_SLEW_DEFAULT
+
+/* mx44_params.h cannot include the table header (it also builds on the
+   host for the descriptor), so check the ranges line up here. */
+typedef char mx44_base_st_max_matches_table
+    [(PARAM_BASE_ST_MAX == FILTER_BP_ALPHA_HP_ST_MAX) ? 1 : -1];
+typedef char mx44_width_st_max_matches_table
+    [(PARAM_WIDTH_ST_MAX == FILTER_BP_ALPHA_LP_ST_MAX) ? 1 : -1];
 
 ModuleData *gModuleData;
 
@@ -37,18 +45,16 @@ static filter_1p_lo_blk inSlew[4];
 static filter_1p_lo_blk outSlew[4];
 static filter_1p_lo_blk mixSlew[4][4]; /* [in][out], 0-based */
 
-static filter_1p_lo_blk baseHzSlew[4];
-static filter_1p_lo_blk widthHzSlew[4];
-static filter_1p_lo_blk wetSlew[4];
+static filter_1p_lo_blk baseStSlew[4];
+static filter_1p_lo_blk widthStSlew[4];
 static filter_1p_lo_blk cvSlew[4];
 static filter_bp_blk outFilt[4];
 
 static fract32 inVal[4];
 static fract32 outVal[4];
 static fract32 mixVal[4][4];
-static fract32 baseHzVal[4];
-static fract32 widthHzVal[4];
-static fract32 wetVal[4];
+static fract32 baseStVal[4];
+static fract32 widthStVal[4];
 static fract32 cvVal[4];
 
 static inline void param_setup(u32 id, ParamValue v) {
@@ -63,20 +69,10 @@ static void set_mix_slew(u8 xin, fract32 slew) {
   }
 }
 
-static inline u32 clamp_lp_hz(u32 hpHz, u32 widthHz) {
-  u32 lpHz;
-  if(widthHz > (0xffffffffu - hpHz)) {
-    lpHz = 0xffffffffu;
-  } else {
-    lpHz = hpHz + widthHz;
-  }
-  if(lpHz < hpHz + 1) {
-    lpHz = hpHz + 1;
-  }
-  if(lpHz > FILT_LP_HZ_MAX) {
-    lpHz = FILT_LP_HZ_MAX;
-  }
-  return lpHz;
+/* LP corner sits `width` semitones above the HP corner; the lookup clamps
+   to the open end of the table. both are well under s32 range. */
+static inline fract32 lp_st(fract32 baseSt, fract32 widthSt) {
+  return baseSt + widthSt;
 }
 
 void module_init(void) {
@@ -92,12 +88,12 @@ void module_init(void) {
     filter_1p_lo_blk_init(&(inSlew[x]), 0, MODULE_BLOCKSIZE);
     filter_1p_lo_blk_init(&(outSlew[x]), 0, MODULE_BLOCKSIZE);
     filter_1p_lo_blk_init(&(cvSlew[x]), 0, MODULE_BLOCKSIZE);
-    filter_1p_lo_blk_init(&(baseHzSlew[x]), PARAM_BASE_DEFAULT, MODULE_BLOCKSIZE);
-    filter_1p_lo_blk_init(&(widthHzSlew[x]), PARAM_WIDTH_DEFAULT,
-			 MODULE_BLOCKSIZE);
-    filter_1p_lo_blk_init(&(wetSlew[x]), PARAM_WET_DEFAULT, MODULE_BLOCKSIZE);
-    filter_1p_lo_blk_set_slew(&(baseHzSlew[x]), FILT_HZ_SLEW);
-    filter_1p_lo_blk_set_slew(&(widthHzSlew[x]), FILT_HZ_SLEW);
+    filter_1p_lo_blk_init(&(baseStSlew[x]), PARAM_BASE_DEFAULT,
+			  MODULE_BLOCKSIZE);
+    filter_1p_lo_blk_init(&(widthStSlew[x]), PARAM_WIDTH_DEFAULT,
+			  MODULE_BLOCKSIZE);
+    filter_1p_lo_blk_set_slew(&(baseStSlew[x]), FILT_ST_SLEW);
+    filter_1p_lo_blk_set_slew(&(widthStSlew[x]), FILT_ST_SLEW);
     filter_bp_blk_init(&(outFilt[x]));
     for(y = 0; y < 4; ++y) {
       filter_1p_lo_blk_init(&(mixSlew[x][y]), 0, MODULE_BLOCKSIZE);
@@ -143,29 +139,21 @@ void module_init(void) {
   param_setup(eParam_out1Slew, PARAM_SLEW_MIN);
   param_setup(eParam_out1Base, PARAM_BASE_DEFAULT);
   param_setup(eParam_out1Width, PARAM_WIDTH_DEFAULT);
-  param_setup(eParam_out1Wet, PARAM_WET_DEFAULT);
-  param_setup(eParam_out1WetSlew, PARAM_SLEW_DEFAULT);
 
   param_setup(eParam_out2, PARAM_AMP_MAX);
   param_setup(eParam_out2Slew, PARAM_SLEW_MIN);
   param_setup(eParam_out2Base, PARAM_BASE_DEFAULT);
   param_setup(eParam_out2Width, PARAM_WIDTH_DEFAULT);
-  param_setup(eParam_out2Wet, PARAM_WET_DEFAULT);
-  param_setup(eParam_out2WetSlew, PARAM_SLEW_DEFAULT);
 
   param_setup(eParam_out3, PARAM_AMP_MAX);
   param_setup(eParam_out3Slew, PARAM_SLEW_MIN);
   param_setup(eParam_out3Base, PARAM_BASE_DEFAULT);
   param_setup(eParam_out3Width, PARAM_WIDTH_DEFAULT);
-  param_setup(eParam_out3Wet, PARAM_WET_DEFAULT);
-  param_setup(eParam_out3WetSlew, PARAM_SLEW_DEFAULT);
 
   param_setup(eParam_out4, PARAM_AMP_MAX);
   param_setup(eParam_out4Slew, PARAM_SLEW_MIN);
   param_setup(eParam_out4Base, PARAM_BASE_DEFAULT);
   param_setup(eParam_out4Width, PARAM_WIDTH_DEFAULT);
-  param_setup(eParam_out4Wet, PARAM_WET_DEFAULT);
-  param_setup(eParam_out4WetSlew, PARAM_SLEW_DEFAULT);
 
   param_setup(eParam_cv1, 0);
   param_setup(eParam_cv2, 0);
@@ -184,12 +172,6 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
   u8 y;
   fract32 bus[4];
   fract32 mix;
-  fract32 filt;
-  fract32 wet;
-  fract32 dry;
-  fract32 sig;
-  u32 hpHz;
-  u32 lpHz;
 
   fract32 *inCh[4];
   fract32 *outCh[4];
@@ -204,31 +186,27 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
   outCh[2] = audio_out_channel(outChannels, 2);
   outCh[3] = audio_out_channel(outChannels, 3);
 
-  /* block-rate slews: one step per amp / Hz / wet */
+  /* block-rate slews: one step per amp / cutoff */
   for(x = 0; x < 4; ++x) {
     filter_1p_lo_blk_prepare(&(inSlew[x]));
     inVal[x] = filter_1p_lo_blk_next(&(inSlew[x]));
     filter_1p_lo_blk_prepare(&(outSlew[x]));
     outVal[x] = filter_1p_lo_blk_next(&(outSlew[x]));
-    filter_1p_lo_blk_prepare(&(baseHzSlew[x]));
-    baseHzVal[x] = filter_1p_lo_blk_next(&(baseHzSlew[x]));
-    filter_1p_lo_blk_prepare(&(widthHzSlew[x]));
-    widthHzVal[x] = filter_1p_lo_blk_next(&(widthHzSlew[x]));
-    filter_1p_lo_blk_prepare(&(wetSlew[x]));
-    wetVal[x] = filter_1p_lo_blk_next(&(wetSlew[x]));
+    filter_1p_lo_blk_prepare(&(baseStSlew[x]));
+    baseStVal[x] = filter_1p_lo_blk_next(&(baseStSlew[x]));
+    filter_1p_lo_blk_prepare(&(widthStSlew[x]));
+    widthStVal[x] = filter_1p_lo_blk_next(&(widthStSlew[x]));
     for(y = 0; y < 4; ++y) {
       filter_1p_lo_blk_prepare(&(mixSlew[x][y]));
       mixVal[x][y] = filter_1p_lo_blk_next(&(mixSlew[x][y]));
     }
   }
 
-  /* BPF alphas once per block (integer divides only here) */
+  /* BPF alphas once per block (table lookup + lerp, no divides) */
   for(y = 0; y < 4; ++y) {
-    hpHz = (u32)(baseHzVal[y] >> 16);
-    lpHz = clamp_lp_hz(hpHz, (u32)(widthHzVal[y] >> 16));
-    filter_bp_blk_prepare(&(outFilt[y]),
-			  filter_bp_blk_hzToDimensionless(hpHz),
-			  filter_bp_blk_hzToDimensionless(lpHz));
+    filter_bp_blk_set_alpha(
+	&(outFilt[y]), filter_bp_alpha_hp(baseStVal[y]),
+	filter_bp_alpha_lp(lp_st(baseStVal[y], widthStVal[y])));
   }
 
   for(frame = 0; frame < MODULE_BLOCKSIZE; frame++) {
@@ -242,12 +220,8 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
         mix = add_fr1x32(mix, mult_fr1x32x32(bus[x], mixVal[x][y]));
       }
 
-      filt = filter_bp_blk_next(&(outFilt[y]), mix);
-      wet = wetVal[y];
-      dry = sub_fr1x32(FR32_MAX, wet);
-      sig = add_fr1x32(mult_fr1x32x32(mix, dry),
-		       mult_fr1x32x32(filt, wet));
-      outCh[y][frame] = mult_fr1x32x32(sig, outVal[y]);
+      outCh[y][frame] =
+	  mult_fr1x32x32(filter_bp_blk_next(&(outFilt[y]), mix), outVal[y]);
     }
   }
 
@@ -379,55 +353,29 @@ void module_set_param(u32 idx, ParamValue v) {
     break;
 
   case eParam_out1Base :
-    filter_1p_lo_blk_in(&(baseHzSlew[0]), v);
+    filter_1p_lo_blk_in(&(baseStSlew[0]), v);
     break;
   case eParam_out2Base :
-    filter_1p_lo_blk_in(&(baseHzSlew[1]), v);
+    filter_1p_lo_blk_in(&(baseStSlew[1]), v);
     break;
   case eParam_out3Base :
-    filter_1p_lo_blk_in(&(baseHzSlew[2]), v);
+    filter_1p_lo_blk_in(&(baseStSlew[2]), v);
     break;
   case eParam_out4Base :
-    filter_1p_lo_blk_in(&(baseHzSlew[3]), v);
+    filter_1p_lo_blk_in(&(baseStSlew[3]), v);
     break;
 
   case eParam_out1Width :
-    filter_1p_lo_blk_in(&(widthHzSlew[0]), v);
+    filter_1p_lo_blk_in(&(widthStSlew[0]), v);
     break;
   case eParam_out2Width :
-    filter_1p_lo_blk_in(&(widthHzSlew[1]), v);
+    filter_1p_lo_blk_in(&(widthStSlew[1]), v);
     break;
   case eParam_out3Width :
-    filter_1p_lo_blk_in(&(widthHzSlew[2]), v);
+    filter_1p_lo_blk_in(&(widthStSlew[2]), v);
     break;
   case eParam_out4Width :
-    filter_1p_lo_blk_in(&(widthHzSlew[3]), v);
-    break;
-
-  case eParam_out1Wet :
-    filter_1p_lo_blk_in(&(wetSlew[0]), v);
-    break;
-  case eParam_out2Wet :
-    filter_1p_lo_blk_in(&(wetSlew[1]), v);
-    break;
-  case eParam_out3Wet :
-    filter_1p_lo_blk_in(&(wetSlew[2]), v);
-    break;
-  case eParam_out4Wet :
-    filter_1p_lo_blk_in(&(wetSlew[3]), v);
-    break;
-
-  case eParam_out1WetSlew :
-    filter_1p_lo_blk_set_slew(&(wetSlew[0]), v);
-    break;
-  case eParam_out2WetSlew :
-    filter_1p_lo_blk_set_slew(&(wetSlew[1]), v);
-    break;
-  case eParam_out3WetSlew :
-    filter_1p_lo_blk_set_slew(&(wetSlew[2]), v);
-    break;
-  case eParam_out4WetSlew :
-    filter_1p_lo_blk_set_slew(&(wetSlew[3]), v);
+    filter_1p_lo_blk_in(&(widthStSlew[3]), v);
     break;
 
   case eParam_cv1 :

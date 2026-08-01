@@ -1,5 +1,21 @@
 # mx44 `module_process_block` performance analysis
 
+## Remediation (0.9.0)
+
+The base-width rework removed the last divides from the module. Cutoffs are
+now semitones on a log axis, and coefficients come from two precomputed
+`fract32` tables in [`dsp_block/filter_bp_alpha_tab.h`](../../dsp_block/filter_bp_alpha_tab.h)
+(1408 bytes of L1 `.rodata`) read with a linear interpolation.
+
+| Change | Effect |
+|--------|--------|
+| `filter_bp_blk_prepare` → `filter_bp_blk_set_alpha` + table lookup | **0** integer divides / block, down from 8 |
+| Dropped `outYWet` / `outYWetSlew` | 4 fewer slew `prepare`s and 4×16 fewer crossfade mul/add/sub per block |
+| Sample loop | mix → HP → LP → out gain; no blend stage |
+
+Per-block slew `prepare`s drop 36 → 32. The remaining cost is the 4×4
+matrix and the eight 1-pole poles, which is ordinary mixer arithmetic.
+
 ## Remediation (0.7.0)
 
 Implemented block-rate path via [`dsp_block/`](../../dsp_block/):
@@ -12,6 +28,9 @@ Implemented block-rate path via [`dsp_block/`](../../dsp_block/):
 
 Classic `dsp/filter_1p` and `dsp/ricks_tricks` BPF remain for frame modules.
 Further ideas: [`dsp_block/TODO.md`](../../dsp_block/TODO.md).
+
+(Superseded in 0.9.0 — see above. The divide counts below describe the
+0.7.0 path.)
 
 ### What the hot path does now
 
