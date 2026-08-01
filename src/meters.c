@@ -43,7 +43,7 @@ u8 meters_poll(void) {
   g_meters_in = in;
   g_meters_out = out;
   if(changed) {
-    if(app_mode_is_inspect()) {
+    if(inspect_on_io()) {
       render_mark_dirty();
     } else {
       /* header VU only; avoid full page redraw */

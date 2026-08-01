@@ -171,6 +171,8 @@ void cv_in_handle_adc(u8 ch, u16 adc12) {
   g_cv_fr[ch] = fr;
   apply_map(ch, adc12, fr);
   if(app_mode_is_inspect()) {
+    /* 0–7 px spark height; keep history warm on both inspect subpages */
+    inspect_cv_hist_push(ch, (u8)(((u32)fr * 7u) / 0x7fffffffu));
     render_mark_dirty();
   }
 }

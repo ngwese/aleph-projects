@@ -86,4 +86,9 @@ void redraw_info(void);
 void redraw_play(void);
 void redraw_inspect(void);
 
+/* inspect subpages: 1 while on the i/o meters view (for meters_poll). */
+u8 inspect_on_io(void);
+/* push one spark sample (height 0–7) while inspect is active. */
+void inspect_cv_hist_push(u8 ch, u8 height);
+
 #endif

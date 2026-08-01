@@ -3,12 +3,10 @@
 #include <string.h>
 
 #include "app.h"
-#include "cv_in.h"
 #include "font.h"
 #include "meters.h"
 #include "morph2d.h"
 #include "pages.h"
-#include "play_maps.h"
 #include "region.h"
 #include "screen.h"
 #include "state.h"
@@ -700,43 +698,59 @@ static u8 vu_peak_fill_h(fract32 peak, u8 bar_h_max) {
   return fill_h;
 }
 
-void render_inspect_cv_values(void) {
-  const fract32 *v = cv_in_values();
+void render_inspect_cv_row(u8 row, const char *label, const char *volts,
+			   const u8 *spark, u8 spark_n) {
+  const u8 y = (u8)(row * FONT_CHARH);
+  const u8 label_w = (u8)(4 * FONT_CHARW); /* "cvN " */
+  const u8 volts_w = (u8)(5 * FONT_CHARW); /* " 0.00" / "10.00" */
+  const u8 spark_x = (u8)(label_w + volts_w + 2);
   u8 i;
-  char line[22];
-  static const char hexd[] = "0123456789abcdef";
+  u8 h;
+  u8 max_n;
 
-  for(i = 0; i < PLAY_MAPS_CV_COUNT; ++i) {
-    u32 x = (u32)v[i];
-    u8 n;
-    line[0] = 'c';
-    line[1] = 'v';
-    line[2] = (char)('0' + i);
-    line[3] = ' ';
-    line[4] = '0';
-    line[5] = 'x';
-    for(n = 0; n < 8; ++n) {
-      line[6 + n] = hexd[(x >> (28 - n * 4)) & 0xfu];
+  if(row >= RENDER_CONTENT_ROWS) {
+    return;
+  }
+  if(label != NULL) {
+    render_string_xy(0, y, label, HEAD_GREY);
+  }
+  if(volts != NULL) {
+    render_string_xy(label_w, y, volts, HEAD_WHITE);
+  }
+  if(spark == NULL || spark_n == 0) {
+    return;
+  }
+  max_n = (u8)(128 - spark_x);
+  if(spark_n > max_n) {
+    spark_n = max_n;
+  }
+  for(i = 0; i < spark_n; ++i) {
+    h = spark[i];
+    if(h > 7) {
+      h = 7;
     }
-    line[14] = '\0';
-    render_string_xy(0, (u8)(i * 8), line, HEAD_GREY_LIGHT);
+    if(h > 0) {
+      render_fill_rect((u8)(spark_x + i), (u8)(y + 8 - h), 1, h,
+		       HEAD_GREY_LIGHT);
+    }
   }
 }
 
 void render_inspect_vu_bars(void) {
   const bfin_meter_bank_t *in = meters_in();
   const bfin_meter_bank_t *out = meters_out();
-  /* CV readouts occupy y=0..31; meters use the lower strip (no in/out tags). */
-  const u8 bar_w = 3;
+  /* full content height: tags at top, digits under baseline, tall bars. */
+  const u8 bar_w = 4;
   const u8 label_w = FONT_CHARW;
-  const u8 col_pitch = 10;
-  const u8 group_gap = 14;
+  const u8 col_pitch = 12;
+  const u8 group_gap = 16;
   const u8 baseline_h = 1;
   const u8 gap_h = 1;
+  const u8 tag_y = 0;
   const u8 label_y = 40;
   const u8 baseline_y = (u8)(label_y - baseline_h);
   const u8 meter_base_y = (u8)(baseline_y - gap_h - 1);
-  const u8 bar_top = 32;
+  const u8 bar_top = 10;
   const u8 bar_h_max =
     (meter_base_y >= bar_top) ? (u8)(meter_base_y - bar_top) : 0;
   const u8 group_w =
@@ -748,6 +762,9 @@ void render_inspect_vu_bars(void) {
   u8 x_bar;
   u8 fill_h;
   char dig[2];
+
+  render_string_xy(x0, tag_y, "in", HEAD_GREY);
+  render_string_xy((u8)(x0 + group_w + group_gap), tag_y, "out", HEAD_GREY);
 
   dig[1] = '\0';
   for(i = 0; i < BFIN_METER_CH; ++i) {

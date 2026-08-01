@@ -87,8 +87,10 @@ void render_footer_slot_tri(u8 cell, MorphSlot slot);
 /* play morph square: light-gray frame + 3×3 white cursor in content area. */
 void render_play_morph(u16 x, u16 y);
 
-/* inspect mode: CV fract32 readouts (0–10 V) + compressed IN/OUT peak bars. */
-void render_inspect_cv_values(void);
+/* inspect i/o: full-height IN/OUT peak bars. */
 void render_inspect_vu_bars(void);
+/* inspect cv in: one content row — label, fixed volts string, spark columns. */
+void render_inspect_cv_row(u8 row, const char *label, const char *volts,
+			   const u8 *spark, u8 spark_n);
 
 #endif
