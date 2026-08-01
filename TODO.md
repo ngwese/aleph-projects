@@ -68,10 +68,16 @@ relevant: `apps/between/src/lib/slots.c` — `slots_rebuild_apply_order`,
 
 ## mx44 output base-width filter
 
-implement a base width filter and add it on the outputs of the mx44
-module (post-mix / pre-DAC path).
+done (mx44 0.9.0): elektron-style base-width bandpass on each output
+(post-mix / pre-DAC). `outYBase` / `outYWidth` are fix16 semitones above a
+1 Hz root, so a fixed width holds a constant octave span as base sweeps.
+fully open is transparent, so the dry/wet control was removed.
 
-relevant: `modules_block/mx44/`
+between shows these as plain semitone numbers, not Hz — the fix scaler is
+linear, which is correct on a log axis, but there is no unit suffix. a
+display variant that resolves semitones to Hz would be a nice follow-up.
+
+relevant: `modules_block/mx44/`, `dsp_block/filter_bp_alpha_tab.*`
 
 ## queued morph apply (sample-and-hold)
 
