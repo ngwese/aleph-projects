@@ -43,11 +43,10 @@ u8 meters_poll(void) {
   g_meters_in = in;
   g_meters_out = out;
   if(changed) {
+    render_meters_mark_dirty();
     if(inspect_on_io()) {
+      /* inspect i/o draws its own bars into the content region */
       render_mark_dirty();
-    } else {
-      /* header VU only; avoid full page redraw */
-      render_header_midi_refresh();
     }
   }
   return changed;

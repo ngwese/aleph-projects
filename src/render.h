@@ -52,25 +52,34 @@ void render_edit_string(u8 row, const char *str, u8 cursor);
  * (0xff = none). */
 void render_charset_row(u8 row, const char *chars, u8 sel);
 
-/* edit-mode page header: mid-grey bar, title box(es), optional MIDI m,
- * morph-position indicator. dirty draws a light-grey "*" after the title. */
+/* edit-mode page header: mid-grey bar, title box(es). the status glyphs sit
+ * in their own regions to the right. dirty draws a light-grey "*" after the
+ * title. */
 void render_header(const char *title, u8 dirty);
 /* like render_header, plus a second white name box (uses "none" if name
  * is NULL/empty) — same pattern as the slot page preset box. dirty draws
  * "*" after the name box. */
 void render_header_with_name(const char *title, const char *name, u8 dirty);
 /* slot page: capital letter box, optional preset-name box, light-grey "*"
- * after the name when dirty, MIDI m + morph indicator. */
+ * after the name when dirty. */
 void render_header_slot(char slot_letter, const char *preset, u8 dirty);
+/* clear the title area; status glyphs are untouched. */
 void render_header_clear(void);
-/* redraw only MIDI m + morph chrome (after connect / activity flash). */
-void render_header_midi_refresh(void);
+
+/* header status glyphs — each owns a region and is redrawn only when its own
+ * mark is set. all four are coalesced into the next frame. */
 
 /* USB-MIDI presence / activity for the header m glyph. */
 void render_midi_set_connected(u8 connected);
 void render_midi_pulse_activity(void);
 /* dark-grey "!!!" left of MIDI m when any DSP xrun counter is non-zero. */
 void render_xrun_set_warn(u8 warn);
+/* header VU boxes are stale (new peak values). */
+void render_meters_mark_dirty(void);
+/* header morph indicator is stale (morph point moved). */
+void render_morph_mark_dirty(void);
+/* age the MIDI activity flash; call once per RENDER_TICK_MS. */
+void render_status_tick(void);
 
 void render_footer(const char *a, const char *b, const char *c, const char *d);
 
@@ -78,7 +87,7 @@ void render_footer(const char *a, const char *b, const char *c, const char *d);
 void render_log(const char *str);
 void render_log_clear(void);
 /* call once per screen-refresh event; clears log after RENDER_LOG_CLEAR_MS
- * idle; ages MIDI activity flash. */
+ * idle. */
 void render_log_tick(void);
 
 /* footer triangle for single-slot param targets (morph corner). */

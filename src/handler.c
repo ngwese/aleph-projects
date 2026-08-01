@@ -72,10 +72,12 @@ static void handle_AppCustom(s32 data) {
   (void)meters_poll();
 }
 
-/* frame tick: age the log/MIDI flash, then redraw + flush if anything is
-   pending. also runs from main-loop idle via app_idle_handler. */
+/* frame tick: age the MIDI flash and the log, then redraw + flush if anything
+   is pending. also runs from main-loop idle via app_idle_handler, which skips
+   the aging — this event is the fixed RENDER_TICK_MS cadence. */
 static void handle_ScreenRefresh(s32 data) {
   (void)data;
+  render_status_tick();
   render_log_tick();
   render_frame_service();
 }

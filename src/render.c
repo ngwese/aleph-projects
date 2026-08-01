@@ -17,7 +17,26 @@ static scroll bootScroll;
 
 /* header 8; content 48 (6 rows); log overlays last content row when active;
  * four bees-style SW label cells at y=56 */
-static region regHead = {.w = 128, .h = 8, .x = 0, .y = 0};
+
+/* the header row is five side-by-side regions: the title area plus one per
+ * status glyph, so each glyph redraws and flushes independently. they tile
+ * L→R to 128. screen_draw_region packs 2px per byte, so every origin and
+ * width here must stay even. */
+#define HEAD_TITLE_W 92
+#define HEAD_XRUN_X HEAD_TITLE_W
+#define HEAD_XRUN_W 8
+#define HEAD_MIDI_X (HEAD_XRUN_X + HEAD_XRUN_W)
+#define HEAD_MIDI_W 8
+#define HEAD_VU_X (HEAD_MIDI_X + HEAD_MIDI_W)
+#define HEAD_VU_W 12
+#define HEAD_IND_X (HEAD_VU_X + HEAD_VU_W)
+#define HEAD_IND_W 8
+
+static region regHead = {.w = HEAD_TITLE_W, .h = 8, .x = 0, .y = 0};
+static region regXrun = {.w = HEAD_XRUN_W, .h = 8, .x = HEAD_XRUN_X, .y = 0};
+static region regMidi = {.w = HEAD_MIDI_W, .h = 8, .x = HEAD_MIDI_X, .y = 0};
+static region regVu = {.w = HEAD_VU_W, .h = 8, .x = HEAD_VU_X, .y = 0};
+static region regMorph = {.w = HEAD_IND_W, .h = 8, .x = HEAD_IND_X, .y = 0};
 static region regMain = {.w = 128, .h = 48, .x = 0, .y = 8};
 static region regLog = {.w = 128, .h = 8, .x = 0, .y = 48};
 static region regFoot[4] = {
@@ -34,28 +53,14 @@ static region regFoot[4] = {
 #define HEAD_BLACK 0x0
 #define HEAD_BAR_W 2
 #define HEAD_GAP_W 1
-#define HEAD_IND_W 8
-#define HEAD_IND_X (128 - HEAD_IND_W)
-/* right chrome L→R: [xrun] [midi] [vu] [morph] */
+/* titles clip to the title region; the glyph slots are always reserved */
+#define HEAD_TITLE_MAX_X (HEAD_TITLE_W - HEAD_GAP_W)
+/* vu boxes, drawn region-local: 4 cols of 2px with 1px gaps = 11px */
 #define HEAD_VU_BOX 2
 #define HEAD_VU_H_GAP 1
 #define HEAD_VU_V_GAP 2
 #define HEAD_VU_COLS 4
-#define HEAD_VU_W                                                             \
-  (HEAD_VU_COLS * HEAD_VU_BOX + (HEAD_VU_COLS - 1) * HEAD_VU_H_GAP)
-#define HEAD_VU_GAP_W 2 /* gap between VU and morph */
-#define HEAD_VU_X (HEAD_IND_X - HEAD_VU_GAP_W - HEAD_VU_W)
 #define HEAD_VU_Y0 1 /* 1px pad; rows at y=1 and y=5 */
-#define HEAD_MIDI_W FONT_CHARW
-#define HEAD_MIDI_GAP_W 2 /* gap between m and VU */
-#define HEAD_MIDI_X (HEAD_VU_X - HEAD_MIDI_GAP_W - HEAD_MIDI_W)
-/* proportional "!!!": each ! is 1px + 1px advance (same as font_string) */
-#define HEAD_XRUN_W 6
-#define HEAD_XRUN_GAP_W 2 /* gap between !!! and m */
-#define HEAD_XRUN_X (HEAD_MIDI_X - HEAD_XRUN_GAP_W - HEAD_XRUN_W)
-/* titles stop left of midi (always reserved); further left when !!! shown */
-#define HEAD_TITLE_MAX_X_BASE (HEAD_MIDI_X - HEAD_GAP_W)
-#define HEAD_TITLE_MAX_X_XRUN (HEAD_XRUN_X - HEAD_GAP_W)
 #define HEAD_MARGIN 2
 #define HEAD_TEXT_X (HEAD_BAR_W + HEAD_GAP_W)
 #define HEAD_DIRTY_GAP_W 2
@@ -83,38 +88,50 @@ static u8 midi_flash = 0;
 static u32 midi_flash_age_ms = 0;
 static u8 xrun_warn = 0;
 
+/* one bit per status glyph; each is redrawn only when its own bit is set */
+#define STATUS_XRUN 0x1
+#define STATUS_MIDI 0x2
+#define STATUS_VU 0x4
+#define STATUS_MORPH 0x8
+#define STATUS_ALL 0xf
+static u8 status_dirty = 0;
+
 /* frame scheduler: page content stale, and time of the last flush */
 static u8 page_dirty = 0;
 static u32 last_frame_ticks = 0;
 
-static u8 head_title_max_x(void) {
-  return xrun_warn ? HEAD_TITLE_MAX_X_XRUN : HEAD_TITLE_MAX_X_BASE;
-}
-
-static void head_fill_col(u8 x0, u8 w, u8 color) {
+/* fill w full-height columns of a header-row region, clipped to its width. */
+static void reg_fill_col(region *r, u8 x0, u8 w, u8 color) {
   u8 x;
   u8 y;
-  for(y = 0; y < 8; ++y) {
+  for(y = 0; y < r->h; ++y) {
     for(x = 0; x < w; ++x) {
-      regHead.data[(u32)y * 128u + (u32)(x0 + x)] = color;
+      if((u16)x0 + x >= r->w) {
+	break;
+      }
+      r->data[(u32)y * (u32)r->w + (u32)(x0 + x)] = color;
     }
   }
 }
 
-static void head_put_px(u8 x, u8 y, u8 color) {
-  if(x < 128 && y < 8) {
-    regHead.data[(u32)y * 128u + (u32)x] = color;
+static void reg_put_px(region *r, u8 x, u8 y, u8 color) {
+  if(x < r->w && y < r->h) {
+    r->data[(u32)y * (u32)r->w + (u32)x] = color;
   }
+}
+
+static void head_fill_col(u8 x0, u8 w, u8 color) {
+  reg_fill_col(&regHead, x0, w, color);
 }
 
 /* light-grey 3×3 circle after a title/name box; x0 is the left edge. */
 static void head_draw_dirty_dot(u8 x0) {
   const u8 y0 = 2;
-  head_put_px((u8)(x0 + 1), y0, HEAD_GREY_LIGHT);
-  head_put_px(x0, (u8)(y0 + 1), HEAD_GREY_LIGHT);
-  head_put_px((u8)(x0 + 1), (u8)(y0 + 1), HEAD_GREY_LIGHT);
-  head_put_px((u8)(x0 + 2), (u8)(y0 + 1), HEAD_GREY_LIGHT);
-  head_put_px((u8)(x0 + 1), (u8)(y0 + 2), HEAD_GREY_LIGHT);
+  reg_put_px(&regHead, (u8)(x0 + 1), y0, HEAD_GREY_LIGHT);
+  reg_put_px(&regHead, x0, (u8)(y0 + 1), HEAD_GREY_LIGHT);
+  reg_put_px(&regHead, (u8)(x0 + 1), (u8)(y0 + 1), HEAD_GREY_LIGHT);
+  reg_put_px(&regHead, (u8)(x0 + 2), (u8)(y0 + 1), HEAD_GREY_LIGHT);
+  reg_put_px(&regHead, (u8)(x0 + 1), (u8)(y0 + 2), HEAD_GREY_LIGHT);
 }
 
 static u8 head_draw_dirty_after(u8 x, u8 x_max, u8 dirty) {
@@ -134,6 +151,10 @@ void render_init(void) {
   region_alloc(&bootScrollRegion);
   scroll_init(&bootScroll, &bootScrollRegion);
   region_alloc(&regHead);
+  region_alloc(&regXrun);
+  region_alloc(&regMidi);
+  region_alloc(&regVu);
+  region_alloc(&regMorph);
   region_alloc(&regMain);
   region_alloc(&regLog);
   for(i = 0; i < 4; ++i) {
@@ -142,8 +163,18 @@ void render_init(void) {
   log_buf[0] = '\0';
   log_active = 0;
   region_fill(&regHead, HEAD_BLACK);
+  region_fill(&regXrun, HEAD_BLACK);
+  region_fill(&regMidi, HEAD_BLACK);
+  region_fill(&regVu, HEAD_BLACK);
+  region_fill(&regMorph, HEAD_BLACK);
   region_fill(&regLog, 0);
   region_draw(&regHead);
+  region_draw(&regXrun);
+  region_draw(&regMidi);
+  region_draw(&regVu);
+  region_draw(&regMorph);
+  /* paint every glyph once on the first frame */
+  status_dirty = STATUS_ALL;
   /* do not draw empty log — it shares the last content row */
 }
 
@@ -356,35 +387,35 @@ static u8 head_draw_text_box(u8 x, const char *text, u8 x_max) {
 }
 
 static void head_draw_morph_indicator(void) {
+  const u8 w = regMorph.w;
   u8 ix;
   u8 iy;
   u8 cx;
   u8 cy;
-  u16 inner = (u16)(HEAD_IND_W - 2);
+  u16 inner = (u16)(w - 2);
 
   /* mid-grey outline, black fill (matches play morph style, 8×8) */
-  head_fill_col(HEAD_IND_X, HEAD_IND_W, HEAD_BLACK);
-  for(ix = 0; ix < HEAD_IND_W; ++ix) {
-    head_put_px((u8)(HEAD_IND_X + ix), 0, HEAD_GREY);
-    head_put_px((u8)(HEAD_IND_X + ix), (u8)(HEAD_IND_W - 1), HEAD_GREY);
+  reg_fill_col(&regMorph, 0, w, HEAD_BLACK);
+  for(ix = 0; ix < w; ++ix) {
+    reg_put_px(&regMorph, ix, 0, HEAD_GREY);
+    reg_put_px(&regMorph, ix, (u8)(w - 1), HEAD_GREY);
   }
-  for(iy = 0; iy < HEAD_IND_W; ++iy) {
-    head_put_px(HEAD_IND_X, iy, HEAD_GREY);
-    head_put_px((u8)(HEAD_IND_X + HEAD_IND_W - 1), iy, HEAD_GREY);
+  for(iy = 0; iy < w; ++iy) {
+    reg_put_px(&regMorph, 0, iy, HEAD_GREY);
+    reg_put_px(&regMorph, (u8)(w - 1), iy, HEAD_GREY);
   }
 
   /* 2×2 white cursor mapped into the inner (outline inset by 1) */
   if(inner > 1) {
-    cx = (u8)(HEAD_IND_X + 1 +
-	      ((u32)g_slots.x * (inner - 1)) / MORPH2D_ONE);
+    cx = (u8)(1 + ((u32)g_slots.x * (inner - 1)) / MORPH2D_ONE);
     cy = (u8)(1 + ((u32)g_slots.y * (inner - 1)) / MORPH2D_ONE);
   } else {
-    cx = (u8)(HEAD_IND_X + 1);
+    cx = 1;
     cy = 1;
   }
   for(iy = 0; iy < 2; ++iy) {
     for(ix = 0; ix < 2; ++ix) {
-      head_put_px((u8)(cx + ix), (u8)(cy + iy), HEAD_WHITE);
+      reg_put_px(&regMorph, (u8)(cx + ix), (u8)(cy + iy), HEAD_WHITE);
     }
   }
 }
@@ -404,11 +435,11 @@ static u8 vu_peak_grey(fract32 peak) {
 
 static u8 head_vu_grey(fract32 peak) { return vu_peak_grey(peak); }
 
-static void head_fill_box2(u8 x, u8 y, u8 color) {
-  head_put_px(x, y, color);
-  head_put_px((u8)(x + 1), y, color);
-  head_put_px(x, (u8)(y + 1), color);
-  head_put_px((u8)(x + 1), (u8)(y + 1), color);
+static void vu_fill_box2(u8 x, u8 y, u8 color) {
+  reg_put_px(&regVu, x, y, color);
+  reg_put_px(&regVu, (u8)(x + 1), y, color);
+  reg_put_px(&regVu, x, (u8)(y + 1), color);
+  reg_put_px(&regVu, (u8)(x + 1), (u8)(y + 1), color);
 }
 
 static void head_draw_vu(void) {
@@ -419,44 +450,67 @@ static void head_draw_vu(void) {
   u8 y_in = HEAD_VU_Y0;
   u8 y_out = (u8)(HEAD_VU_Y0 + HEAD_VU_BOX + HEAD_VU_V_GAP);
 
+  reg_fill_col(&regVu, 0, regVu.w, HEAD_BLACK);
   for(i = 0; i < HEAD_VU_COLS; i++) {
-    x = (u8)(HEAD_VU_X + i * (HEAD_VU_BOX + HEAD_VU_H_GAP));
-    head_fill_box2(x, y_in, head_vu_grey(in->ch[i]));
-    head_fill_box2(x, y_out, head_vu_grey(out->ch[i]));
+    x = (u8)(i * (HEAD_VU_BOX + HEAD_VU_H_GAP));
+    vu_fill_box2(x, y_in, head_vu_grey(in->ch[i]));
+    vu_fill_box2(x, y_out, head_vu_grey(out->ch[i]));
   }
 }
 
-/* right chrome left of morph: [xrun] [midi] [vu] */
-static void head_draw_status_glyphs(void) {
-  u8 color;
+static void head_draw_xrun(void) {
   u8 *dst;
-  u8 x;
+  u8 x = 0;
+  u8 i;
 
-  /* clear from xrun through the morph gap */
-  for(x = HEAD_XRUN_X; x < HEAD_IND_X; ++x) {
-    head_fill_col(x, 1, HEAD_BLACK);
+  reg_fill_col(&regXrun, 0, regXrun.w, HEAD_BLACK);
+  if(!xrun_warn) {
+    return;
   }
-  if(xrun_warn) {
-    /* proportional glyphs — fixed-width cells leave ~4px between bangs */
-    font_string_region_clip(&regHead, "!!!", HEAD_XRUN_X, 0, HEAD_GREY_DARK,
-			    HEAD_BLACK);
+  /* proportional glyphs — each ! is 1px wide plus a 1px advance. drawn one
+   * at a time: font_string_region_clip's padding math underflows on a
+   * region this narrow. */
+  for(i = 0; i < 3; ++i) {
+    dst = regXrun.data + x;
+    x = (u8)(x + font_glyph('!', dst, regXrun.w, HEAD_GREY_DARK, HEAD_BLACK) +
+	     1);
   }
-  if(midi_connected) {
-    color = midi_flash ? HEAD_GREY_LIGHT : HEAD_GREY_DARK;
-    dst = regHead.data + HEAD_MIDI_X;
-    (void)font_glyph_fixed('m', dst, 128, color, HEAD_BLACK);
-  }
-  head_draw_vu();
 }
 
-static void head_draw_right_chrome(void) {
-  head_draw_status_glyphs();
-  head_draw_morph_indicator();
+static void head_draw_midi(void) {
+  u8 color;
+
+  reg_fill_col(&regMidi, 0, regMidi.w, HEAD_BLACK);
+  if(!midi_connected) {
+    return;
+  }
+  color = midi_flash ? HEAD_GREY_LIGHT : HEAD_GREY_DARK;
+  (void)font_glyph_fixed('m', regMidi.data, regMidi.w, color, HEAD_BLACK);
+}
+
+static void status_redraw(void) {
+  if(status_dirty & STATUS_XRUN) {
+    head_draw_xrun();
+    regXrun.dirty = 1;
+  }
+  if(status_dirty & STATUS_MIDI) {
+    head_draw_midi();
+    regMidi.dirty = 1;
+  }
+  if(status_dirty & STATUS_VU) {
+    head_draw_vu();
+    regVu.dirty = 1;
+  }
+  if(status_dirty & STATUS_MORPH) {
+    head_draw_morph_indicator();
+    regMorph.dirty = 1;
+  }
+  status_dirty = 0;
 }
 
 void render_header(const char *title, u8 dirty) {
   u8 x;
-  u8 x_max = head_title_max_x();
+  u8 x_max = HEAD_TITLE_MAX_X;
 
   if(title == NULL) {
     title = "";
@@ -466,13 +520,12 @@ void render_header(const char *title, u8 dirty) {
   head_fill_col(0, HEAD_BAR_W, HEAD_GREY);
   x = head_draw_text_box(HEAD_TEXT_X, title, x_max);
   (void)head_draw_dirty_after(x, x_max, dirty);
-  head_draw_right_chrome();
   regHead.dirty = 1;
 }
 
 void render_header_with_name(const char *title, const char *name, u8 dirty) {
   u8 x;
-  u8 x_max = head_title_max_x();
+  u8 x_max = HEAD_TITLE_MAX_X;
 
   if(title == NULL) {
     title = "";
@@ -489,14 +542,13 @@ void render_header_with_name(const char *title, const char *name, u8 dirty) {
     x = head_draw_text_box(x, name, x_max);
   }
   (void)head_draw_dirty_after(x, x_max, dirty);
-  head_draw_right_chrome();
   regHead.dirty = 1;
 }
 
 void render_header_slot(char slot_letter, const char *preset, u8 dirty) {
   char slot[2];
   u8 x;
-  u8 x_max = head_title_max_x();
+  u8 x_max = HEAD_TITLE_MAX_X;
 
   slot[0] = slot_letter;
   slot[1] = '\0';
@@ -510,22 +562,13 @@ void render_header_slot(char slot_letter, const char *preset, u8 dirty) {
     x = head_draw_text_box(x, preset, x_max);
   }
   (void)head_draw_dirty_after(x, x_max, dirty);
-
-  head_draw_right_chrome();
   regHead.dirty = 1;
 }
 
+/* clears the title area only; status glyphs own their own regions. */
 void render_header_clear(void) {
   region_fill(&regHead, HEAD_BLACK);
   regHead.dirty = 1;
-}
-
-void render_header_midi_refresh(void) {
-  head_draw_right_chrome();
-  regHead.dirty = 1;
-  app_pause();
-  region_draw(&regHead);
-  app_resume();
 }
 
 void render_midi_set_connected(u8 connected) {
@@ -534,7 +577,7 @@ void render_midi_set_connected(u8 connected) {
     midi_flash = 0;
     midi_flash_age_ms = 0;
   }
-  render_header_midi_refresh();
+  status_dirty |= STATUS_MIDI;
 }
 
 void render_midi_pulse_activity(void) {
@@ -543,7 +586,7 @@ void render_midi_pulse_activity(void) {
   }
   midi_flash = 1;
   midi_flash_age_ms = 0;
-  render_header_midi_refresh();
+  status_dirty |= STATUS_MIDI;
 }
 
 void render_xrun_set_warn(u8 warn) {
@@ -552,9 +595,24 @@ void render_xrun_set_warn(u8 warn) {
     return;
   }
   xrun_warn = next;
-  /* right chrome only; callers redraw the full header when warn flips so
-   * title max-x updates. */
-  render_header_midi_refresh();
+  status_dirty |= STATUS_XRUN;
+}
+
+void render_meters_mark_dirty(void) { status_dirty |= STATUS_VU; }
+
+void render_morph_mark_dirty(void) { status_dirty |= STATUS_MORPH; }
+
+void render_status_tick(void) {
+  if(!midi_flash) {
+    return;
+  }
+  midi_flash_age_ms += RENDER_TICK_MS;
+  if(midi_flash_age_ms >= RENDER_MIDI_FLASH_MS) {
+    midi_flash = 0;
+    midi_flash_age_ms = 0;
+    /* back to dark-grey m while still connected */
+    status_dirty |= STATUS_MIDI;
+  }
 }
 
 void render_footer(const char *a, const char *b, const char *c, const char *d) {
@@ -827,16 +885,6 @@ void render_log_clear(void) {
 }
 
 void render_log_tick(void) {
-  if(midi_flash) {
-    midi_flash_age_ms += RENDER_TICK_MS;
-    if(midi_flash_age_ms >= RENDER_MIDI_FLASH_MS) {
-      midi_flash = 0;
-      midi_flash_age_ms = 0;
-      /* return to dark-grey m while still connected */
-      head_draw_status_glyphs();
-      regHead.dirty = 1;
-    }
-  }
   if(!log_active) {
     return;
   }
@@ -851,6 +899,18 @@ void render_update(void) {
   app_pause();
   if(regHead.dirty) {
     region_draw(&regHead);
+  }
+  if(regXrun.dirty) {
+    region_draw(&regXrun);
+  }
+  if(regMidi.dirty) {
+    region_draw(&regMidi);
+  }
+  if(regVu.dirty) {
+    region_draw(&regVu);
+  }
+  if(regMorph.dirty) {
+    region_draw(&regMorph);
   }
   if(regMain.dirty) {
     region_draw(&regMain);
@@ -876,6 +936,9 @@ static u8 any_region_dirty(void) {
   if(regHead.dirty || regMain.dirty || (log_active && regLog.dirty)) {
     return 1;
   }
+  if(regXrun.dirty || regMidi.dirty || regVu.dirty || regMorph.dirty) {
+    return 1;
+  }
   for(i = 0; i < 4; ++i) {
     if(regFoot[i].dirty) {
       return 1;
@@ -889,7 +952,7 @@ void render_mark_dirty(void) { page_dirty = 1; }
 void render_frame_service(void) {
   u32 now;
 
-  if(!page_dirty && !any_region_dirty()) {
+  if(!page_dirty && !status_dirty && !any_region_dirty()) {
     return;
   }
   now = time_now();
@@ -897,6 +960,9 @@ void render_frame_service(void) {
     return;
   }
   last_frame_ticks = now;
+  if(status_dirty) {
+    status_redraw();
+  }
   if(page_dirty) {
     page_dirty = 0;
     pages_redraw();

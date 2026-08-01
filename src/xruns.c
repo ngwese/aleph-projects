@@ -33,7 +33,6 @@ static void xrun_set_warn(u8 on) {
   }
   g_xrun_warn = next;
   render_xrun_set_warn(next);
-  render_mark_dirty();
 }
 
 u8 xruns_poll(void) {

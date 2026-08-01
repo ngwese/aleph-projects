@@ -74,6 +74,7 @@ void state_set_morph(u16 x, u16 y) {
   slots_set_morph(&g_slots, x, y);
   if(g_slots.x != ox || g_slots.y != oy) {
     g_setup_dirty = 1;
+    render_morph_mark_dirty();
   }
 }
 
@@ -83,6 +84,7 @@ void state_snap_to(MorphSlot slot) {
   slots_snap_to(&g_slots, slot);
   if(g_slots.x != ox || g_slots.y != oy) {
     g_setup_dirty = 1;
+    render_morph_mark_dirty();
   }
 }
 
@@ -289,6 +291,7 @@ u8 state_load_module(const char *name, u8 keep_slots) {
   if(!keep_slots) {
     slots_clear_all(&g_slots);
     slots_set_morph(&g_slots, 0, 0);
+    render_morph_mark_dirty();
     state_exclude_clear();
   }
   play_maps_clear_invalid(&g_play_maps, g_module.desc, g_module.num_params);
@@ -507,6 +510,7 @@ u8 state_load_setup(const char *stem) {
     }
   }
   slots_set_morph(&g_slots, data.x, data.y);
+  render_morph_mark_dirty();
   g_play_maps = data.maps;
   play_maps_clear_invalid(&g_play_maps, g_module.desc, g_module.num_params);
   state_exclude_manual_from_list(data.morph_exclude);
