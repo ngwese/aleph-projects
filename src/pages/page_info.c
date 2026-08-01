@@ -93,16 +93,19 @@ static void format_version(char *dst, u8 dst_len) {
 /* dark-grey label, white value — e.g. "version 0.1.0" */
 static void info_line(u8 row, const char *label, const char *value) {
   char lab[14];
-  u8 i = 0;
+  const char *p;
+  u16 i = 0;
   u8 x;
   u8 y;
 
   if(row >= RENDER_CONTENT_ROWS || label == NULL) {
     return;
   }
-  while(label[i] != '\0' && i + 2 < (u8)sizeof(lab)) {
-    lab[i] = label[i];
-    ++i;
+  /* walk via pointer: avr32-gcc -Warray-bounds false-positives on
+   * label[i] when inlining a short string literal into a larger lab[]. */
+  p = label;
+  while(*p != '\0' && i + 2 < sizeof(lab)) {
+    lab[i++] = *p++;
   }
   lab[i++] = ' ';
   lab[i] = '\0';
