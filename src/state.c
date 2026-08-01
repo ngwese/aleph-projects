@@ -40,6 +40,34 @@ u8 state_setup_dirty(void) {
   return 0;
 }
 
+void state_rename_setup(const char *stem) {
+  if(stem == NULL || stem[0] == '\0') {
+    return;
+  }
+  if(strcmp(g_setup_name, stem) == 0) {
+    return;
+  }
+  strncpy(g_setup_name, stem, BETWEEN_NAME_LEN - 1);
+  g_setup_name[BETWEEN_NAME_LEN - 1] = '\0';
+  g_setup_dirty = 1;
+}
+
+void state_rename_preset(MorphSlot slot, const char *stem) {
+  if(slot >= MORPH2D_SLOTS || !g_slots.occupied[slot]) {
+    return;
+  }
+  if(stem == NULL || stem[0] == '\0') {
+    return;
+  }
+  if(strcmp(g_slots.stem[slot], stem) == 0) {
+    return;
+  }
+  strncpy(g_slots.stem[slot], stem, SETUP_STEM_MAX - 1);
+  g_slots.stem[slot][SETUP_STEM_MAX - 1] = '\0';
+  g_slots.dirty[slot] = 1;
+  g_setup_dirty = 1;
+}
+
 void state_set_morph(u16 x, u16 y) {
   u16 ox = g_slots.x;
   u16 oy = g_slots.y;

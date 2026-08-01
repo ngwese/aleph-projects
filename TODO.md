@@ -38,9 +38,10 @@ relevant: `apps/between/src/pages/page_play_maps.c`
 
 ## setup / preset name entry UX
 
-done: shared save-as name modal (`src/pages/name_edit.c`). Alt+Save on
-setups (alt+sw1) and slot (alt+sw0) opens it — hold Select for charset,
-ENC2 for cursor/palette, Clear / Cancel / OK.
+done: shared name modal (`src/pages/name_edit.c`). Alt+**rename** on
+setups (alt+sw1) and slot (alt+sw0) opens it — hold Select for charset
+(enc0 cursor, enc2 palette), Clear / Cancel / OK (rename only; then
+**save**).
 
 still open: wire the same modal into setups **new** and slots-grid **new**
 so create flows can choose a name instead of only auto stems.

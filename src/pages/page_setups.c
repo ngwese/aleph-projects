@@ -22,14 +22,10 @@ static void do_scan(void) {
   scanned = 1;
 }
 
-static void on_save_as_ok(const char *stem, void *ctx) {
+static void on_rename_ok(const char *stem, void *ctx) {
   (void)ctx;
-  if(state_save_setup(stem)) {
-    render_log("setup saved");
-    do_scan();
-  } else {
-    render_log("save fail");
-  }
+  state_rename_setup(stem);
+  render_log("renamed");
   render_mark_dirty();
 }
 
@@ -52,7 +48,7 @@ static void redraw(void) {
     }
   }
   if(g_alt_mode) {
-    render_footer("delete", "save as", "scan", "alt");
+    render_footer("delete", "rename", "scan", "alt");
   } else {
     render_footer("load", "save", "new", "alt");
   }
@@ -104,7 +100,7 @@ static void handle_sw1(s32 data) {
       render_log("name fail");
       return;
     }
-    name_edit_open(eNameEditSetup, stem, on_save_as_ok, NULL);
+    name_edit_open(eNameEditSetup, stem, on_rename_ok, NULL);
     return;
   }
   if(g_setup_name[0] != '\0') {

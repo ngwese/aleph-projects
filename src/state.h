@@ -19,6 +19,10 @@ void state_setup_mark_dirty(void);
 void state_setup_clear_dirty(void);
 u8 state_setup_dirty(void);
 
+/* rename in memory only (no disk I/O); dirties if the stem changes. */
+void state_rename_setup(const char *stem);
+void state_rename_preset(MorphSlot slot, const char *stem);
+
 /* morph point (marks setup dirty when the position changes). */
 void state_set_morph(u16 x, u16 y);
 void state_snap_to(MorphSlot slot);

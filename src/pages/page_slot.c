@@ -20,7 +20,7 @@
 static MorphSlot cur_slot;
 /* shared across slot A–D pages so selection/scroll survive page changes */
 static s16 param_sel;
-static MorphSlot save_as_slot;
+static MorphSlot rename_slot;
 
 static void clamp_param_sel(void) {
   if(g_slots.num_params == 0) {
@@ -180,7 +180,7 @@ static void redraw_slot(MorphSlot slot) {
   render_string_xy(SLOT_VAL_X, status_y, val14_s, RENDER_PLAY_GREY_LIGHT);
 
   if(g_alt_mode) {
-    render_footer("save as", "capture", "focus", "alt");
+    render_footer("rename", "capture", "focus", "alt");
   } else {
     render_footer("save", "reset", "new", "alt");
   }
@@ -298,13 +298,10 @@ static void handle_enc3(s32 data) {
   bump_param((io_t)delta32, 1);
 }
 
-static void on_save_as_ok(const char *stem, void *ctx) {
+static void on_rename_ok(const char *stem, void *ctx) {
   MorphSlot slot = *(MorphSlot *)ctx;
-  if(state_save_preset(slot, stem)) {
-    render_log("save as");
-  } else {
-    render_log("save fail");
-  }
+  state_rename_preset(slot, stem);
+  render_log("renamed");
   render_mark_dirty();
 }
 
@@ -339,8 +336,8 @@ static void handle_sw0(s32 data) {
       render_log("name fail");
       return;
     }
-    save_as_slot = cur_slot;
-    name_edit_open(eNameEditPreset, stem, on_save_as_ok, &save_as_slot);
+    rename_slot = cur_slot;
+    name_edit_open(eNameEditPreset, stem, on_rename_ok, &rename_slot);
     return;
   }
   if(g_slots.stem[cur_slot][0]) {

@@ -145,12 +145,35 @@ static void insert_char(char ch) {
   }
 }
 
-static void handle_enc0(s32 data) { (void)data; }
+/* cursor range is 0..len (len = append cell when room remains). */
+static void move_cursor(s8 dir) {
+  u8 len = stem_len();
+
+  if(dir > 0) {
+    if(cursor < len) {
+      ++cursor;
+    } else if(len < BETWEEN_NAME_LEN - 1 && cursor == len) {
+      /* already at append position */
+    } else if(len < BETWEEN_NAME_LEN - 1) {
+      cursor = len;
+    }
+  } else if(cursor > 0) {
+    --cursor;
+  }
+}
+
+static void handle_enc0(s32 data) {
+  if(!select_held) {
+    return;
+  }
+  move_cursor((data > 0) ? 1 : -1);
+  render_mark_dirty();
+}
+
 static void handle_enc1(s32 data) { (void)data; }
 static void handle_enc3(s32 data) { (void)data; }
 
 static void handle_enc2(s32 data) {
-  u8 len;
   s8 dir = (data > 0) ? 1 : -1;
 
   if(select_held) {
@@ -164,20 +187,7 @@ static void handle_enc2(s32 data) {
       }
     }
   } else {
-    len = stem_len();
-    if(dir > 0) {
-      if(cursor < len) {
-	++cursor;
-      } else if(len < BETWEEN_NAME_LEN - 1 && cursor == len) {
-	/* already at append position */
-      } else if(len < BETWEEN_NAME_LEN - 1) {
-	cursor = len;
-      }
-    } else {
-      if(cursor > 0) {
-	--cursor;
-      }
-    }
+    move_cursor(dir);
   }
   render_mark_dirty();
 }
