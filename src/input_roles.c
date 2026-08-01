@@ -13,7 +13,7 @@ static InputSwRole g_sw_role[4];
 static u8 role_thresh(InputRole role) {
   switch(role) {
   case eInputRolePageSelect:
-    return 32;
+    return 24;
   case eInputRoleListSelect:
     return 4;
   case eInputRoleParamFine:
