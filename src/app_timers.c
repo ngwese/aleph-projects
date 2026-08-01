@@ -12,7 +12,7 @@ static event_t e;
 static softTimer_t screenTimer = {.next = NULL, .prev = NULL};
 static softTimer_t encTimer = {.next = NULL, .prev = NULL};
 static softTimer_t midiPollTimer = {.next = NULL, .prev = NULL};
-static softTimer_t xrunTimer = {.next = NULL, .prev = NULL};
+static softTimer_t dspPollTimer = {.next = NULL, .prev = NULL};
 static softTimer_t adcPollTimer = {.next = NULL, .prev = NULL};
 
 /* runs in the TC ISR: post only, so the screen SPI stays on the main loop */
@@ -47,7 +47,7 @@ static void midi_poll_timer_callback(void *obj) {
 }
 
 /* post AppCustom so main loop can SPI-read xruns / meters */
-static void xrun_timer_callback(void *obj) {
+static void dsp_poll_callback(void *obj) {
   (void)obj;
   e.type = kEventAppCustom;
   e.data = 0;
@@ -63,7 +63,7 @@ void init_app_timers(void) {
   timer_add(&screenTimer, 50, &screen_timer_callback, NULL);
   timer_add(&encTimer, 50, &enc_timer_callback, NULL);
   /* ~10 Hz — meters feel alive; xrun SPI is cheap at this rate */
-  timer_add(&xrunTimer, 100, &xrun_timer_callback, NULL);
+  timer_add(&dspPollTimer, 100, &dsp_poll_callback, NULL);
 }
 
 void timers_set_midi(void) {

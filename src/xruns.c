@@ -3,7 +3,7 @@
 #include "pages.h"
 #include "render.h"
 
-/* must match xrunTimer interval in app_timers.c */
+/* must match dspPollTimer interval in app_timers.c */
 #define XRUN_POLL_MS 100
 #define XRUN_WARN_HOLD_MS 5000
 
