@@ -16,8 +16,9 @@ slewing (`filter_1p_lo_blk` in `dsp_block`). slews advance **once per
 audio block** (`MODULE_BLOCKSIZE` frames); bees still send per-sample
 integrator coeffs, converted with `c → c^N` so convergence time stays
 equivalent. matrix send slews share one time constant per **input** (all
-four sends from that input use the same slew). filter cutoffs use a fixed
-internal slew (not exposed).
+four sends from that input use the same slew). each output's base and
+width share one time constant (`outYBWSlew`) but keep independent slew
+state.
 
 parameter labels are **1-based** (`in1`…`in4`, `out1`…`out4`, `cv1`…`cv4`).
 ADC/DAC/CV hardware channels remain 0-based (`adc0`…`adc3`, `dac0`…`dac3`,
@@ -63,6 +64,7 @@ for each input X in 1..4:
 for each output Y in 1..4:
   outYBase     — HP corner, in semitones above 1 Hz (0 = HP open)
   outYWidth    — distance up to the LP corner, in semitones (max = LP open)
+  outYBWSlew   — shared slew time for Base and Width (independent slews)
   outY         — level from filtered mix bus Y to dac(Y-1) (slew: outYSlew)
 for each CV channel N in 1..4:
   cvN          — panel CV DAC level 0…10 V as fract32 (slew: cvSlewN)
@@ -115,10 +117,10 @@ in `filter_bp_blk` evaluates at half scale, because `in - lastIn` reaches
 | input level slews | 4 | `in1Slew`…`in4Slew` | integrator |
 | matrix sends | 16 | `inX-Y` (X,Y ∈ 1…4) | amp |
 | matrix send slews | 4 | `in1MixSlew`…`in4MixSlew` | integrator |
-| output (per out Y) | 4×4 | `outY`, `outYSlew`, `outYBase`, `outYWidth` | amp / integrator / fix / fix |
+| output (per out Y) | 5×4 | `outY`, `outYSlew`, `outYBase`, `outYWidth`, `outYBWSlew` | amp / integrator / fix / fix / integrator |
 | CV levels | 4 | `cv1`…`cv4` | fix |
 | CV slews | 4 | `cvSlew1`…`cvSlew4` | integrator |
-| **total** | **52** | | |
+| **total** | **56** | | |
 
 amp params: `0`…`PARAM_AMP_MAX` (`0x7fffffff`), displayed as dB in bees.
 integrator (slew) params: `0`…`PARAM_SLEW_MAX`, displayed as seconds-to-
@@ -157,8 +159,9 @@ CV levels: `eParamTypeFix`, `0`…`PARAM_CV_MAX` (`0x7fffffff` = 10 V), radix
 
 suggested startup: identity matrix (`inX-X` = unity, other sends = 0),
 `in*` / `out*` = unity, `in*Slew` / `out*Slew` = min (`0`), matrix send
-slews = `PARAM_SLEW_DEFAULT`, `out*Base` = 0, `out*Width` = 192, `cv*` =
-0, `cvSlew*` = `PARAM_SLEW_DEFAULT`.
+slews = `PARAM_SLEW_DEFAULT`, `out*Base` = 0, `out*Width` = 192,
+`out*BWSlew` = `PARAM_SLEW_DEFAULT`, `cv*` = 0, `cvSlew*` =
+`PARAM_SLEW_DEFAULT`.
 
 ---
 
@@ -202,18 +205,22 @@ internal (1-based labels).
 | `out1Slew` | — | `out1` | slew time for `out1` |
 | `out1Base` | — | `bpf1` | output 1 HP corner (semitones); LP = base + width |
 | `out1Width` | — | `bpf1` | output 1 band width (semitones) |
+| `out1BWSlew` | — | `out1Base`/`out1Width` | shared slew time for Base and Width |
 | `out2` | `out2` | `dac1` | output 2 level from bpf to DAC |
 | `out2Slew` | — | `out2` | slew time for `out2` |
 | `out2Base` | — | `bpf2` | output 2 HP corner (semitones) |
 | `out2Width` | — | `bpf2` | output 2 band width (semitones) |
+| `out2BWSlew` | — | `out2Base`/`out2Width` | shared slew time for Base and Width |
 | `out3` | `out3` | `dac2` | output 3 level from bpf to DAC |
 | `out3Slew` | — | `out3` | slew time for `out3` |
 | `out3Base` | — | `bpf3` | output 3 HP corner (semitones) |
 | `out3Width` | — | `bpf3` | output 3 band width (semitones) |
+| `out3BWSlew` | — | `out3Base`/`out3Width` | shared slew time for Base and Width |
 | `out4` | `out4` | `dac3` | output 4 level from bpf to DAC |
 | `out4Slew` | — | `out4` | slew time for `out4` |
 | `out4Base` | — | `bpf4` | output 4 HP corner (semitones) |
 | `out4Width` | — | `bpf4` | output 4 band width (semitones) |
+| `out4BWSlew` | — | `out4Base`/`out4Width` | shared slew time for Base and Width |
 | `cv1` | — | `cvOut0` | panel CV out 1 (0…10 V) |
 | `cv2` | — | `cvOut1` | panel CV out 2 (0…10 V) |
 | `cv3` | — | `cvOut2` | panel CV out 3 (0…10 V) |
@@ -231,12 +238,12 @@ internal (1-based labels).
   `module_process_block`.
 - slewing: one `filter_1p_lo` (or equivalent) per amplitude target; for
   matrix sends, four filters per input share the same `inXMixSlew`
-  coefficient.
+  coefficient. each output's Base and Width keep independent slews but
+  share `outYBWSlew` as their time constant.
 - output filters: `dsp_block` `filter_bp_blk` (HP then LP); cutoff params
-  stored as fix16 semitones and slewed with a fixed internal
-  `filter_1p_lo` rate, then converted to coefficients through
-  `filter_bp_alpha_tab`. slewing on the log axis makes cutoff sweeps sound
-  even.
+  stored as fix16 semitones and slewed, then converted to coefficients
+  through `filter_bp_alpha_tab`. slewing on the log axis makes cutoff
+  sweeps sound even.
 - `mx44_params.h` deliberately does **not** include `filter_bp_alpha_tab.h`
   — it is also compiled by host `gcc` for the descriptor, where
   `fract_math.h` is unavailable. the semitone limits are duplicated as
@@ -247,13 +254,15 @@ internal (1-based labels).
   audio; `cv1`→hw ch 0 … `cv4`→hw ch 3.
 - keep enum order stable once published; bees / between / ctl apps key off
   indices and labels. output params are grouped **per output** (level, slew,
-  base, width). CV params are appended after outs so earlier audio indices
-  stay stable.
+  base, width, BW slew). CV params are appended after outs so earlier audio
+  indices stay stable.
 - **0.9.0 breaks presets.** `outYWet` / `outYWetSlew` are gone, and
   `outYBase` / `outYWidth` changed from Hz to semitones. between resolves
   presets by label and ignores unknown ones, so the two dropped params load
   harmlessly, but any stored base / width is now read as semitones —
   re-dial and re-save filter settings. redeploy the `.dsc` with the `.ldr`.
+- **0.10.0** adds `outYBWSlew` after each Width; CV indices shift. redeploy
+  `.dsc` with `.ldr`.
 
 ### suggested enum grouping
 
@@ -264,10 +273,10 @@ in1-1..in1-4, in1MixSlew
 in2-1..in2-4, in2MixSlew
 in3-1..in3-4, in3MixSlew
 in4-1..in4-4, in4MixSlew
-out1, out1Slew, out1Base, out1Width
-out2, out2Slew, out2Base, out2Width
-out3, out3Slew, out3Base, out3Width
-out4, out4Slew, out4Base, out4Width
+out1, out1Slew, out1Base, out1Width, out1BWSlew
+out2, out2Slew, out2Base, out2Width, out2BWSlew
+out3, out3Slew, out3Base, out3Width, out3BWSlew
+out4, out4Slew, out4Base, out4Width, out4BWSlew
 cv1..cv4
 cvSlew1..cvSlew4
 ```

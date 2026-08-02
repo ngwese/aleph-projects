@@ -42,7 +42,7 @@
   order matches SPEC.md suggested enum grouping (1-based labels):
   in1..in4, in1Slew..in4Slew,
   inX-1..inX-4 + inXMixSlew per input,
-  per output Y: outY, outYSlew, outYBase, outYWidth,
+  per output Y: outY, outYSlew, outYBase, outYWidth, outYBWSlew,
   cv1..cv4, cvSlew1..cvSlew4
 */
 enum params {
@@ -84,21 +84,25 @@ enum params {
   eParam_out1Slew,
   eParam_out1Base,
   eParam_out1Width,
+  eParam_out1BWSlew,
 
   eParam_out2,
   eParam_out2Slew,
   eParam_out2Base,
   eParam_out2Width,
+  eParam_out2BWSlew,
 
   eParam_out3,
   eParam_out3Slew,
   eParam_out3Base,
   eParam_out3Width,
+  eParam_out3BWSlew,
 
   eParam_out4,
   eParam_out4Slew,
   eParam_out4Base,
   eParam_out4Width,
+  eParam_out4BWSlew,
 
   eParam_cv1,
   eParam_cv2,

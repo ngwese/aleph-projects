@@ -10,8 +10,9 @@
   parameter labels are 1-based; arrays stay 0-based.
   each amplitude has a 1-pole slew (block-rate filter_1p_lo_blk);
   matrix sends from input X share inXMixSlew.
-  filter cutoffs are semitones and use a fixed internal slew; fully open
-  (base min, width max) is transparent, so there is no dry/wet control.
+  filter cutoffs are semitones; each output's base and width share a
+  slewed time constant (outYBWSlew). fully open (base min, width max) is
+  transparent, so there is no dry/wet control.
 */
 
 #include <string.h>
@@ -25,9 +26,6 @@
 #include "module.h"
 #include "module_custom.h"
 #include "mx44_params.h"
-
-/* fixed internal slew for filter cutoff params (medium, avoids zipper) */
-#define FILT_ST_SLEW PARAM_SLEW_DEFAULT
 
 /* mx44_params.h cannot include the table header (it also builds on the
    host for the descriptor), so check the ranges line up here. */
@@ -69,6 +67,12 @@ static void set_mix_slew(u8 xin, fract32 slew) {
   }
 }
 
+/* shared time constant for the independent base and width slews */
+static void set_bw_slew(u8 y, fract32 slew) {
+  filter_1p_lo_blk_set_slew(&(baseStSlew[y]), slew);
+  filter_1p_lo_blk_set_slew(&(widthStSlew[y]), slew);
+}
+
 /* LP corner sits `width` semitones above the HP corner; the lookup clamps
    to the open end of the table. both are well under s32 range. */
 static inline fract32 lp_st(fract32 baseSt, fract32 widthSt) {
@@ -92,8 +96,6 @@ void module_init(void) {
 			  MODULE_BLOCKSIZE);
     filter_1p_lo_blk_init(&(widthStSlew[x]), PARAM_WIDTH_DEFAULT,
 			  MODULE_BLOCKSIZE);
-    filter_1p_lo_blk_set_slew(&(baseStSlew[x]), FILT_ST_SLEW);
-    filter_1p_lo_blk_set_slew(&(widthStSlew[x]), FILT_ST_SLEW);
     filter_bp_blk_init(&(outFilt[x]));
     for(y = 0; y < 4; ++y) {
       filter_1p_lo_blk_init(&(mixSlew[x][y]), 0, MODULE_BLOCKSIZE);
@@ -139,21 +141,25 @@ void module_init(void) {
   param_setup(eParam_out1Slew, PARAM_SLEW_MIN);
   param_setup(eParam_out1Base, PARAM_BASE_DEFAULT);
   param_setup(eParam_out1Width, PARAM_WIDTH_DEFAULT);
+  param_setup(eParam_out1BWSlew, PARAM_SLEW_DEFAULT);
 
   param_setup(eParam_out2, PARAM_AMP_MAX);
   param_setup(eParam_out2Slew, PARAM_SLEW_MIN);
   param_setup(eParam_out2Base, PARAM_BASE_DEFAULT);
   param_setup(eParam_out2Width, PARAM_WIDTH_DEFAULT);
+  param_setup(eParam_out2BWSlew, PARAM_SLEW_DEFAULT);
 
   param_setup(eParam_out3, PARAM_AMP_MAX);
   param_setup(eParam_out3Slew, PARAM_SLEW_MIN);
   param_setup(eParam_out3Base, PARAM_BASE_DEFAULT);
   param_setup(eParam_out3Width, PARAM_WIDTH_DEFAULT);
+  param_setup(eParam_out3BWSlew, PARAM_SLEW_DEFAULT);
 
   param_setup(eParam_out4, PARAM_AMP_MAX);
   param_setup(eParam_out4Slew, PARAM_SLEW_MIN);
   param_setup(eParam_out4Base, PARAM_BASE_DEFAULT);
   param_setup(eParam_out4Width, PARAM_WIDTH_DEFAULT);
+  param_setup(eParam_out4BWSlew, PARAM_SLEW_DEFAULT);
 
   param_setup(eParam_cv1, 0);
   param_setup(eParam_cv2, 0);
@@ -376,6 +382,19 @@ void module_set_param(u32 idx, ParamValue v) {
     break;
   case eParam_out4Width :
     filter_1p_lo_blk_in(&(widthStSlew[3]), v);
+    break;
+
+  case eParam_out1BWSlew :
+    set_bw_slew(0, v);
+    break;
+  case eParam_out2BWSlew :
+    set_bw_slew(1, v);
+    break;
+  case eParam_out3BWSlew :
+    set_bw_slew(2, v);
+    break;
+  case eParam_out4BWSlew :
+    set_bw_slew(3, v);
     break;
 
   case eParam_cv1 :
