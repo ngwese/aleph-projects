@@ -30,9 +30,9 @@
 /* mx44_params.h cannot include the table header (it also builds on the
    host for the descriptor), so check the ranges line up here. */
 typedef char mx44_base_st_max_matches_table
-    [(PARAM_BASE_ST_MAX == FILTER_BP_ALPHA_HP_ST_MAX) ? 1 : -1];
+  [(PARAM_BASE_ST_MAX == FILTER_BP_ALPHA_HP_ST_MAX) ? 1 : -1];
 typedef char mx44_width_st_max_matches_table
-    [(PARAM_WIDTH_ST_MAX == FILTER_BP_ALPHA_LP_ST_MAX) ? 1 : -1];
+  [(PARAM_WIDTH_ST_MAX == FILTER_BP_ALPHA_LP_ST_MAX) ? 1 : -1];
 
 ModuleData *gModuleData;
 
@@ -93,9 +93,9 @@ void module_init(void) {
     filter_1p_lo_blk_init(&(outSlew[x]), 0, MODULE_BLOCKSIZE);
     filter_1p_lo_blk_init(&(cvSlew[x]), 0, MODULE_BLOCKSIZE);
     filter_1p_lo_blk_init(&(baseStSlew[x]), PARAM_BASE_DEFAULT,
-			  MODULE_BLOCKSIZE);
+                          MODULE_BLOCKSIZE);
     filter_1p_lo_blk_init(&(widthStSlew[x]), PARAM_WIDTH_DEFAULT,
-			  MODULE_BLOCKSIZE);
+                          MODULE_BLOCKSIZE);
     filter_bp_blk_init(&(outFilt[x]));
     for(y = 0; y < 4; ++y) {
       filter_1p_lo_blk_init(&(mixSlew[x][y]), 0, MODULE_BLOCKSIZE);
@@ -211,8 +211,8 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
   /* BPF alphas once per block (table lookup + lerp, no divides) */
   for(y = 0; y < 4; ++y) {
     filter_bp_blk_set_alpha(
-	&(outFilt[y]), filter_bp_alpha_hp(baseStVal[y]),
-	filter_bp_alpha_lp(lp_st(baseStVal[y], widthStVal[y])));
+      &(outFilt[y]), filter_bp_alpha_hp(baseStVal[y]),
+      filter_bp_alpha_lp(lp_st(baseStVal[y], widthStVal[y])));
   }
 
   for(frame = 0; frame < MODULE_BLOCKSIZE; frame++) {
@@ -227,7 +227,7 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
       }
 
       outCh[y][frame] =
-	  mult_fr1x32x32(filter_bp_blk_next(&(outFilt[y]), mix), outVal[y]);
+        mult_fr1x32x32(filter_bp_blk_next(&(outFilt[y]), mix), outVal[y]);
     }
   }
 

@@ -25,7 +25,7 @@ static void fill_slew(ParamDesc *d, const char *label) {
 
 /* base-width cutoff, in fix16 semitones above a 1 Hz root */
 static void fill_st(ParamDesc *d, const char *label, ParamValue min,
-		    ParamValue max) {
+                    ParamValue max) {
   strcpy(d->label, label);
   d->type = eParamTypeFix;
   d->min = min;
@@ -80,28 +80,28 @@ void fill_param_desc(ParamDesc *desc) {
   fill_slew(&desc[eParam_out1Slew], "out1Slew");
   fill_st(&desc[eParam_out1Base], "out1Base", PARAM_BASE_MIN, PARAM_BASE_MAX);
   fill_st(&desc[eParam_out1Width], "out1Width", PARAM_WIDTH_MIN,
-	  PARAM_WIDTH_MAX);
+          PARAM_WIDTH_MAX);
   fill_slew(&desc[eParam_out1BWSlew], "out1BWSlew");
 
   fill_amp(&desc[eParam_out2], "out2");
   fill_slew(&desc[eParam_out2Slew], "out2Slew");
   fill_st(&desc[eParam_out2Base], "out2Base", PARAM_BASE_MIN, PARAM_BASE_MAX);
   fill_st(&desc[eParam_out2Width], "out2Width", PARAM_WIDTH_MIN,
-	  PARAM_WIDTH_MAX);
+          PARAM_WIDTH_MAX);
   fill_slew(&desc[eParam_out2BWSlew], "out2BWSlew");
 
   fill_amp(&desc[eParam_out3], "out3");
   fill_slew(&desc[eParam_out3Slew], "out3Slew");
   fill_st(&desc[eParam_out3Base], "out3Base", PARAM_BASE_MIN, PARAM_BASE_MAX);
   fill_st(&desc[eParam_out3Width], "out3Width", PARAM_WIDTH_MIN,
-	  PARAM_WIDTH_MAX);
+          PARAM_WIDTH_MAX);
   fill_slew(&desc[eParam_out3BWSlew], "out3BWSlew");
 
   fill_amp(&desc[eParam_out4], "out4");
   fill_slew(&desc[eParam_out4Slew], "out4Slew");
   fill_st(&desc[eParam_out4Base], "out4Base", PARAM_BASE_MIN, PARAM_BASE_MAX);
   fill_st(&desc[eParam_out4Width], "out4Width", PARAM_WIDTH_MIN,
-	  PARAM_WIDTH_MAX);
+          PARAM_WIDTH_MAX);
   fill_slew(&desc[eParam_out4BWSlew], "out4BWSlew");
 
   fill_cv(&desc[eParam_cv1], "cv1");
