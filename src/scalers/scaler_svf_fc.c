@@ -39,13 +39,14 @@ void scaler_svf_fc_str(char* dst, void* scaler, io_t in) {
 void scaler_svf_fc_init(void* scaler) {
   ParamScaler* sc = (ParamScaler*)scaler;
   // check descriptor
-  if( sc->desc->type != eParamTypeSvfFreq) {
+  if(sc->desc->type != eParamTypeSvfFreq) {
     print_dbg("\r\n !!! warning: wrong param type for svf_fc scaler");
   }
-  
+
   // init flag for static data
-  if(initFlag) { 
-    ;;
+  if(initFlag) {
+    ;
+    ;
   } else {
     initFlag = 1;
 
@@ -64,7 +65,7 @@ void scaler_svf_fc_init(void* scaler) {
 
   //// FIXME: add tuning functions (???)
   //  sc->tune = NULL;
-  //  sc->numTune = 0;  
+  //  sc->numTune = 0;
 }
 
 // get input given DSP value (use sparingly)
@@ -98,7 +99,7 @@ io_t scaler_svf_fc_in(void* scaler, s32 x) {
 
 
 // increment input by pointer, return value
-s32 scaler_svf_fc_inc(void* scaler, io_t* pin, io_t inc ) {
+s32 scaler_svf_fc_inc(void* scaler, io_t* pin, io_t inc) {
   ParamScaler* sc = (ParamScaler*)scaler;
   // this speeds up the knob a great deal.
 #if 0
@@ -113,7 +114,7 @@ s32 scaler_svf_fc_inc(void* scaler, io_t* pin, io_t inc ) {
     inc = (io_t)0xc000;
   }
 #endif
-  
+
   // use saturation
   *pin = op_sadd(*pin, inc);
 

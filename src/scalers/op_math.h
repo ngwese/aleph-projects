@@ -20,7 +20,7 @@ typedef s16 io_t;
 #define IO_SHIFT_16 (16 - IO_BITS)
 
 //----- constants
-//! unity 
+//! unity
 #define OP_ONE 1
 //! negative unity
 #define OP_NEG_ONE -1
@@ -28,7 +28,7 @@ typedef s16 io_t;
 //! smallest incremnet
 #define OP_MIN_INC 1
 //! ranges
-#define OP_MIN_VAL 0 //??
+#define OP_MIN_VAL 0  //??
 #define OP_MAX_VAL 0x7fff
 
 #define op_from_int(x) (x)
@@ -36,7 +36,7 @@ typedef s16 io_t;
 
 //----- conversion
 
-//! standard (overflow) 
+//! standard (overflow)
 extern io_t op_add(io_t a, io_t b);
 extern io_t op_sub(io_t a, io_t b);
 extern io_t op_mul(io_t a, io_t b);

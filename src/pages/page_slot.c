@@ -128,7 +128,7 @@ static void redraw_slot(MorphSlot slot) {
 
   clamp_param_sel();
   render_header_slot((char)('A' + (u8)slot), g_slots.stem[slot],
-		     g_slots.dirty[slot]);
+                     g_slots.dirty[slot]);
 
   /* four list rows; status line above the diagnostic log (row 4) */
   start = (param_sel > 3) ? (u16)(param_sel - 3) : 0;
@@ -278,7 +278,7 @@ static void handle_enc3(s32 data) {
     }
     if(!state_exclude_manual_set((u16)param_sel, want_excl)) {
       if(state_param_play_bound((u16)param_sel)) {
-	render_log("bound to play");
+        render_log("bound to play");
       }
       return;
     }

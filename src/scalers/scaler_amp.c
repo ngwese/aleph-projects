@@ -27,7 +27,7 @@ s32 scaler_amp_val(void* scaler, io_t in) {
   return tabVal[(u16)((u16)in >> inRshift)];
 }
 
-void scaler_amp_str(char* dst, void* scaler,  io_t in) {
+void scaler_amp_str(char* dst, void* scaler, io_t in) {
   //  u16 uin = BIT_ABS_16((s16)in) >> inRshift;
   if(in < 0) { in = 0; }
 
@@ -35,10 +35,10 @@ void scaler_amp_str(char* dst, void* scaler,  io_t in) {
 
   if(in == 0) {
     strcpy(dst, "   -inf");
-  } else if (in == (tabSize - 1)) {
+  } else if(in == (tabSize - 1)) {
     print_fix16(dst, 0);
   } else {
-    print_fix16(dst, tabRep[(u16)in] );
+    print_fix16(dst, tabRep[(u16)in]);
   }
 }
 
@@ -48,29 +48,28 @@ void scaler_amp_init(void* scaler) {
   print_dbg("\r\n initializing amp scaler for param, label: ");
   print_dbg(sc->desc->label);
   // check descriptor
-  if( sc->desc->type != eParamTypeAmp) {
+  if(sc->desc->type != eParamTypeAmp) {
     print_dbg("\r\n !!! warning: wrong param type for amp scaler");
     print_dbg(" ; this param has type: ");
     print_dbg_ulong(sc->desc->type);
   }
-  
+
   // init flag for static data
-  if(initFlag) { 
-    ;;
+  if(initFlag) {
+    ;
+    ;
   } else {
     initFlag = 1;
 
     // assign
     tabVal = scaler_get_nv_data(eParamTypeAmp);
     tabRep = scaler_get_nv_rep(eParamTypeAmp);
-
   }
 
-    sc->inMin = 0;
-    sc->inMax = (tabSize - 1) << inRshift;
+  sc->inMin = 0;
+  sc->inMax = (tabSize - 1) << inRshift;
   /// FIXME: should consider requested param range,
   //  and compute a customized multiplier here if necessary.
- 
 }
 
 // get input given DSP value (use sparingly)
@@ -102,7 +101,7 @@ io_t scaler_amp_in(void* scaler, s32 x) {
 
 
 // increment input by pointer, return value
-s32 scaler_amp_inc(void* scaler, io_t* pin, io_t inc ) {
+s32 scaler_amp_inc(void* scaler, io_t* pin, io_t inc) {
   ParamScaler* sc = (ParamScaler*)scaler;
   // this speeds up the knob a great deal.
 #if 0
@@ -117,7 +116,7 @@ s32 scaler_amp_inc(void* scaler, io_t* pin, io_t inc ) {
     inc = (io_t)0xc000;
   }
 #endif
-  
+
   // use saturation
   *pin = op_sadd(*pin, inc);
 

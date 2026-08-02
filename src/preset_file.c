@@ -19,8 +19,8 @@ static void make_path(char *path, const char *module, const char *stem) {
 }
 
 PresetIoStatus preset_file_load(const char *module, const char *stem,
-				PresetMeta *meta, preset_on_param_fn on_param,
-				void *ctx) {
+                                PresetMeta *meta, preset_on_param_fn on_param,
+                                void *ctx) {
   char path[BETWEEN_PATH_MAX];
   LineIO io;
   void *fp;
@@ -43,8 +43,8 @@ PresetIoStatus preset_file_load(const char *module, const char *stem,
 }
 
 PresetIoStatus preset_file_save(const char *module, const char *stem,
-				const PresetMeta *meta,
-				preset_next_param_fn next_param, void *ctx) {
+                                const PresetMeta *meta,
+                                preset_next_param_fn next_param, void *ctx) {
   char path[BETWEEN_PATH_MAX];
   LineIO io;
   void *fp;

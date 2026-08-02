@@ -117,8 +117,8 @@ SetupIoStatus setup_io_read(LineIO *io, SetupData *out) {
     if(kvtext_key_eq(pair.key, "format")) {
       s32 f = 0;
       if(!parse_s32(pair.val, &f) || f < 0 || f > 255 ||
-	 f != SETUP_IO_FORMAT) {
-	return eSetupIoBadFormat;
+         f != SETUP_IO_FORMAT) {
+        return eSetupIoBadFormat;
       }
       out->format = (u8)f;
       have_format = 1;
@@ -132,7 +132,7 @@ SetupIoStatus setup_io_read(LineIO *io, SetupData *out) {
     }
     if(kvtext_key_eq(pair.key, "version")) {
       if(!preset_io_parse_version(pair.val, &out->version)) {
-	return eSetupIoMalformed;
+        return eSetupIoMalformed;
       }
       have_version = 1;
       continue;
@@ -144,13 +144,13 @@ SetupIoStatus setup_io_read(LineIO *io, SetupData *out) {
     }
     if(kvtext_key_eq(pair.key, "x")) {
       if(!parse_u16_morph(pair.val, &out->x)) {
-	return eSetupIoMalformed;
+        return eSetupIoMalformed;
       }
       continue;
     }
     if(kvtext_key_eq(pair.key, "y")) {
       if(!parse_u16_morph(pair.val, &out->y)) {
-	return eSetupIoMalformed;
+        return eSetupIoMalformed;
       }
       continue;
     }
@@ -159,7 +159,7 @@ SetupIoStatus setup_io_read(LineIO *io, SetupData *out) {
       PlayEncMap enc;
       u8 idx = (u8)(pair.key[8] - '0');
       if(!play_maps_parse_enc(pair.val, &enc)) {
-	return eSetupIoMalformed;
+        return eSetupIoMalformed;
       }
       out->maps.enc[idx] = enc;
       continue;
@@ -169,7 +169,7 @@ SetupIoStatus setup_io_read(LineIO *io, SetupData *out) {
       PlaySwMap sw;
       u8 idx = (u8)(pair.key[7] - '0');
       if(!play_maps_parse_sw(pair.val, &sw)) {
-	return eSetupIoMalformed;
+        return eSetupIoMalformed;
       }
       out->maps.sw[idx] = sw;
       continue;
@@ -179,7 +179,7 @@ SetupIoStatus setup_io_read(LineIO *io, SetupData *out) {
       PlaySwMap sw;
       u8 idx = (u8)(pair.key[7] - '0');
       if(!play_maps_parse_sw(pair.val, &sw)) {
-	return eSetupIoMalformed;
+        return eSetupIoMalformed;
       }
       out->maps.fs[idx] = sw;
       continue;
@@ -189,7 +189,7 @@ SetupIoStatus setup_io_read(LineIO *io, SetupData *out) {
       PlayEncMap cv;
       u8 idx = (u8)(pair.key[7] - '0');
       if(!play_maps_parse_enc(pair.val, &cv)) {
-	return eSetupIoMalformed;
+        return eSetupIoMalformed;
       }
       out->maps.cv[idx] = cv;
       continue;
@@ -199,17 +199,17 @@ SetupIoStatus setup_io_read(LineIO *io, SetupData *out) {
       u8 n = 0;
       const char *p = pair.key + 7;
       if(p[0] < '1' || p[0] > '9') {
-	continue; /* unknown / ignore */
+        continue; /* unknown / ignore */
       }
       while(p[0] >= '0' && p[0] <= '9') {
-	n = (u8)(n * 10u + (u8)(p[0] - '0'));
-	p++;
+        n = (u8)(n * 10u + (u8)(p[0] - '0'));
+        p++;
       }
       if(p[0] != '\0' || n < 1 || n > PLAY_MAPS_CC_COUNT) {
-	continue;
+        continue;
       }
       if(!play_maps_parse_cc(pair.val, &cc)) {
-	return eSetupIoMalformed;
+        return eSetupIoMalformed;
       }
       out->maps.cc[n - 1] = cc;
       continue;
@@ -295,48 +295,48 @@ SetupIoStatus setup_io_write(LineIO *io, const SetupData *data) {
     static const char *cv_keys[PLAY_MAPS_CV_COUNT] = {
       "play.cv0", "play.cv1", "play.cv2", "play.cv3"};
     static const char *cc_keys[PLAY_MAPS_CC_COUNT] = {
-      "play.cc1",  "play.cc2",  "play.cc3",  "play.cc4",  "play.cc5",
-      "play.cc6",  "play.cc7",  "play.cc8",  "play.cc9",  "play.cc10",
+      "play.cc1", "play.cc2", "play.cc3", "play.cc4", "play.cc5",
+      "play.cc6", "play.cc7", "play.cc8", "play.cc9", "play.cc10",
       "play.cc11", "play.cc12"};
     char val[SETUP_IO_LINE_MAX];
     for(i = 0; i < PLAY_MAPS_ENC_COUNT; ++i) {
       if(!play_maps_format_enc(val, sizeof(val), &data->maps.enc[i])) {
-	return eSetupIoWriteFail;
+        return eSetupIoWriteFail;
       }
       if(!write_kv(io, enc_keys[i], val)) {
-	return eSetupIoWriteFail;
+        return eSetupIoWriteFail;
       }
     }
     for(i = 0; i < PLAY_MAPS_SW_COUNT; ++i) {
       if(!play_maps_format_sw(val, sizeof(val), &data->maps.sw[i])) {
-	return eSetupIoWriteFail;
+        return eSetupIoWriteFail;
       }
       if(!write_kv(io, sw_keys[i], val)) {
-	return eSetupIoWriteFail;
+        return eSetupIoWriteFail;
       }
     }
     for(i = 0; i < PLAY_MAPS_FS_COUNT; ++i) {
       if(!play_maps_format_sw(val, sizeof(val), &data->maps.fs[i])) {
-	return eSetupIoWriteFail;
+        return eSetupIoWriteFail;
       }
       if(!write_kv(io, fs_keys[i], val)) {
-	return eSetupIoWriteFail;
+        return eSetupIoWriteFail;
       }
     }
     for(i = 0; i < PLAY_MAPS_CV_COUNT; ++i) {
       if(!play_maps_format_enc(val, sizeof(val), &data->maps.cv[i])) {
-	return eSetupIoWriteFail;
+        return eSetupIoWriteFail;
       }
       if(!write_kv(io, cv_keys[i], val)) {
-	return eSetupIoWriteFail;
+        return eSetupIoWriteFail;
       }
     }
     for(i = 0; i < PLAY_MAPS_CC_COUNT; ++i) {
       if(!play_maps_format_cc(val, sizeof(val), &data->maps.cc[i])) {
-	return eSetupIoWriteFail;
+        return eSetupIoWriteFail;
       }
       if(!write_kv(io, cc_keys[i], val)) {
-	return eSetupIoWriteFail;
+        return eSetupIoWriteFail;
       }
     }
   }

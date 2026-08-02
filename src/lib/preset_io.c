@@ -98,7 +98,7 @@ static u8 parse_s32(const char *s, s32 *out) {
 }
 
 PresetIoStatus preset_io_read(LineIO *io, PresetMeta *meta,
-			      preset_on_param_fn on_param, void *ctx) {
+                              preset_on_param_fn on_param, void *ctx) {
   char line[PRESET_IO_LINE_MAX];
   KvPair pair;
   u8 have_format = 0;
@@ -123,31 +123,31 @@ PresetIoStatus preset_io_read(LineIO *io, PresetMeta *meta,
 
     if(!in_params) {
       if(kvtext_key_eq(pair.key, "format")) {
-	s32 f = 0;
-	if(!parse_s32(pair.val, &f) || f < 0 || f > 255 ||
-	   f != PRESET_IO_FORMAT) {
-	  return ePresetIoBadFormat;
-	}
-	meta->format = (u8)f;
-	have_format = 1;
-	continue;
+        s32 f = 0;
+        if(!parse_s32(pair.val, &f) || f < 0 || f > 255 ||
+           f != PRESET_IO_FORMAT) {
+          return ePresetIoBadFormat;
+        }
+        meta->format = (u8)f;
+        have_format = 1;
+        continue;
       }
       if(kvtext_key_eq(pair.key, "module")) {
-	strncpy(meta->module, pair.val, MODULE_NAME_LEN - 1);
-	meta->module[MODULE_NAME_LEN - 1] = '\0';
-	have_module = 1;
-	continue;
+        strncpy(meta->module, pair.val, MODULE_NAME_LEN - 1);
+        meta->module[MODULE_NAME_LEN - 1] = '\0';
+        have_module = 1;
+        continue;
       }
       if(kvtext_key_eq(pair.key, "version")) {
-	if(!preset_io_parse_version(pair.val, &meta->version)) {
-	  return ePresetIoMalformed;
-	}
-	have_version = 1;
-	continue;
+        if(!preset_io_parse_version(pair.val, &meta->version)) {
+          return ePresetIoMalformed;
+        }
+        have_version = 1;
+        continue;
       }
       /* first non-meta key starts params; require meta first */
       if(!have_format || !have_module || !have_version) {
-	return ePresetIoMissingMeta;
+        return ePresetIoMissingMeta;
       }
       in_params = 1;
       /* fall through and treat this line as a param */
@@ -156,10 +156,10 @@ PresetIoStatus preset_io_read(LineIO *io, PresetMeta *meta,
     if(in_params) {
       s32 value = 0;
       if(!parse_s32(pair.val, &value)) {
-	return ePresetIoMalformed;
+        return ePresetIoMalformed;
       }
       if(on_param != NULL && !on_param(pair.key, value, ctx)) {
-	return ePresetIoMalformed;
+        return ePresetIoMalformed;
       }
     }
   }
@@ -179,7 +179,7 @@ static u8 write_kv(LineIO *io, const char *key, const char *val) {
 }
 
 PresetIoStatus preset_io_write(LineIO *io, const PresetMeta *meta,
-			       preset_next_param_fn next_param, void *ctx) {
+                               preset_next_param_fn next_param, void *ctx) {
   char ver[32];
   char num[24];
 
@@ -216,20 +216,20 @@ PresetIoStatus preset_io_write(LineIO *io, const PresetMeta *meta,
       u32 pos = 0;
       u32 mag;
       if(label == NULL) {
-	return ePresetIoWriteFail;
+        return ePresetIoWriteFail;
       }
       num[0] = '\0';
       if(value < 0) {
-	num[pos++] = '-';
-	num[pos] = '\0';
-	/* avoid signed overflow on INT_MIN */
-	mag = (u32)(-(value + 1)) + 1u;
+        num[pos++] = '-';
+        num[pos] = '\0';
+        /* avoid signed overflow on INT_MIN */
+        mag = (u32)(-(value + 1)) + 1u;
       } else {
-	mag = (u32)value;
+        mag = (u32)value;
       }
       append_u(num, &pos, sizeof(num), mag);
       if(!write_kv(io, label, num)) {
-	return ePresetIoWriteFail;
+        return ePresetIoWriteFail;
       }
     }
   }

@@ -35,13 +35,13 @@ static void slots_rebuild_apply_order(Slots *s) {
   out = 0;
 
   for(t = 0; t < (u16)(sizeof(k_slots_apply_type_order) /
-			sizeof(k_slots_apply_type_order[0]));
+                       sizeof(k_slots_apply_type_order[0]));
       ++t) {
     ParamType want = k_slots_apply_type_order[t];
     for(i = 0; i < n; ++i) {
       if(!placed[i] && s->desc[i].type == want) {
-	s->apply_order[out++] = i;
-	placed[i] = 1;
+        s->apply_order[out++] = i;
+        placed[i] = 1;
       }
     }
   }
@@ -61,8 +61,8 @@ u8 slots_param_is_discrete(ParamType type) {
 }
 
 void slots_init(Slots *s, u16 max_params, ParamDesc *desc,
-		ParamValue *banks[MORPH2D_SLOTS], slots_set_param_fn set_param,
-		void *ctx) {
+                ParamValue *banks[MORPH2D_SLOTS], slots_set_param_fn set_param,
+                void *ctx) {
   u32 i;
   if(s == NULL) {
     return;

@@ -32,7 +32,11 @@ static u8 load_scaler_dat(const char *name, s32 *dst, u32 dstWords) {
   void *fp;
   u32 i;
   u32 size;
-  union { u32 u; s32 s; u8 b[4]; } swap;
+  union {
+    u32 u;
+    s32 s;
+    u8 b[4];
+  } swap;
 
   if(name == NULL || name[0] == '\0' || dstWords == 0) {
     return 1;
@@ -92,14 +96,14 @@ void scaler_tables_init(void) {
     if(words > 0) {
       dst = (s32 *)(g_scaler_bytes + scaler_get_data_offset(p));
       if(!load_scaler_dat(scaler_get_data_path(p), dst, words)) {
-	ok = 0;
+        ok = 0;
       }
     }
     words = scaler_get_rep_bytes(p) / 4;
     if(words > 0) {
       dst = (s32 *)(g_scaler_bytes + scaler_get_rep_offset(p));
       if(!load_scaler_dat(scaler_get_rep_path(p), dst, words)) {
-	ok = 0;
+        ok = 0;
       }
     }
     g_type_ok[p] = ok;

@@ -17,13 +17,13 @@ const bfin_xrun_t *xruns_get(void) {
 
 u8 xruns_any(void) {
   return (g_xruns.windowRx | g_xruns.windowTx | g_xruns.clashRx |
-	  g_xruns.clashTx) != 0;
+          g_xruns.clashTx) != 0;
 }
 
 /* true if any counter rose (wrap not treated as activity). */
 static u8 xrun_increased(const bfin_xrun_t *cur, const bfin_xrun_t *prev) {
   return cur->windowRx > prev->windowRx || cur->windowTx > prev->windowTx ||
-	 cur->clashRx > prev->clashRx || cur->clashTx > prev->clashTx;
+         cur->clashRx > prev->clashRx || cur->clashTx > prev->clashTx;
 }
 
 static void xrun_set_warn(u8 on) {
@@ -42,9 +42,9 @@ u8 xruns_poll(void) {
 
   bfin_get_xruns(&cur);
   changed = (cur.windowRx != g_xruns.windowRx ||
-	     cur.windowTx != g_xruns.windowTx ||
-	     cur.clashRx != g_xruns.clashRx ||
-	     cur.clashTx != g_xruns.clashTx);
+             cur.windowTx != g_xruns.windowTx ||
+             cur.clashRx != g_xruns.clashRx ||
+             cur.clashTx != g_xruns.clashTx);
   increased = xrun_increased(&cur, &g_xruns);
   g_xruns = cur;
 

@@ -18,7 +18,6 @@ void scaler_short_init(void* scaler) {
   // print_dbg(sc->desc->label);
   sc->inMin = scaler_short_in(scaler, sc->desc->min);
   sc->inMax = scaler_short_in(scaler, sc->desc->max);
-
 }
 
 s32 scaler_short_val(void* scaler, io_t in) {
@@ -35,7 +34,7 @@ io_t scaler_short_in(void* scaler, s32 val) {
 }
 
 // increment input by pointer, return value
-s32 scaler_short_inc(void* sc, io_t* pin, io_t inc ) {
+s32 scaler_short_inc(void* sc, io_t* pin, io_t inc) {
   s32 val;
   ParamScaler* scaler = (ParamScaler*)sc;
   // use saturation

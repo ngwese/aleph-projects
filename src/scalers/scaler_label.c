@@ -12,29 +12,29 @@
 //---- extern funcs
 
 s32 scaler_labels_val(void* scaler, io_t in) {
-  return (io_t) in;
+  return (io_t)in;
 }
 
 char scaler_labels[MAX_LABELS][LABEL_LENGTH] = {"EFFECT", "ADC0", "ADC1", "ADC2", "ADC3", "ADC4", "GRAIN1", "GRAIN2", "PTOSC1", "PTOSC2", "ENV1", "ENV2", "LFO", "PING", "CV1", "CV2"};
 int scaler_n_labels = 16;
 
-static char *labelsWriteHead;
-void scaler_start_parse_labels (void) {
+static char* labelsWriteHead;
+void scaler_start_parse_labels(void) {
   scaler_n_labels = 1;
   labelsWriteHead = &scaler_labels[0][0];
   *labelsWriteHead = 0;
 }
 
-void scaler_parse_labels_char (char c) {
+void scaler_parse_labels_char(char c) {
   /* print_dbg("\r\nchar: "); */
   /* print_dbg_char(c); */
   /* print_dbg("(n="); */
   /* print_dbg_ulong(c); */
   /* print_dbg(")"); */
-  if (scaler_n_labels >= MAX_LABELS) {
+  if(scaler_n_labels >= MAX_LABELS) {
     print_dbg("\r\n tried to insert too many labels");
   }
-  if (labelsWriteHead - &scaler_labels[scaler_n_labels][0] >= LABEL_LENGTH - 1) {
+  if(labelsWriteHead - &scaler_labels[scaler_n_labels][0] >= LABEL_LENGTH - 1) {
     *labelsWriteHead = 0;
     print_dbg("\r\n tried to insert over-length label");
   }
@@ -51,7 +51,7 @@ void scaler_parse_labels_char (char c) {
     scaler_n_labels++;
   } else if(c == 255) {
     *labelsWriteHead = 0;
-  }else {
+  } else {
     *labelsWriteHead = c;
     labelsWriteHead++;
     *labelsWriteHead = 0;
@@ -77,7 +77,7 @@ void scaler_labels_init(void* scaler) {
   /* print_dbg("\r\n exiting scaler_patch_init"); */
 }
 
-void scaler_labels_str(char* dst, void* scaler,  io_t in) {
+void scaler_labels_str(char* dst, void* scaler, io_t in) {
   ParamScaler* sc = (ParamScaler*)scaler;
   /* print_dbg("\r\n entered scaler_patch_str"); */
   //  u16 uin = BIT_ABS_16((s16)in) >> inRshift;
@@ -87,7 +87,7 @@ void scaler_labels_str(char* dst, void* scaler,  io_t in) {
   if(in < sc->inMin) {
     in = sc->inMin;
   }
-  strcpy(dst,scaler_labels[in]);
+  strcpy(dst, scaler_labels[in]);
 
   /* print_dbg("\r\n exiting scaler_patch_str"); */
 }
@@ -99,12 +99,12 @@ io_t scaler_labels_in(void* scaler, s32 x) {
   if(x < sc->inMin) { x = sc->inMin; }
   if(x > sc->inMax) { x = sc->inMax; }
   /* print_dbg("\r\n exiting scaler_labels_in"); */
-  return (io_t) x;
+  return (io_t)x;
 }
 
 
 // increment input by pointer, return value
-s32 scaler_labels_inc(void* scaler, io_t* pin, io_t inc ) {
+s32 scaler_labels_inc(void* scaler, io_t* pin, io_t inc) {
   /* print_dbg("\r\n entered scaler_patch_inc"); */
   /* print_dbg("\r\n *pin = "); */
   /* print_dbg_ulong(*pin); */

@@ -119,16 +119,16 @@ static void enc_label(char *dst, u32 dst_len, const PlayEncMap *m) {
     return;
   }
   switch(m->kind) {
-  case ePlayEncNone:
+  case ePlayEncNone :
     strncpy(dst, "-", dst_len - 1);
     break;
-  case ePlayEncMorphX:
+  case ePlayEncMorphX :
     strncpy(dst, "morph.x", dst_len - 1);
     break;
-  case ePlayEncMorphY:
+  case ePlayEncMorphY :
     strncpy(dst, "morph.y", dst_len - 1);
     break;
-  case ePlayEncParamSlot:
+  case ePlayEncParamSlot :
     /* e.g. "a/amp" so slot changes are visible on play */
     if(dst_len < 4) {
       strncpy(dst, "?", dst_len - 1);
@@ -139,7 +139,7 @@ static void enc_label(char *dst, u32 dst_len, const PlayEncMap *m) {
       strncat(dst, m->label, dst_len - 3);
     }
     break;
-  case ePlayEncParamAll:
+  case ePlayEncParamAll :
     if(dst_len < 5) {
       strncpy(dst, "?", dst_len - 1);
     } else {
@@ -147,7 +147,7 @@ static void enc_label(char *dst, u32 dst_len, const PlayEncMap *m) {
       strncat(dst, m->label, dst_len - 3);
     }
     break;
-  default:
+  default :
     strncpy(dst, "?", dst_len - 1);
     break;
   }
@@ -167,31 +167,31 @@ static void enc_value_str(char *dst, u32 dst_len, const PlayEncMap *m) {
     return;
   }
   switch(m->kind) {
-  case ePlayEncNone:
+  case ePlayEncNone :
     strncpy(dst, "-", dst_len - 1);
     break;
-  case ePlayEncMorphX:
+  case ePlayEncMorphX :
     fmt_u(dst, (g_slots.x * 100u) / MORPH2D_ONE);
     if(strlen(dst) + 1 < dst_len) {
       strcat(dst, "%");
     }
     break;
-  case ePlayEncMorphY:
+  case ePlayEncMorphY :
     fmt_u(dst, (g_slots.y * 100u) / MORPH2D_ONE);
     if(strlen(dst) + 1 < dst_len) {
       strcat(dst, "%");
     }
     break;
-  case ePlayEncParamSlot:
+  case ePlayEncParamSlot :
     idx = module_find_param(m->label);
     if(idx < 0 || !g_slots.occupied[m->slot]) {
       strncpy(dst, "-", dst_len - 1);
     } else {
       fmt_param_value(dst, (u16)dst_len, (u16)idx,
-		      slots_get_value(&g_slots, m->slot, (u16)idx));
+                      slots_get_value(&g_slots, m->slot, (u16)idx));
     }
     break;
-  case ePlayEncParamAll:
+  case ePlayEncParamAll :
     idx = module_find_param(m->label);
     if(idx < 0) {
       strncpy(dst, "-", dst_len - 1);
@@ -199,16 +199,16 @@ static void enc_value_str(char *dst, u32 dst_len, const PlayEncMap *m) {
     }
     for(s = 0; s < MORPH2D_SLOTS; ++s) {
       if(g_slots.occupied[s]) {
-	raw = slots_get_value(&g_slots, s, (u16)idx);
-	fmt_param_value(dst, (u16)dst_len, (u16)idx, raw);
-	break;
+        raw = slots_get_value(&g_slots, s, (u16)idx);
+        fmt_param_value(dst, (u16)dst_len, (u16)idx, raw);
+        break;
       }
     }
     if(dst[0] == '\0') {
       strncpy(dst, "-", dst_len - 1);
     }
     break;
-  default:
+  default :
     strncpy(dst, "-", dst_len - 1);
     break;
   }
@@ -353,31 +353,31 @@ static void apply_enc(u8 i, s32 data) {
   u16 y;
 
   switch(m->kind) {
-  case ePlayEncNone:
+  case ePlayEncNone :
     return;
-  case ePlayEncMorphX:
+  case ePlayEncMorphX :
     x = g_slots.x;
     nudge_axis(&x, data);
     state_set_morph(x, g_slots.y);
     state_apply();
     break;
-  case ePlayEncMorphY:
+  case ePlayEncMorphY :
     y = g_slots.y;
     nudge_axis(&y, data);
     state_set_morph(g_slots.x, y);
     state_apply();
     break;
-  case ePlayEncParamSlot:
+  case ePlayEncParamSlot :
     idx = module_find_param(m->label);
     if(idx < 0 || !g_slots.occupied[m->slot]) {
       return;
     }
     next = bump_one((u16)idx, slots_get_value(&g_slots, m->slot, (u16)idx),
-		    data);
+                    data);
     slots_set_value(&g_slots, m->slot, (u16)idx, next);
     state_send_param((u16)idx, next);
     break;
-  case ePlayEncParamAll:
+  case ePlayEncParamAll :
     idx = module_find_param(m->label);
     if(idx < 0) {
       return;
@@ -386,29 +386,29 @@ static void apply_enc(u8 i, s32 data) {
     {
       u8 have = 0;
       for(s = 0; s < MORPH2D_SLOTS; ++s) {
-	if(g_slots.occupied[s]) {
-	  if(!have) {
-	    next = bump_one((u16)idx,
-			    slots_get_value(&g_slots, s, (u16)idx), data);
-	    have = 1;
-	  }
-	  slots_set_value(&g_slots, s, (u16)idx, next);
-	}
+        if(g_slots.occupied[s]) {
+          if(!have) {
+            next = bump_one((u16)idx,
+                            slots_get_value(&g_slots, s, (u16)idx), data);
+            have = 1;
+          }
+          slots_set_value(&g_slots, s, (u16)idx, next);
+        }
       }
       if(!have) {
-	return;
+        return;
       }
     }
     state_send_param((u16)idx, next);
     break;
-  default:
+  default :
     return;
   }
   render_mark_dirty();
 }
 
 static void write_param_slots(MorphSlot slot, u8 all, const char *label,
-			      ParamValue v) {
+                              ParamValue v) {
   s16 idx = module_find_param(label);
   MorphSlot s;
   if(idx < 0) {
@@ -417,7 +417,7 @@ static void write_param_slots(MorphSlot slot, u8 all, const char *label,
   if(all) {
     for(s = 0; s < MORPH2D_SLOTS; ++s) {
       if(g_slots.occupied[s]) {
-	slots_set_value(&g_slots, s, (u16)idx, v);
+        slots_set_value(&g_slots, s, (u16)idx, v);
       }
     }
   } else if(g_slots.occupied[slot]) {
@@ -427,7 +427,7 @@ static void write_param_slots(MorphSlot slot, u8 all, const char *label,
 }
 
 static void mom_press(u8 sw, MorphSlot slot, u8 all, const char *label,
-		      ParamValue v) {
+                      ParamValue v) {
   s16 idx = module_find_param(label);
   MorphSlot s;
   if(idx < 0) {
@@ -440,9 +440,9 @@ static void mom_press(u8 sw, MorphSlot slot, u8 all, const char *label,
   if(all) {
     for(s = 0; s < MORPH2D_SLOTS; ++s) {
       if(g_slots.occupied[s]) {
-	mom.occupied[s] = 1;
-	mom.saved[s] = slots_get_value(&g_slots, s, (u16)idx);
-	slots_set_value(&g_slots, s, (u16)idx, v);
+        mom.occupied[s] = 1;
+        mom.saved[s] = slots_get_value(&g_slots, s, (u16)idx);
+        slots_set_value(&g_slots, s, (u16)idx, v);
       }
     }
   } else if(g_slots.occupied[slot]) {
@@ -473,8 +473,8 @@ static void mom_release(u8 sw) {
     if(mom.occupied[s]) {
       slots_set_value(&g_slots, s, (u16)idx, mom.saved[s]);
       if(!have) {
-	send = mom.saved[s];
-	have = 1;
+        send = mom.saved[s];
+        have = 1;
       }
     }
   }
@@ -499,23 +499,23 @@ static void apply_sw(u8 i, s32 data) {
       return;
     }
     switch(m->kind) {
-    case ePlaySwSetSlot:
+    case ePlaySwSetSlot :
       write_param_slots(m->slot, 0, m->label, m->value);
       render_mark_dirty();
       break;
-    case ePlaySwSetAll:
+    case ePlaySwSetAll :
       write_param_slots(0, 1, m->label, m->value);
       render_mark_dirty();
       break;
-    case ePlaySwMomSlot:
+    case ePlaySwMomSlot :
       mom_press(i, m->slot, 0, m->label, m->value);
       render_mark_dirty();
       break;
-    case ePlaySwMomAll:
+    case ePlaySwMomAll :
       mom_press(i, 0, 1, m->label, m->value);
       render_mark_dirty();
       break;
-    default:
+    default :
       break;
     }
   } else if(data <= 0) {

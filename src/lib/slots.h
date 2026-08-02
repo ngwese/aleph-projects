@@ -37,8 +37,8 @@ typedef struct {
 } Slots;
 
 void slots_init(Slots *s, u16 max_params, ParamDesc *desc,
-		ParamValue *banks[MORPH2D_SLOTS], slots_set_param_fn set_param,
-		void *ctx);
+                ParamValue *banks[MORPH2D_SLOTS], slots_set_param_fn set_param,
+                void *ctx);
 
 void slots_clear_all(Slots *s);
 void slots_clear_slot(Slots *s, MorphSlot slot);

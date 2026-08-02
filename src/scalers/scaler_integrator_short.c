@@ -28,7 +28,7 @@ s32 scaler_integrator_short_val(void* scaler, io_t in) {
   return tabVal[(u16)((u16)in >> inRshift)];
 }
 
-void scaler_integrator_short_str(char* dst, void* scaler,  io_t in) {
+void scaler_integrator_short_str(char* dst, void* scaler, io_t in) {
   //  u16 uin = (in < 0) ? 0 : ((u16)in >> inRshift) ;
   /* print_dbg("\r\n ingegrator_str() , input: 0x"); */
   /* print_dbg_hex(in); */
@@ -44,8 +44,8 @@ void scaler_integrator_short_str(char* dst, void* scaler,  io_t in) {
   //  print_dbg(" , computed val : 0x");
   if(in < 0) { in = 0; }
   //  print_dbg_hex(fix16_mul((s32)in << 1, 0x400000) );
-  print_fix16(dst, fix16_mul((s32)in << 1, 0x400000) );
-  
+  print_fix16(dst, fix16_mul((s32)in << 1, 0x400000));
+
   //  print_fix16(dst, tabRep[uin] );
 }
 
@@ -58,15 +58,16 @@ void scaler_integrator_short_init(void* scaler) {
   print_dbg(sc->desc->label);
 
   // check descriptor
-  if( sc->desc->type != eParamTypeIntegratorShort) {
+  if(sc->desc->type != eParamTypeIntegratorShort) {
     print_dbg("\r\n !!! warning: wrong param type for integrator_short scaler");
     print_dbg(" ; this param has type: ");
     print_dbg_ulong(sc->desc->type);
   }
-  
+
   // init flag for static data
-  if(initFlag) { 
-    ;;
+  if(initFlag) {
+    ;
+    ;
   } else {
     initFlag = 1;
     // assign
@@ -78,10 +79,10 @@ void scaler_integrator_short_init(void* scaler) {
 
 
   //// FIXME: add tuning functions....
-  /// here, that would mean adjusting for actual samplerate. 
+  /// here, that would mean adjusting for actual samplerate.
   /// table data assumes 48k.
   //  sc->tune = NULL;
-  //  sc->numTune = 0;  
+  //  sc->numTune = 0;
 }
 
 
@@ -118,7 +119,7 @@ io_t scaler_integrator_short_in(void* scaler, s32 x) {
 
 
 // increment input by pointer, return value
-s32 scaler_integrator_short_inc(void* scaler, io_t* pin, io_t inc ) {
+s32 scaler_integrator_short_inc(void* scaler, io_t* pin, io_t inc) {
   ParamScaler* sc = (ParamScaler*)scaler;
 
   // use saturation

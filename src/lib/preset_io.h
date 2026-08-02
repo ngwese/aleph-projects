@@ -33,10 +33,10 @@ typedef u8 (*preset_on_param_fn)(const char *label, s32 value, void *ctx);
 typedef u8 (*preset_next_param_fn)(const char **label, s32 *value, void *ctx);
 
 PresetIoStatus preset_io_read(LineIO *io, PresetMeta *meta,
-			      preset_on_param_fn on_param, void *ctx);
+                              preset_on_param_fn on_param, void *ctx);
 
 PresetIoStatus preset_io_write(LineIO *io, const PresetMeta *meta,
-			       preset_next_param_fn next_param, void *ctx);
+                               preset_next_param_fn next_param, void *ctx);
 
 /* helpers for version strings "maj.min.rev" */
 u8 preset_io_parse_version(const char *s, ModuleVersion *out);

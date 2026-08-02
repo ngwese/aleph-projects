@@ -134,8 +134,8 @@ static void apply_play_cc(u8 ch, u8 cc_num, u8 val) {
   } else if(ch == MIDI_CH_SETUP) {
     for(i = 0; i < MORPH2D_SLOTS; ++i) {
       if(g_slots.occupied[i]) {
-	slots_set_value(&g_slots, (MorphSlot)i, (u16)idx, raw);
-	wrote = 1;
+        slots_set_value(&g_slots, (MorphSlot)i, (u16)idx, raw);
+        wrote = 1;
       }
     }
   }
@@ -178,8 +178,8 @@ static void apply_nrpn_data(u8 ch) {
   } else if(ch == MIDI_CH_SETUP) {
     for(s = 0; s < MORPH2D_SLOTS; ++s) {
       if(g_slots.occupied[s]) {
-	slots_set_value(&g_slots, s, idx, raw);
-	wrote = 1;
+        slots_set_value(&g_slots, s, idx, raw);
+        wrote = 1;
       }
     }
   }
@@ -252,18 +252,18 @@ static void on_control_change(u8 ch, u8 num, u8 val) {
 }
 
 static midi_behavior_t g_midi_beh = {
-    .note_on = NULL,
-    .note_off = NULL,
-    .channel_pressure = NULL,
-    .pitch_bend = NULL,
-    .control_change = on_control_change,
-    .program_change = NULL,
-    .clock_tick = NULL,
-    .seq_start = NULL,
-    .seq_stop = NULL,
-    .seq_continue = NULL,
-    .panic = NULL,
-    .aftertouch = NULL,
+  .note_on = NULL,
+  .note_off = NULL,
+  .channel_pressure = NULL,
+  .pitch_bend = NULL,
+  .control_change = on_control_change,
+  .program_change = NULL,
+  .clock_tick = NULL,
+  .seq_start = NULL,
+  .seq_stop = NULL,
+  .seq_continue = NULL,
+  .panic = NULL,
+  .aftertouch = NULL,
 };
 
 void between_midi_handle_packet(u32 data) {

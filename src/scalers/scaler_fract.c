@@ -19,7 +19,6 @@ void scaler_fract_init(void* scaler) {
 
   sc->inMin = scaler_fract_in(scaler, sc->desc->min);
   sc->inMax = scaler_fract_in(scaler, sc->desc->max);
-
 }
 
 s32 scaler_fract_val(void* scaler, io_t in) {
@@ -30,7 +29,6 @@ s32 scaler_fract_val(void* scaler, io_t in) {
 void scaler_fract_str(char* dst, void* scaler, io_t in) {
   // print as fractional part of fix16, shifting normalized IO to 16b...
   print_fix16(dst, (s32)in);
-  
 }
 
 // get IO input value based on expected output
@@ -39,7 +37,7 @@ io_t scaler_fract_in(void* scaler, s32 val) {
 }
 
 // increment input by pointer, return value
-s32 scaler_fract_inc(void* sc, io_t* pin, io_t inc ) {
+s32 scaler_fract_inc(void* sc, io_t* pin, io_t inc) {
   s32 val;
   ParamScaler* scaler = (ParamScaler*)sc;
   // use saturation

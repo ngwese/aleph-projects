@@ -5,12 +5,12 @@
 #include "types.h"
 
 PresetIoStatus preset_file_load(const char *module, const char *stem,
-				PresetMeta *meta, preset_on_param_fn on_param,
-				void *ctx);
+                                PresetMeta *meta, preset_on_param_fn on_param,
+                                void *ctx);
 
 PresetIoStatus preset_file_save(const char *module, const char *stem,
-				const PresetMeta *meta,
-				preset_next_param_fn next_param, void *ctx);
+                                const PresetMeta *meta,
+                                preset_next_param_fn next_param, void *ctx);
 
 u8 preset_file_delete(const char *module, const char *stem);
 

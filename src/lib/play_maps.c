@@ -143,7 +143,7 @@ const PlaySwMap *play_maps_sw_total_at_const(const PlayMaps *m, u8 idx) {
 }
 
 void play_maps_clear_invalid(PlayMaps *m, const ParamDesc *desc,
-			     u16 num_params) {
+                             u16 num_params) {
   u8 i;
   if(m == NULL) {
     return;
@@ -152,8 +152,8 @@ void play_maps_clear_invalid(PlayMaps *m, const ParamDesc *desc,
     if(m->enc[i].kind == ePlayEncParamSlot ||
        m->enc[i].kind == ePlayEncParamAll) {
       if(!label_known(m->enc[i].label, desc, num_params)) {
-	memset(&m->enc[i], 0, sizeof(m->enc[i]));
-	m->enc[i].kind = ePlayEncNone;
+        memset(&m->enc[i], 0, sizeof(m->enc[i]));
+        m->enc[i].kind = ePlayEncNone;
       }
     }
   }
@@ -161,8 +161,8 @@ void play_maps_clear_invalid(PlayMaps *m, const ParamDesc *desc,
     if(m->sw[i].kind == ePlaySwSetSlot || m->sw[i].kind == ePlaySwMomSlot ||
        m->sw[i].kind == ePlaySwSetAll || m->sw[i].kind == ePlaySwMomAll) {
       if(!label_known(m->sw[i].label, desc, num_params)) {
-	memset(&m->sw[i], 0, sizeof(m->sw[i]));
-	m->sw[i].kind = ePlaySwNone;
+        memset(&m->sw[i], 0, sizeof(m->sw[i]));
+        m->sw[i].kind = ePlaySwNone;
       }
     }
   }
@@ -170,8 +170,8 @@ void play_maps_clear_invalid(PlayMaps *m, const ParamDesc *desc,
     if(m->fs[i].kind == ePlaySwSetSlot || m->fs[i].kind == ePlaySwMomSlot ||
        m->fs[i].kind == ePlaySwSetAll || m->fs[i].kind == ePlaySwMomAll) {
       if(!label_known(m->fs[i].label, desc, num_params)) {
-	memset(&m->fs[i], 0, sizeof(m->fs[i]));
-	m->fs[i].kind = ePlaySwNone;
+        memset(&m->fs[i], 0, sizeof(m->fs[i]));
+        m->fs[i].kind = ePlaySwNone;
       }
     }
   }
@@ -179,16 +179,16 @@ void play_maps_clear_invalid(PlayMaps *m, const ParamDesc *desc,
     if(m->cv[i].kind == ePlayEncParamSlot ||
        m->cv[i].kind == ePlayEncParamAll) {
       if(!label_known(m->cv[i].label, desc, num_params)) {
-	memset(&m->cv[i], 0, sizeof(m->cv[i]));
-	m->cv[i].kind = ePlayEncNone;
+        memset(&m->cv[i], 0, sizeof(m->cv[i]));
+        m->cv[i].kind = ePlayEncNone;
       }
     }
   }
   for(i = 0; i < PLAY_MAPS_CC_COUNT; ++i) {
     if(m->cc[i].kind == ePlayCcParam) {
       if(!label_known(m->cc[i].label, desc, num_params)) {
-	memset(&m->cc[i], 0, sizeof(m->cc[i]));
-	m->cc[i].kind = ePlayCcNone;
+        memset(&m->cc[i], 0, sizeof(m->cc[i]));
+        m->cc[i].kind = ePlayCcNone;
       }
     }
   }
@@ -279,7 +279,7 @@ u8 play_maps_parse_sw(const char *val, PlaySwMap *out) {
       char lab[PARAM_LABEL_LEN];
       u32 len = (u32)(colon - (p + 4));
       if(len == 0 || len >= PARAM_LABEL_LEN) {
-	return 0;
+        return 0;
       }
       memcpy(lab, p + 4, len);
       lab[len] = '\0';
@@ -311,32 +311,32 @@ u8 play_maps_format_enc(char *buf, u32 buf_size, const PlayEncMap *m) {
     return 0;
   }
   switch(m->kind) {
-  case ePlayEncNone:
+  case ePlayEncNone :
     if(buf_size < 2) {
       return 0;
     }
     strcpy(buf, "-");
     return 1;
-  case ePlayEncMorphX:
+  case ePlayEncMorphX :
     if(buf_size < 8) {
       return 0;
     }
     strcpy(buf, "morph.x");
     return 1;
-  case ePlayEncMorphY:
+  case ePlayEncMorphY :
     if(buf_size < 8) {
       return 0;
     }
     strcpy(buf, "morph.y");
     return 1;
-  case ePlayEncParamAll:
+  case ePlayEncParamAll :
     if(buf_size < 11 + strlen(m->label)) {
       return 0;
     }
     strcpy(buf, "param.all.");
     strcat(buf, m->label);
     return 1;
-  case ePlayEncParamSlot:
+  case ePlayEncParamSlot :
     if(buf_size < 9 + strlen(m->label)) {
       return 0;
     }
@@ -348,7 +348,7 @@ u8 play_maps_format_enc(char *buf, u32 buf_size, const PlayEncMap *m) {
     strcat(buf, ".");
     strcat(buf, m->label);
     return 1;
-  default:
+  default :
     return 0;
   }
 }
@@ -360,16 +360,16 @@ u8 play_maps_format_sw(char *buf, u32 buf_size, const PlaySwMap *m) {
     return 0;
   }
   switch(m->kind) {
-  case ePlaySwNone:
+  case ePlaySwNone :
     if(buf_size < 2) {
       return 0;
     }
     strcpy(buf, "-");
     return 1;
-  case ePlaySwSnapA:
-  case ePlaySwSnapB:
-  case ePlaySwSnapC:
-  case ePlaySwSnapD:
+  case ePlaySwSnapA :
+  case ePlaySwSnapB :
+  case ePlaySwSnapC :
+  case ePlaySwSnapD :
     if(buf_size < 7) {
       return 0;
     }
@@ -379,8 +379,8 @@ u8 play_maps_format_sw(char *buf, u32 buf_size, const PlaySwMap *m) {
       strcat(buf, s);
     }
     return 1;
-  case ePlaySwSetSlot:
-  case ePlaySwMomSlot:
+  case ePlaySwSetSlot :
+  case ePlaySwMomSlot :
     format_s32(num, sizeof(num), m->value);
     strcpy(tmp, (m->kind == ePlaySwMomSlot) ? "mom." : "set.");
     {
@@ -396,8 +396,8 @@ u8 play_maps_format_sw(char *buf, u32 buf_size, const PlaySwMap *m) {
     }
     strcpy(buf, tmp);
     return 1;
-  case ePlaySwSetAll:
-  case ePlaySwMomAll:
+  case ePlaySwSetAll :
+  case ePlaySwMomAll :
     format_s32(num, sizeof(num), m->value);
     strcpy(tmp, (m->kind == ePlaySwMomAll) ? "mom.all." : "set.all.");
     strcat(tmp, m->label);
@@ -408,7 +408,7 @@ u8 play_maps_format_sw(char *buf, u32 buf_size, const PlaySwMap *m) {
     }
     strcpy(buf, tmp);
     return 1;
-  default:
+  default :
     return 0;
   }
 }
@@ -422,35 +422,33 @@ void play_maps_summary_enc(char *buf, u32 buf_size, const PlayEncMap *m) {
     return;
   }
   switch(m->kind) {
-  case ePlayEncNone:
+  case ePlayEncNone :
     strncpy(buf, "-", buf_size - 1);
     break;
-  case ePlayEncMorphX:
+  case ePlayEncMorphX :
     strncpy(buf, "morph.x", buf_size - 1);
     break;
-  case ePlayEncMorphY:
+  case ePlayEncMorphY :
     strncpy(buf, "morph.y", buf_size - 1);
     break;
-  case ePlayEncParamAll:
+  case ePlayEncParamAll :
     strncpy(buf, "all/", buf_size - 1);
     strncat(buf, m->label, buf_size - strlen(buf) - 1);
     break;
-  case ePlayEncParamSlot:
-    {
-      char s[8];
-      s[0] = 's';
-      s[1] = 'l';
-      s[2] = 'o';
-      s[3] = 't';
-      s[4] = '.';
-      s[5] = slot_to_char(m->slot);
-      s[6] = '/';
-      s[7] = '\0';
-      strncpy(buf, s, buf_size - 1);
-      strncat(buf, m->label, buf_size - strlen(buf) - 1);
-    }
-    break;
-  default:
+  case ePlayEncParamSlot : {
+    char s[8];
+    s[0] = 's';
+    s[1] = 'l';
+    s[2] = 'o';
+    s[3] = 't';
+    s[4] = '.';
+    s[5] = slot_to_char(m->slot);
+    s[6] = '/';
+    s[7] = '\0';
+    strncpy(buf, s, buf_size - 1);
+    strncat(buf, m->label, buf_size - strlen(buf) - 1);
+  } break;
+  default :
     strncpy(buf, "?", buf_size - 1);
     break;
   }
@@ -466,21 +464,19 @@ void play_maps_summary_sw(char *buf, u32 buf_size, const PlaySwMap *m) {
     return;
   }
   switch(m->kind) {
-  case ePlaySwNone:
+  case ePlaySwNone :
     strncpy(buf, "-", buf_size - 1);
     break;
-  case ePlaySwSnapA:
-  case ePlaySwSnapB:
-  case ePlaySwSnapC:
-  case ePlaySwSnapD:
-    {
-      char s[8] = "snap.?";
-      s[5] = (char)('a' + (m->kind - ePlaySwSnapA));
-      strncpy(buf, s, buf_size - 1);
-    }
-    break;
-  case ePlaySwSetSlot:
-  case ePlaySwMomSlot:
+  case ePlaySwSnapA :
+  case ePlaySwSnapB :
+  case ePlaySwSnapC :
+  case ePlaySwSnapD : {
+    char s[8] = "snap.?";
+    s[5] = (char)('a' + (m->kind - ePlaySwSnapA));
+    strncpy(buf, s, buf_size - 1);
+  } break;
+  case ePlaySwSetSlot :
+  case ePlaySwMomSlot :
     strncpy(buf, (m->kind == ePlaySwMomSlot) ? "mom." : "set.", buf_size - 1);
     {
       char s[3] = {slot_to_char(m->slot), '/', '\0'};
@@ -488,13 +484,13 @@ void play_maps_summary_sw(char *buf, u32 buf_size, const PlaySwMap *m) {
     }
     strncat(buf, m->label, buf_size - strlen(buf) - 1);
     break;
-  case ePlaySwSetAll:
-  case ePlaySwMomAll:
+  case ePlaySwSetAll :
+  case ePlaySwMomAll :
     strncpy(buf, (m->kind == ePlaySwMomAll) ? "mom.all/" : "set.all/",
-	    buf_size - 1);
+            buf_size - 1);
     strncat(buf, m->label, buf_size - strlen(buf) - 1);
     break;
-  default:
+  default :
     strncpy(buf, "?", buf_size - 1);
     break;
   }
@@ -512,23 +508,23 @@ void play_maps_footer_sw(char *buf, u32 buf_size, const PlaySwMap *m) {
     return;
   }
   switch(m->kind) {
-  case ePlaySwSnapA:
-  case ePlaySwSnapB:
-  case ePlaySwSnapC:
-  case ePlaySwSnapD:
+  case ePlaySwSnapA :
+  case ePlaySwSnapB :
+  case ePlaySwSnapC :
+  case ePlaySwSnapD :
     buf[0] = (char)('A' + (m->kind - ePlaySwSnapA));
     if(buf_size > 1) {
       buf[1] = '\0';
     }
     break;
-  case ePlaySwSetSlot:
-  case ePlaySwMomSlot:
-  case ePlaySwSetAll:
-  case ePlaySwMomAll:
+  case ePlaySwSetSlot :
+  case ePlaySwMomSlot :
+  case ePlaySwSetAll :
+  case ePlaySwMomAll :
     strncpy(buf, m->label, buf_size - 1);
     buf[buf_size - 1] = '\0';
     break;
-  default:
+  default :
     strncpy(buf, "-", buf_size - 1);
     buf[buf_size - 1] = '\0';
     break;
@@ -581,20 +577,20 @@ u8 play_maps_format_cc(char *buf, u32 buf_size, const PlayCcMap *m) {
     return 0;
   }
   switch(m->kind) {
-  case ePlayCcNone:
+  case ePlayCcNone :
     if(buf_size < 2) {
       return 0;
     }
     strcpy(buf, "-");
     return 1;
-  case ePlayCcParam:
+  case ePlayCcParam :
     if(buf_size < 7 + strlen(m->label)) {
       return 0;
     }
     strcpy(buf, "param.");
     strcat(buf, m->label);
     return 1;
-  default:
+  default :
     return 0;
   }
 }
@@ -608,13 +604,13 @@ void play_maps_summary_cc(char *buf, u32 buf_size, const PlayCcMap *m) {
     return;
   }
   switch(m->kind) {
-  case ePlayCcNone:
+  case ePlayCcNone :
     strncpy(buf, "-", buf_size - 1);
     break;
-  case ePlayCcParam:
+  case ePlayCcParam :
     strncpy(buf, m->label, buf_size - 1);
     break;
-  default:
+  default :
     strncpy(buf, "?", buf_size - 1);
     break;
   }
@@ -678,7 +674,7 @@ u8 play_maps_cv_any_bound(const PlayMaps *m) {
 }
 
 static void mark_label(const char *label, const ParamDesc *desc, u16 n,
-		       u8 *out) {
+                       u8 *out) {
   u16 i;
   if(label == NULL || label[0] == '\0' || desc == NULL || out == NULL) {
     return;
@@ -692,7 +688,7 @@ static void mark_label(const char *label, const ParamDesc *desc, u16 n,
 }
 
 void play_maps_fill_bound(const PlayMaps *m, const ParamDesc *desc,
-			  u16 num_params, u8 *out) {
+                          u16 num_params, u8 *out) {
   u8 i;
   if(out == NULL) {
     return;

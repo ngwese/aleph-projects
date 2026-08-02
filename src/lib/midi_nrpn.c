@@ -63,7 +63,7 @@ u16 midi_nrpn_range_to_v14(s32 min, s32 max, s32 v) {
   }
   /* (d * 16383) / s without overflowing u32 */
   return (u16)((d / s) * (u32)MIDI_NRPN_V14_MAX +
-	       ((d % s) * (u32)MIDI_NRPN_V14_MAX) / s);
+               ((d % s) * (u32)MIDI_NRPN_V14_MAX) / s);
 }
 
 static s32 map_round(s32 min, s32 max, u16 v14) {

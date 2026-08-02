@@ -12,18 +12,18 @@ static InputSwRole g_sw_role[4];
 
 static u8 role_thresh(InputRole role) {
   switch(role) {
-  case eInputRolePageSelect:
+  case eInputRolePageSelect :
     return 24;
-  case eInputRoleListSelect:
+  case eInputRoleListSelect :
     return 4;
-  case eInputRoleParamFine:
+  case eInputRoleParamFine :
     return 0;
-  case eInputRoleParamCoarse:
+  case eInputRoleParamCoarse :
     /* same thresh as fine so posted tick counts reach the handler; step
      * size is applied in the page (0x100 * data), matching live play. */
     return 0;
-  case eInputRoleUnmapped:
-  default:
+  case eInputRoleUnmapped :
+  default :
     return 4;
   }
 }
@@ -38,23 +38,23 @@ static void enc_dispatch(u8 idx, s32 data) {
   role = g_enc_role[idx];
   fn = g_enc_fn[idx];
   switch(role) {
-  case eInputRoleUnmapped:
+  case eInputRoleUnmapped :
     return;
-  case eInputRolePageSelect:
+  case eInputRolePageSelect :
     if(fn != NULL) {
       fn(data);
     } else {
       pages_next(data > 0 ? 1 : -1);
     }
     return;
-  case eInputRoleListSelect:
-  case eInputRoleParamFine:
-  case eInputRoleParamCoarse:
+  case eInputRoleListSelect :
+  case eInputRoleParamFine :
+  case eInputRoleParamCoarse :
     if(fn != NULL) {
       fn(data);
     }
     return;
-  default:
+  default :
     return;
   }
 }
@@ -69,20 +69,20 @@ static void sw_dispatch(u8 idx, s32 data) {
   role = g_sw_role[idx];
   fn = g_sw_fn[idx];
   switch(role) {
-  case eInputSwRoleUnmapped:
+  case eInputSwRoleUnmapped :
     return;
-  case eInputSwRoleAction:
+  case eInputSwRoleAction :
     if(fn != NULL) {
       fn(data);
     }
     return;
-  case eInputSwRoleAlt:
+  case eInputSwRoleAlt :
     g_alt_mode = data > 0 ? 1 : 0;
     if(fn != NULL) {
       fn(data);
     }
     return;
-  default:
+  default :
     return;
   }
 }

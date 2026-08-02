@@ -40,10 +40,10 @@ static region regMorph = {.w = HEAD_IND_W, .h = 8, .x = HEAD_IND_X, .y = 0};
 static region regMain = {.w = 128, .h = 48, .x = 0, .y = 8};
 static region regLog = {.w = 128, .h = 8, .x = 0, .y = 48};
 static region regFoot[4] = {
-    {.w = 32, .h = 8, .x = 0, .y = 56},
-    {.w = 32, .h = 8, .x = 32, .y = 56},
-    {.w = 32, .h = 8, .x = 64, .y = 56},
-    {.w = 32, .h = 8, .x = 96, .y = 56},
+  {.w = 32, .h = 8, .x = 0, .y = 56},
+  {.w = 32, .h = 8, .x = 32, .y = 56},
+  {.w = 32, .h = 8, .x = 64, .y = 56},
+  {.w = 32, .h = 8, .x = 96, .y = 56},
 };
 
 #define HEAD_GREY 0x5
@@ -73,10 +73,14 @@ typedef struct {
 } head_vu_lut_t;
 
 static const head_vu_lut_t head_vu_lut[] = {
-    {(fract32)0x60000000, 0xf}, {(fract32)0x40000000, 0xc},
-    {(fract32)0x20000000, 0xa}, {(fract32)0x10000000, 0x7},
-    {(fract32)0x08000000, 0x5}, {(fract32)0x04000000, 0x3},
-    {(fract32)0x01000000, 0x2}, {(fract32)0x00000000, 0x0},
+  {(fract32)0x60000000, 0xf},
+  {(fract32)0x40000000, 0xc},
+  {(fract32)0x20000000, 0xa},
+  {(fract32)0x10000000, 0x7},
+  {(fract32)0x08000000, 0x5},
+  {(fract32)0x04000000, 0x3},
+  {(fract32)0x01000000, 0x2},
+  {(fract32)0x00000000, 0x0},
 };
 
 static char log_buf[22];
@@ -107,7 +111,7 @@ static void reg_fill_col(region *r, u8 x0, u8 w, u8 color) {
   for(y = 0; y < r->h; ++y) {
     for(x = 0; x < w; ++x) {
       if((u16)x0 + x >= r->w) {
-	break;
+        break;
       }
       r->data[(u32)y * (u32)r->w + (u32)(x0 + x)] = color;
     }
@@ -270,7 +274,7 @@ void render_edit_string(u8 row, const char *str, u8 cursor) {
     u8 px;
     for(y = 0; y < 8; ++y) {
       for(px = 0; px < 128; ++px) {
-	regMain.data[(u32)(y0 + y) * 128u + px] = 0;
+        regMain.data[(u32)(y0 + y) * 128u + px] = 0;
       }
     }
   }
@@ -315,7 +319,7 @@ void render_charset_row(u8 row, const char *chars, u8 sel) {
     u8 px;
     for(y = 0; y < 8; ++y) {
       for(px = 0; px < 128; ++px) {
-	regMain.data[(u32)(y0 + y) * 128u + px] = 0;
+        regMain.data[(u32)(y0 + y) * 128u + px] = 0;
       }
     }
   }
@@ -382,7 +386,7 @@ static u8 head_draw_text_box(u8 x, const char *text, u8 x_max) {
   }
   head_fill_col(x, bar_w, HEAD_WHITE);
   font_string_region_clip(&regHead, text, (u8)(x + HEAD_MARGIN), 0, HEAD_BLACK,
-			  HEAD_WHITE);
+                          HEAD_WHITE);
   return (u8)(x + bar_w);
 }
 
@@ -473,7 +477,7 @@ static void head_draw_xrun(void) {
   for(i = 0; i < 3; ++i) {
     dst = regXrun.data + x;
     x = (u8)(x + font_glyph('!', dst, regXrun.w, HEAD_GREY_DARK, HEAD_BLACK) +
-	     1);
+             1);
   }
 }
 
@@ -649,7 +653,7 @@ void render_footer_slot_tri(u8 cell, MorphSlot slot) {
   }
   /* 3-pixel right triangle in morph-plane corner of the footer cell */
   switch(slot) {
-  case eMorphSlotA: /* top-left */
+  case eMorphSlotA : /* top-left */
     px[0] = 0;
     py[0] = 0;
     px[1] = 1;
@@ -657,7 +661,7 @@ void render_footer_slot_tri(u8 cell, MorphSlot slot) {
     px[2] = 0;
     py[2] = 1;
     break;
-  case eMorphSlotB: /* top-right */
+  case eMorphSlotB : /* top-right */
     px[0] = 31;
     py[0] = 0;
     px[1] = 30;
@@ -665,7 +669,7 @@ void render_footer_slot_tri(u8 cell, MorphSlot slot) {
     px[2] = 31;
     py[2] = 1;
     break;
-  case eMorphSlotC: /* bottom-left */
+  case eMorphSlotC : /* bottom-left */
     px[0] = 0;
     py[0] = 7;
     px[1] = 1;
@@ -673,8 +677,8 @@ void render_footer_slot_tri(u8 cell, MorphSlot slot) {
     px[2] = 0;
     py[2] = 6;
     break;
-  case eMorphSlotD: /* bottom-right */
-  default:
+  case eMorphSlotD : /* bottom-right */
+  default :
     px[0] = 31;
     py[0] = 7;
     px[1] = 30;
@@ -702,24 +706,24 @@ void render_play_morph(u16 mx, u16 my) {
   /* light-gray frame */
   for(x = 0; x < RENDER_PLAY_MORPH_SZ; ++x) {
     regMain.data[(u32)RENDER_PLAY_MORPH_OY * 128u +
-		 (u32)(RENDER_PLAY_MORPH_OX + x)] = HEAD_GREY;
+                 (u32)(RENDER_PLAY_MORPH_OX + x)] = HEAD_GREY;
     regMain.data[(u32)(RENDER_PLAY_MORPH_OY + RENDER_PLAY_MORPH_SZ - 1) * 128u +
-		 (u32)(RENDER_PLAY_MORPH_OX + x)] = HEAD_GREY;
+                 (u32)(RENDER_PLAY_MORPH_OX + x)] = HEAD_GREY;
   }
   for(y = 0; y < RENDER_PLAY_MORPH_SZ; ++y) {
     regMain.data[(u32)(RENDER_PLAY_MORPH_OY + y) * 128u +
-		 (u32)RENDER_PLAY_MORPH_OX] = HEAD_GREY;
+                 (u32)RENDER_PLAY_MORPH_OX] = HEAD_GREY;
     regMain.data[(u32)(RENDER_PLAY_MORPH_OY + y) * 128u +
-		 (u32)(RENDER_PLAY_MORPH_OX + RENDER_PLAY_MORPH_SZ - 1)] =
+                 (u32)(RENDER_PLAY_MORPH_OX + RENDER_PLAY_MORPH_SZ - 1)] =
       HEAD_GREY;
   }
 
   /* 3×3 white cursor; map morph into inner (frame inset by 1) */
   if(inner > 2) {
     cx = (u8)(RENDER_PLAY_MORPH_OX + 1 +
-	      ((u32)mx * (inner - 2)) / MORPH2D_ONE);
+              ((u32)mx * (inner - 2)) / MORPH2D_ONE);
     cy = (u8)(RENDER_PLAY_MORPH_OY + 1 +
-	      ((u32)my * (inner - 2)) / MORPH2D_ONE);
+              ((u32)my * (inner - 2)) / MORPH2D_ONE);
   } else {
     cx = (u8)(RENDER_PLAY_MORPH_OX + 1);
     cy = (u8)(RENDER_PLAY_MORPH_OY + 1);
@@ -729,7 +733,7 @@ void render_play_morph(u16 mx, u16 my) {
       x = (u8)(cx + ix);
       y = (u8)(cy + iy);
       if(x < 128 && y < 40) {
-	regMain.data[(u32)y * 128u + (u32)x] = HEAD_WHITE;
+        regMain.data[(u32)y * 128u + (u32)x] = HEAD_WHITE;
       }
     }
   }
@@ -757,7 +761,7 @@ static u8 vu_peak_fill_h(fract32 peak, u8 bar_h_max) {
 }
 
 void render_inspect_cv_row(u8 row, const char *label, const char *volts,
-			   const u8 *spark, u8 spark_n) {
+                           const u8 *spark, u8 spark_n) {
   const u8 y = (u8)(row * FONT_CHARH);
   const u8 label_w = (u8)(4 * FONT_CHARW); /* "cvN " */
   const u8 volts_w = (u8)(5 * FONT_CHARW); /* " 0.00" / "10.00" */
@@ -789,7 +793,7 @@ void render_inspect_cv_row(u8 row, const char *label, const char *volts,
     }
     if(h > 0) {
       render_fill_rect((u8)(spark_x + i), (u8)(y + 8 - h), 1, h,
-		       HEAD_GREY_LIGHT);
+                       HEAD_GREY_LIGHT);
     }
   }
 }
@@ -832,7 +836,7 @@ void render_inspect_vu_bars(void) {
     render_fill_rect(x_bar, baseline_y, bar_w, baseline_h, HEAD_GREY_DARK);
     if(fill_h > 0) {
       render_fill_rect(x_bar, (u8)(meter_base_y + 1 - fill_h), bar_w, fill_h,
-		       HEAD_GREY_LIGHT);
+                       HEAD_GREY_LIGHT);
     }
     dig[0] = (char)('0' + i);
     render_string_xy(x_label, label_y, dig, HEAD_GREY);
@@ -845,7 +849,7 @@ void render_inspect_vu_bars(void) {
     render_fill_rect(x_bar, baseline_y, bar_w, baseline_h, HEAD_GREY_DARK);
     if(fill_h > 0) {
       render_fill_rect(x_bar, (u8)(meter_base_y + 1 - fill_h), bar_w, fill_h,
-		       HEAD_GREY_LIGHT);
+                       HEAD_GREY_LIGHT);
     }
     dig[0] = (char)('0' + i);
     render_string_xy(x_label, label_y, dig, HEAD_GREY);

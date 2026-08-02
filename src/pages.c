@@ -69,8 +69,7 @@ void pages_init(void) {
   g_pages[ePagePlay] =
     (Page){.name = "play", .select_fn = select_play, .redraw_fn = redraw_play};
   g_pages[ePageInspect] =
-    (Page){.name = "inspect", .select_fn = select_inspect,
-	   .redraw_fn = redraw_inspect};
+    (Page){.name = "inspect", .select_fn = select_inspect, .redraw_fn = redraw_inspect};
 
   g_page_idx = ePageSetups;
   g_app_mode = eAppModeEdit;

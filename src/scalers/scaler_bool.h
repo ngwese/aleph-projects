@@ -16,6 +16,6 @@ extern void scaler_bool_init(void* scaler);
 extern s32 scaler_bool_val(void* scaler, io_t in);
 extern void scaler_bool_str(char* dst, void* scaler, io_t in);
 extern io_t scaler_bool_in(void* scaler, s32 val);
-extern s32 scaler_bool_inc(void* sc, io_t *pin, io_t inc );
+extern s32 scaler_bool_inc(void* sc, io_t* pin, io_t inc);
 EXTERN_C_END
 #endif

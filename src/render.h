@@ -100,6 +100,6 @@ void render_play_morph(u16 x, u16 y);
 void render_inspect_vu_bars(void);
 /* inspect cv in: one content row — label, fixed volts string, spark columns. */
 void render_inspect_cv_row(u8 row, const char *label, const char *volts,
-			   const u8 *spark, u8 spark_n);
+                           const u8 *spark, u8 spark_n);
 
 #endif

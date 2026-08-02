@@ -12,11 +12,11 @@
 
 /* A–O | P–Z | a–o | p–z | 0–9-_ */
 static const char *const charset_rows[5] = {
-    "ABCDEFGHIJKLMNO",
-    "PQRSTUVWXYZ",
-    "abcdefghijklmno",
-    "pqrstuvwxyz",
-    "0123456789-_",
+  "ABCDEFGHIJKLMNO",
+  "PQRSTUVWXYZ",
+  "abcdefghijklmno",
+  "pqrstuvwxyz",
+  "0123456789-_",
 };
 
 #define CHARSET_N 64 /* 26 + 26 + 10 + 2 */
@@ -89,7 +89,7 @@ static void redraw(void) {
     row_sel_for_palette(palette_idx, &prow, &psel);
     for(r = 0; r < CHARSET_ROWS; ++r) {
       render_charset_row((u8)(1 + r), charset_rows[r],
-			 (r == prow) ? psel : (u8)0xff);
+                         (r == prow) ? psel : (u8)0xff);
     }
   }
 
@@ -179,11 +179,11 @@ static void handle_enc2(s32 data) {
   if(select_held) {
     if(dir > 0) {
       if(palette_idx < CHARSET_N - 1) {
-	++palette_idx;
+        ++palette_idx;
       }
     } else {
       if(palette_idx > 0) {
-	--palette_idx;
+        --palette_idx;
       }
     }
   } else {
@@ -235,7 +235,7 @@ static void handle_sw3(s32 data) {
 }
 
 void name_edit_open(NameEditKind kind, const char *initial,
-		    name_edit_done_fn on_ok, void *ctx) {
+                    name_edit_done_fn on_ok, void *ctx) {
   edit_kind = kind;
   done_fn = on_ok;
   done_ctx = ctx;

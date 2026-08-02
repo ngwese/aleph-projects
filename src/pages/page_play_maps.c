@@ -23,8 +23,8 @@ enum {
 };
 
 /* 0..3 = enc, 4..7 = sw, 8..9 = fs, 10..13 = cv, 14..25 = cc1..cc12 */
-#define PLAY_MAPS_CTRL_COUNT                                                     \
-  (PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT + PLAY_MAPS_FS_COUNT +               \
+#define PLAY_MAPS_CTRL_COUNT                                       \
+  (PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT + PLAY_MAPS_FS_COUNT + \
    PLAY_MAPS_CV_COUNT + PLAY_MAPS_CC_COUNT)
 #define PLAY_MAPS_FS_BASE (PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT)
 #define PLAY_MAPS_CV_BASE (PLAY_MAPS_FS_BASE + PLAY_MAPS_FS_COUNT)
@@ -39,7 +39,7 @@ static u8 field;
 static u8 is_enc(void) { return sel < PLAY_MAPS_ENC_COUNT; }
 static u8 is_panel_sw(void) {
   return sel >= PLAY_MAPS_ENC_COUNT &&
-	 sel < (PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT);
+         sel < (PLAY_MAPS_ENC_COUNT + PLAY_MAPS_SW_COUNT);
 }
 static u8 is_fs(void) {
   return sel >= PLAY_MAPS_FS_BASE && sel < PLAY_MAPS_CV_BASE;
@@ -110,7 +110,7 @@ static void ensure_param_label(char *label) {
 
 static u8 sw_has_value_kind(PlaySwKind k) {
   return k == ePlaySwSetSlot || k == ePlaySwMomSlot || k == ePlaySwSetAll ||
-	 k == ePlaySwMomAll;
+         k == ePlaySwMomAll;
 }
 
 static u8 sw_has_value(const PlaySwMap *m) {
@@ -149,24 +149,24 @@ static u8 field_ok(u8 f) {
     PlaySwMap *m = cur_sw_map();
     PlaySwKind k = m->kind;
     switch(f) {
-    case eFieldSlot:
+    case eFieldSlot :
       return k == ePlaySwSetSlot || k == ePlaySwMomSlot;
-    case eFieldParam:
+    case eFieldParam :
       return sw_has_value(m);
-    case eFieldValue:
+    case eFieldValue :
       return sw_has_value(m);
-    default:
+    default :
       return 0;
     }
   } else {
     PlayEncMap *em = cur_enc_like_map();
     PlayEncKind k = (em != NULL) ? em->kind : ePlayEncNone;
     switch(f) {
-    case eFieldSlot:
+    case eFieldSlot :
       return k == ePlayEncParamSlot;
-    case eFieldParam:
+    case eFieldParam :
       return k == ePlayEncParamSlot || k == ePlayEncParamAll;
-    default:
+    default :
       return 0;
     }
   }
@@ -180,13 +180,13 @@ static void clamp_field(void) {
 
 static const char *field_tag(void) {
   switch(field) {
-  case eFieldSlot:
+  case eFieldSlot :
     return "slot";
-  case eFieldParam:
+  case eFieldParam :
     return "param";
-  case eFieldValue:
+  case eFieldValue :
     return "value";
-  default:
+  default :
     return "kind";
   }
 }
@@ -279,52 +279,52 @@ static void redraw(void) {
     if(idx < PLAY_MAPS_ENC_COUNT) {
       strcat(line, "enc");
       {
-	char n[2] = {(char)('0' + idx), '\0'};
-	strcat(line, n);
+        char n[2] = {(char)('0' + idx), '\0'};
+        strcat(line, n);
       }
       strcat(line, ": ");
       play_maps_summary_enc(sum, sizeof(sum), &g_play_maps.enc[idx]);
     } else if(idx < PLAY_MAPS_FS_BASE) {
       strcat(line, "sw");
       {
-	char n[2] = {(char)('0' + (idx - PLAY_MAPS_ENC_COUNT)), '\0'};
-	strcat(line, n);
+        char n[2] = {(char)('0' + (idx - PLAY_MAPS_ENC_COUNT)), '\0'};
+        strcat(line, n);
       }
       strcat(line, ": ");
       play_maps_summary_sw(sum, sizeof(sum),
-			   &g_play_maps.sw[idx - PLAY_MAPS_ENC_COUNT]);
+                           &g_play_maps.sw[idx - PLAY_MAPS_ENC_COUNT]);
     } else if(idx < PLAY_MAPS_CV_BASE) {
       strcat(line, "fs");
       {
-	char n[2] = {(char)('0' + (idx - PLAY_MAPS_FS_BASE)), '\0'};
-	strcat(line, n);
+        char n[2] = {(char)('0' + (idx - PLAY_MAPS_FS_BASE)), '\0'};
+        strcat(line, n);
       }
       strcat(line, ": ");
       play_maps_summary_sw(sum, sizeof(sum),
-			   &g_play_maps.fs[idx - PLAY_MAPS_FS_BASE]);
+                           &g_play_maps.fs[idx - PLAY_MAPS_FS_BASE]);
     } else if(idx < PLAY_MAPS_CC_BASE) {
       strcat(line, "cv");
       {
-	char n[2] = {(char)('0' + (idx - PLAY_MAPS_CV_BASE)), '\0'};
-	strcat(line, n);
+        char n[2] = {(char)('0' + (idx - PLAY_MAPS_CV_BASE)), '\0'};
+        strcat(line, n);
       }
       strcat(line, ": ");
       play_maps_summary_enc(sum, sizeof(sum),
-			    &g_play_maps.cv[idx - PLAY_MAPS_CV_BASE]);
+                            &g_play_maps.cv[idx - PLAY_MAPS_CV_BASE]);
     } else {
       u8 cc_n = (u8)(idx - PLAY_MAPS_CC_BASE + 1);
       strcat(line, "cc");
       if(cc_n >= 10) {
-	char n[3] = {(char)('0' + (cc_n / 10)), (char)('0' + (cc_n % 10)),
-		     '\0'};
-	strcat(line, n);
+        char n[3] = {(char)('0' + (cc_n / 10)), (char)('0' + (cc_n % 10)),
+                     '\0'};
+        strcat(line, n);
       } else {
-	char n[2] = {(char)('0' + cc_n), '\0'};
-	strcat(line, n);
+        char n[2] = {(char)('0' + cc_n), '\0'};
+        strcat(line, n);
       }
       strcat(line, ": ");
       play_maps_summary_cc(sum, sizeof(sum),
-			   &g_play_maps.cc[idx - PLAY_MAPS_CC_BASE]);
+                           &g_play_maps.cc[idx - PLAY_MAPS_CC_BASE]);
     }
     strncat(line, sum, sizeof(line) - strlen(line) - 1);
     render_line((u8)i, line);
@@ -342,8 +342,8 @@ static void redraw(void) {
     s16 pidx = find_param(swm->label);
     val_lab_w = (u8)font_string_pixels("value ");
     val_lab_x = (PLAY_MAPS_VAL_X > val_lab_w)
-		  ? (u8)(PLAY_MAPS_VAL_X - val_lab_w)
-		  : 0;
+                  ? (u8)(PLAY_MAPS_VAL_X - val_lab_w)
+                  : 0;
     /* keep value block readable if edit text runs long */
     render_fill_rect(val_lab_x, status_y, (u8)(128 - val_lab_x), 8, 0);
     render_string_xy(val_lab_x, status_y, "value ", RENDER_PLAY_GREY_DARK);
@@ -403,8 +403,8 @@ static void cycle_sw_kind(PlaySwMap *m, s8 dir) {
   static const PlaySwKind seq_no_mod[] = {
     ePlaySwNone, ePlaySwSnapA, ePlaySwSnapB, ePlaySwSnapC, ePlaySwSnapD};
   static const PlaySwKind seq_mod[] = {
-    ePlaySwNone,   ePlaySwSnapA,   ePlaySwSnapB,  ePlaySwSnapC,
-    ePlaySwSnapD,  ePlaySwSetSlot, ePlaySwMomSlot, ePlaySwSetAll,
+    ePlaySwNone, ePlaySwSnapA, ePlaySwSnapB, ePlaySwSnapC,
+    ePlaySwSnapD, ePlaySwSetSlot, ePlaySwMomSlot, ePlaySwSetAll,
     ePlaySwMomAll};
   const PlaySwKind *seq;
   u8 n;
@@ -503,9 +503,9 @@ static void bump_sw_value(PlaySwMap *m, s32 data, u8 coarse) {
     if(coarse) {
       delta32 = (s32)0x100 * data;
       if(delta32 > 32767) {
-	delta32 = 32767;
+        delta32 = 32767;
       } else if(delta32 < -32768) {
-	delta32 = -32768;
+        delta32 = -32768;
       }
       delta = (io_t)delta32;
     } else {
@@ -536,31 +536,31 @@ static void adjust_field(s8 dir, u8 coarse) {
   if(is_cc()) {
     PlayCcMap *m = cur_cc_map();
     switch(field) {
-    case eFieldKind:
+    case eFieldKind :
       cycle_cc_kind(m, dir);
       break;
-    case eFieldParam:
+    case eFieldParam :
       cycle_param_label(m->label, dir, coarse);
       break;
-    default:
+    default :
       break;
     }
   } else if(is_sw_like()) {
     PlaySwMap *m = cur_sw_map();
     switch(field) {
-    case eFieldKind:
+    case eFieldKind :
       cycle_sw_kind(m, dir);
       break;
-    case eFieldSlot:
+    case eFieldSlot :
       m->slot = (MorphSlot)(((u8)m->slot + (dir > 0 ? 1 : 3)) % 4);
       break;
-    case eFieldParam:
+    case eFieldParam :
       cycle_param_label(m->label, dir, coarse);
       break;
-    case eFieldValue:
+    case eFieldValue :
       bump_sw_value(m, dir, coarse);
       break;
-    default:
+    default :
       break;
     }
   } else {
@@ -569,16 +569,16 @@ static void adjust_field(s8 dir, u8 coarse) {
       return;
     }
     switch(field) {
-    case eFieldKind:
+    case eFieldKind :
       cycle_enc_kind(m, dir);
       break;
-    case eFieldSlot:
+    case eFieldSlot :
       m->slot = (MorphSlot)(((u8)m->slot + (dir > 0 ? 1 : 3)) % 4);
       break;
-    case eFieldParam:
+    case eFieldParam :
       cycle_param_label(m->label, dir, coarse);
       break;
-    default:
+    default :
       break;
     }
   }

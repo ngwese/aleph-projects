@@ -28,7 +28,7 @@ static void slot_name(MorphSlot s, char *name) {
 }
 
 static void draw_slot_pair(u8 row_lab, u8 row_name, MorphSlot left,
-			   MorphSlot right) {
+                           MorphSlot right) {
   const char *pref_l = (left == sel_slot) ? "> " : "  ";
   const char *pref_r = (right == sel_slot) ? "> " : "  ";
   char letter[2];
@@ -147,19 +147,19 @@ static void handle_sw0(s32 data) {
   if(modal) {
     if(g_alt_mode) {
       if(presets.count == 0) {
-	return;
+        return;
       }
       if(preset_file_delete(g_module.name, presets.names[preset_sel])) {
-	rescan_presets();
-	render_log("deleted");
+        rescan_presets();
+        render_log("deleted");
       } else {
-	render_log("delete fail");
+        render_log("delete fail");
       }
     } else if(presets.count > 0) {
       if(state_load_preset(sel_slot, presets.names[preset_sel])) {
-	render_log("preset loaded");
+        render_log("preset loaded");
       } else {
-	render_log("load fail");
+        render_log("load fail");
       }
       modal = 0;
     }

@@ -34,7 +34,7 @@ static void redraw(void) {
   char line[24];
   render_clear();
   render_header_with_name("setup", g_setup_name[0] ? g_setup_name : NULL,
-			  state_setup_dirty());
+                          state_setup_dirty());
   if(list.count == 0) {
     render_line(0, "(none)");
   } else {

@@ -70,7 +70,7 @@ KvLineKind kvtext_parse_line(const char *line, KvPair *out) {
 
   key_len = (u32)(colon - p);
   while(key_len > 0 &&
-	(p[key_len - 1] == ' ' || p[key_len - 1] == '\t')) {
+        (p[key_len - 1] == ' ' || p[key_len - 1] == '\t')) {
     --key_len;
   }
   if(key_len == 0 || key_len >= KVTEXT_KEY_MAX) {
@@ -95,7 +95,7 @@ KvLineKind kvtext_parse_line(const char *line, KvPair *out) {
 }
 
 s32 kvtext_format_line(char *buf, u32 buf_size, const char *key,
-		       const char *val) {
+                       const char *val) {
   u32 key_len;
   u32 val_len;
   u32 need;

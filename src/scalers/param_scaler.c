@@ -7,53 +7,82 @@
 #include "types.h"
 
 static u32 scalerDataWords[eParamNumTypes] = {
-  0, 	/* eParamTypeBool */
-  0, 	/* eParamTypeFix */
+  0,    /* eParamTypeBool */
+  0,    /* eParamTypeFix */
   1024, /* eParamTypeAmp */
   1024, /* eParamTypeIntegrator */
   1024, /* eParamTypeNote */
   1024, /* eParamTypeSvfFreq */
-  0,	/* eParamTypeFract */
-  0,	/* eParamTypeShort */
-  0,	/* eParamTypeIntegratorShort */
-  0,	/* eParamTypePatchMatrix */
+  0,    /* eParamTypeFract */
+  0,    /* eParamTypeShort */
+  0,    /* eParamTypeIntegratorShort */
+  0,    /* eParamTypePatchMatrix */
 };
 
 static u32 scalerRepWords[eParamNumTypes] = {
-  0, 0,
+  0,
+  0,
   1024, /* amp */
-  0, 0, 0, 0, 0, 0, 0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
 };
 
 static const char scalerDataPath[eParamNumTypes][32] = {
-  "", "",
+  "",
+  "",
   "scaler_amp_val.dat",
   "scaler_integrator_val.dat",
   "scaler_note_val.dat",
   "scaler_svf_fc_val.dat",
-  "", "", "", "",
+  "",
+  "",
+  "",
+  "",
 };
 
 static const char scalerRepPath[eParamNumTypes][32] = {
-  "", "",
+  "",
+  "",
   "scaler_amp_rep.dat",
-  "", "", "", "", "", "", "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
 };
 
 /* word offsets into scaler NV blob */
 static const u32 scalerDataOffset[eParamNumTypes] = {
-  0, 0,
-  0,	/* amp */
+  0,
+  0,
+  0,    /* amp */
   1024, /* integrator */
   2048, /* note */
   3072, /* svf */
-  0, 0, 0, 0,
+  0,
+  0,
+  0,
+  0,
 };
 
 static const u32 scalerRepOffset[eParamNumTypes] = {
-  0, 0,
+  0,
+  0,
   4096, /* amp rep */
-  0, 0, 0, 0, 0, 0, 0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
 };
 
 scaler_init_fn scaler_init_pr[eParamNumTypes] = {
@@ -151,7 +180,7 @@ io_t scaler_get_in(ParamScaler* sc, s32 value) {
   return 0;
 }
 
-s32 scaler_inc(ParamScaler* sc, io_t * pin, io_t inc ) {
+s32 scaler_inc(ParamScaler* sc, io_t* pin, io_t inc) {
   scaler_inc_fn fn = scaler_inc_pr[sc->desc->type];
   if(fn != NULL) {
     return (*fn)(sc, pin, inc);

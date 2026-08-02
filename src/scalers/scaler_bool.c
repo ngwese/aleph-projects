@@ -10,7 +10,6 @@ void scaler_bool_init(void* scaler) {
 
   sc->inMin = 0;
   sc->inMax = 1;
-
 }
 
 s32 scaler_bool_val(void* scaler, io_t in) {
@@ -18,7 +17,7 @@ s32 scaler_bool_val(void* scaler, io_t in) {
 }
 
 void scaler_bool_str(char* dst, void* scaler, io_t in) {
-  print_fix16(dst, in > 0 ? fix16_one : 0); 
+  print_fix16(dst, in > 0 ? fix16_one : 0);
 }
 
 io_t scaler_bool_in(void* scaler, s32 val) {
@@ -26,7 +25,7 @@ io_t scaler_bool_in(void* scaler, s32 val) {
 }
 
 // increment input by pointer, return value
-s32 scaler_bool_inc(void* sc, io_t* pin, io_t inc ) {
+s32 scaler_bool_inc(void* sc, io_t* pin, io_t inc) {
   /* *pin = op_sadd(*pin, inc); */
   /* return (*pin > 0); */
   *pin = (inc > 0);

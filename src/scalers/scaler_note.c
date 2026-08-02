@@ -23,10 +23,10 @@ static u8 initFlag = 0;
 //---- extern funcs
 
 s32 scaler_note_val(void* scaler, io_t in) {
-  print_dbg("\r\n requesting note_scaler value for input: 0x"); 
+  print_dbg("\r\n requesting note_scaler value for input: 0x");
   print_dbg_hex((u32)in);
   print_dbg(" ; result: 0x");
-  print_dbg_hex(tabVal[(u16)((u16)in >> inRshift)] );
+  print_dbg_hex(tabVal[(u16)((u16)in >> inRshift)]);
   //  u16 uin = BIT_ABS_16((s16)in);
   u16 idx1, idx2;
   u16 shiftMask = (1 << inRshift) - 1;
@@ -35,7 +35,7 @@ s32 scaler_note_val(void* scaler, io_t in) {
     idx1 = 0;
     idx2 = 0;
     pan = 0;
-  } else if (in >= (0x7FFF & ~shiftMask)) {
+  } else if(in >= (0x7FFF & ~shiftMask)) {
     idx1 = 0x7FFF >> inRshift;
     idx2 = idx1;
   } else {
@@ -43,13 +43,13 @@ s32 scaler_note_val(void* scaler, io_t in) {
     idx2 = idx1 + 1;
   }
 
-  s32 sa = tabVal [idx1] >> inRshift;
-  s32 sb = tabVal [idx2] >> inRshift;
+  s32 sa = tabVal[idx1] >> inRshift;
+  s32 sb = tabVal[idx2] >> inRshift;
 
   return sb * pan + sa * ((1 << inRshift) - pan);
 }
 
-void scaler_note_str(char* dst, void* scaler,  io_t in) {
+void scaler_note_str(char* dst, void* scaler, io_t in) {
   u16 uin = BIT_ABS_16((s16)in) >> inRshift;
   // top 7 bits are semitones (== midi note number)
   // low 3 bits are microtuning
@@ -66,10 +66,11 @@ void scaler_note_init(void* scaler) {
   /* if( sc->desc->type != eParamTypeNote) { */
   /*   print_dbg("\r\n !!! warning: wrong param type for note scaler"); */
   /* } */
-  
+
   // init flag for static data
-  if(initFlag) { 
-    ;;
+  if(initFlag) {
+    ;
+    ;
   } else {
     initFlag = 1;
     // assign
@@ -82,7 +83,7 @@ void scaler_note_init(void* scaler) {
   }
   //// FIXME: add tuning functions (???)
   //  sc->tune = NULL;
-  //  sc->numTune = 0;  
+  //  sc->numTune = 0;
 }
 
 
@@ -116,7 +117,7 @@ io_t scaler_note_in(void* scaler, s32 x) {
 
 
 // increment input by pointer, return value
-s32 scaler_note_inc(void* scaler, io_t* pin, io_t inc ) {
+s32 scaler_note_inc(void* scaler, io_t* pin, io_t inc) {
   ParamScaler* sc = (ParamScaler*)scaler;
   // this speeds up the knob a great deal.
 #if 0
@@ -131,7 +132,7 @@ s32 scaler_note_inc(void* scaler, io_t* pin, io_t inc ) {
     inc = (io_t)0xc000;
   }
 #endif
-  
+
   // use saturation
   *pin = op_sadd(*pin, inc);
 

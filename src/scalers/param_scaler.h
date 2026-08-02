@@ -22,24 +22,16 @@
 
 EXTERN_C_BEGIN
 
-#define PARAM_SCALER_DATA_SIZE (PARAM_SCALER_AMP_DATA_SIZE	\
-				+ PARAM_SCALER_BOOL_DATA_SIZE	\
-				+ PARAM_SCALER_FIX_DATA_SIZE	\
-				+ PARAM_SCALER_FRACT_DATA_SIZE	\
-				+ PARAM_SCALER_INTEGRATOR_DATA_SIZE	\
-				+ PARAM_SCALER_INTEGRATOR_SHORT_DATA_SIZE	\
-				+ PARAM_SCALER_NOTE_DATA_SIZE		\
-				+ PARAM_SCALER_SHORT_DATA_SIZE \
-				+ PARAM_SCALER_SVF_FC_DATA_SIZE )
+#define PARAM_SCALER_DATA_SIZE (PARAM_SCALER_AMP_DATA_SIZE + PARAM_SCALER_BOOL_DATA_SIZE + PARAM_SCALER_FIX_DATA_SIZE + PARAM_SCALER_FRACT_DATA_SIZE + PARAM_SCALER_INTEGRATOR_DATA_SIZE + PARAM_SCALER_INTEGRATOR_SHORT_DATA_SIZE + PARAM_SCALER_NOTE_DATA_SIZE + PARAM_SCALER_SHORT_DATA_SIZE + PARAM_SCALER_SVF_FC_DATA_SIZE)
 
 typedef s32 (*scaler_get_value_fn)(void* scaler, io_t in);
 typedef void (*scaler_get_str_fn)(char* dst, void* scaler, io_t in);
 typedef io_t (*scaler_get_in_fn)(void* scaler, s32 value);
 typedef s32 (*scaler_tune_fn)(void* scaler, u8 tuneId, io_t in);
-typedef s32 (*scaler_inc_fn)(void* scaler, io_t *pin, io_t inc);
+typedef s32 (*scaler_inc_fn)(void* scaler, io_t* pin, io_t inc);
 
 typedef struct _paramScaler {
-  const ParamDesc *desc;
+  const ParamDesc* desc;
   io_t inMin;
   io_t inMax;
 } ParamScaler;
@@ -50,7 +42,7 @@ extern void scaler_init(ParamScaler* sc, const ParamDesc* desc);
 extern s32 scaler_get_value(ParamScaler* sc, io_t in);
 extern void scaler_get_str(char* dst, ParamScaler* sc, io_t in);
 extern io_t scaler_get_in(ParamScaler* sc, s32 value);
-extern s32 scaler_inc(ParamScaler* sc, io_t *pin, io_t inc );
+extern s32 scaler_inc(ParamScaler* sc, io_t* pin, io_t inc);
 
 extern u32 scaler_get_data_bytes(ParamType p);
 extern u32 scaler_get_rep_bytes(ParamType p);

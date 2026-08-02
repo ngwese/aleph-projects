@@ -39,7 +39,7 @@ void morph2d_slot_corner(MorphSlot slot, u16 *x, u16 *y) {
 }
 
 void morph2d_weights(u16 x, u16 y, const u8 occupied[MORPH2D_SLOTS],
-		     u16 out_w[MORPH2D_SLOTS]) {
+                     u16 out_w[MORPH2D_SLOTS]) {
   u16 inv_x;
   u16 inv_y;
   u32 raw[MORPH2D_SLOTS];
@@ -83,18 +83,18 @@ void morph2d_weights(u16 x, u16 y, const u8 occupied[MORPH2D_SLOTS],
     u32 last = 0;
     for(i = 0; i < MORPH2D_SLOTS; ++i) {
       if(raw[i] == 0) {
-	out_w[i] = 0;
+        out_w[i] = 0;
       } else {
-	out_w[i] = (u16)(((u32)raw[i] * MORPH2D_ONE) / sum);
-	acc += out_w[i];
-	last = i;
+        out_w[i] = (u16)(((u32)raw[i] * MORPH2D_ONE) / sum);
+        acc += out_w[i];
+        last = i;
       }
     }
     if(acc != MORPH2D_ONE && out_w[last] != 0) {
       if(acc < MORPH2D_ONE) {
-	out_w[last] = (u16)(out_w[last] + (MORPH2D_ONE - acc));
+        out_w[last] = (u16)(out_w[last] + (MORPH2D_ONE - acc));
       } else if(out_w[last] >= (u16)(acc - MORPH2D_ONE)) {
-	out_w[last] = (u16)(out_w[last] - (acc - MORPH2D_ONE));
+        out_w[last] = (u16)(out_w[last] - (acc - MORPH2D_ONE));
       }
     }
   }
@@ -113,15 +113,15 @@ s32 morph2d_blend_s32(const u16 w[MORPH2D_SLOTS], const s32 v[MORPH2D_SLOTS]) {
 }
 
 s8 morph2d_pick_discrete(const u16 w[MORPH2D_SLOTS],
-			 const u8 occupied[MORPH2D_SLOTS]) {
+                         const u8 occupied[MORPH2D_SLOTS]) {
   s8 best = -1;
   u16 best_w = 0;
   u32 i;
   for(i = 0; i < MORPH2D_SLOTS; ++i) {
     if(occupied != NULL && occupied[i] && w[i] >= best_w) {
       if(best < 0 || w[i] > best_w) {
-	best_w = w[i];
-	best = (s8)i;
+        best_w = w[i];
+        best = (s8)i;
       }
     }
   }

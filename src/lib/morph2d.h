@@ -22,7 +22,7 @@ typedef enum {
  * out_w[i] normalized to sum MORPH2D_ONE among occupied slots (0 if none).
  */
 void morph2d_weights(u16 x, u16 y, const u8 occupied[MORPH2D_SLOTS],
-		     u16 out_w[MORPH2D_SLOTS]);
+                     u16 out_w[MORPH2D_SLOTS]);
 
 /* clamp x,y into [0, MORPH2D_ONE]. */
 void morph2d_clamp(u16 *x, u16 *y);
@@ -32,7 +32,7 @@ s32 morph2d_blend_s32(const u16 w[MORPH2D_SLOTS], const s32 v[MORPH2D_SLOTS]);
 
 /* discrete pick: index of highest-weight occupied slot; -1 if none. */
 s8 morph2d_pick_discrete(const u16 w[MORPH2D_SLOTS],
-			 const u8 occupied[MORPH2D_SLOTS]);
+                         const u8 occupied[MORPH2D_SLOTS]);
 
 /* corner position for a slot. */
 void morph2d_slot_corner(MorphSlot slot, u16 *x, u16 *y);

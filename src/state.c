@@ -181,13 +181,13 @@ void state_exclude_manual_from_list(const char *list) {
     {
       char *e = tok + strlen(tok);
       while(e > tok && (e[-1] == ' ' || e[-1] == '\t')) {
-	*--e = '\0';
+        *--e = '\0';
       }
     }
     for(i = 0; i < g_module.num_params && i < BETWEEN_PARAMS_MAX; ++i) {
       if(strncmp(g_module.desc[i].label, tok, PARAM_LABEL_LEN) == 0) {
-	g_exclude_manual[i] = 1;
-	break;
+        g_exclude_manual[i] = 1;
+        break;
       }
     }
   }
@@ -246,9 +246,9 @@ void state_send_excluded(void) {
     src = eMorphSlotA;
     for(s = 0; s < MORPH2D_SLOTS; ++s) {
       if(g_slots.occupied[s]) {
-	src = s;
-	have = 1;
-	break;
+        src = s;
+        have = 1;
+        break;
       }
     }
     if(!have) {
@@ -258,10 +258,10 @@ void state_send_excluded(void) {
     for(s = 0; s < PLAY_MAPS_ENC_COUNT; ++s) {
       const PlayEncMap *m = &g_play_maps.enc[s];
       if(m->kind == ePlayEncParamSlot &&
-	 strncmp(m->label, g_module.desc[i].label, PARAM_LABEL_LEN) == 0 &&
-	 g_slots.occupied[m->slot]) {
-	src = m->slot;
-	break;
+         strncmp(m->label, g_module.desc[i].label, PARAM_LABEL_LEN) == 0 &&
+         g_slots.occupied[m->slot]) {
+        src = m->slot;
+        break;
       }
     }
     slots_send_param(&g_slots, i, slots_get_value(&g_slots, src, i));
@@ -271,7 +271,7 @@ void state_send_excluded(void) {
 void state_init(void) {
   ParamValue *ptrs[MORPH2D_SLOTS] = {banks[0], banks[1], banks[2], banks[3]};
   slots_init(&g_slots, BETWEEN_PARAMS_MAX, g_module.desc, ptrs, set_param_cb,
-	     NULL);
+             NULL);
   play_maps_set_defaults(&g_play_maps);
   state_exclude_clear();
   g_setup_name[0] = '\0';
@@ -504,8 +504,8 @@ u8 state_load_setup(const char *stem) {
   for(i = 0; i < MORPH2D_SLOTS; ++i) {
     if(data.slot_occupied[i]) {
       if(!state_load_preset(i, data.slot_stem[i])) {
-	slots_clear_slot(&g_slots, i);
-	fail_mask |= (u8)(1u << i);
+        slots_clear_slot(&g_slots, i);
+        fail_mask |= (u8)(1u << i);
       }
     }
   }
@@ -532,10 +532,10 @@ u8 state_load_setup(const char *stem) {
     msg[n++] = ' ';
     for(i = 0; i < MORPH2D_SLOTS; ++i) {
       if((fail_mask & (u8)(1u << i)) == 0) {
-	continue;
+        continue;
       }
       if(n > 5) {
-	msg[n++] = ',';
+        msg[n++] = ',';
       }
       msg[n++] = (char)('a' + i);
     }
@@ -577,8 +577,8 @@ u8 state_save_setup(const char *stem) {
     if(g_slots.occupied[i] && g_slots.dirty[i] && g_slots.stem[i][0] != '\0') {
       log_writing_file(g_slots.stem[i]);
       if(!state_save_preset(i, g_slots.stem[i])) {
-	app_resume();
-	return 0;
+        app_resume();
+        return 0;
       }
     }
   }

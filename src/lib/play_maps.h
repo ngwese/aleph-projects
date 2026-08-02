@@ -63,9 +63,9 @@ typedef struct {
 typedef struct {
   PlayEncMap enc[PLAY_MAPS_ENC_COUNT];
   PlaySwMap sw[PLAY_MAPS_SW_COUNT];
-  PlaySwMap fs[PLAY_MAPS_FS_COUNT]; /* footswitches; same targets as sw */
+  PlaySwMap fs[PLAY_MAPS_FS_COUNT];  /* footswitches; same targets as sw */
   PlayEncMap cv[PLAY_MAPS_CV_COUNT]; /* CV jacks; same kinds as encoders */
-  PlayCcMap cc[PLAY_MAPS_CC_COUNT]; /* MIDI CC 1..12 */
+  PlayCcMap cc[PLAY_MAPS_CC_COUNT];  /* MIDI CC 1..12 */
 } PlayMaps;
 
 /* panel 0..3 or footswitch 4..5 → map; NULL if out of range. */
@@ -76,7 +76,7 @@ void play_maps_set_defaults(PlayMaps *m);
 
 /* clear param bindings whose labels are not in desc[0..num_params). */
 void play_maps_clear_invalid(PlayMaps *m, const ParamDesc *desc,
-			     u16 num_params);
+                             u16 num_params);
 
 /* parse/format value portion of play.encN / play.cvN / play.swN / play.ccN. */
 u8 play_maps_parse_enc(const char *val, PlayEncMap *out);
@@ -114,6 +114,6 @@ u8 play_maps_cv_any_bound(const PlayMaps *m);
 /* mark out[i]=1 for each param index targeted by a play param binding.
  * out must be length >= num_params (cleared by this function for 0..n-1). */
 void play_maps_fill_bound(const PlayMaps *m, const ParamDesc *desc,
-			  u16 num_params, u8 *out);
+                          u16 num_params, u8 *out);
 
 #endif

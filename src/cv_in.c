@@ -70,8 +70,8 @@ static void apply_param(const PlayEncMap *m, u16 adc12) {
   } else if(m->kind == ePlayEncParamAll) {
     for(i = 0; i < MORPH2D_SLOTS; ++i) {
       if(g_slots.occupied[i]) {
-	slots_set_value(&g_slots, (MorphSlot)i, (u16)idx, raw);
-	wrote = 1;
+        slots_set_value(&g_slots, (MorphSlot)i, (u16)idx, raw);
+        wrote = 1;
       }
     }
   }
@@ -91,23 +91,23 @@ static u8 apply_map(u8 ch, u16 adc12, fract32 fr) {
   }
   m = &g_play_maps.cv[ch];
   switch(m->kind) {
-  case ePlayEncNone:
+  case ePlayEncNone :
     break;
-  case ePlayEncMorphX:
+  case ePlayEncMorphX :
     axis = fr32_to_morph(fr);
     state_set_morph(axis, g_slots.y);
     state_apply();
     return 1;
-  case ePlayEncMorphY:
+  case ePlayEncMorphY :
     axis = fr32_to_morph(fr);
     state_set_morph(g_slots.x, axis);
     state_apply();
     return 1;
-  case ePlayEncParamSlot:
-  case ePlayEncParamAll:
+  case ePlayEncParamSlot :
+  case ePlayEncParamAll :
     apply_param(m, adc12);
     return 1;
-  default:
+  default :
     break;
   }
   return 0;
@@ -179,7 +179,7 @@ void cv_in_handle_adc(u8 ch, u16 adc12) {
   if(app_mode_is_inspect()) {
     /* 0–7 px spark height; keep history warm on both inspect subpages */
     inspect_cv_hist_push(
-	ch, (u8)((((u32)fr >> 10) * 7u) / (0x7fffffffu >> 10)));
+      ch, (u8)((((u32)fr >> 10) * 7u) / (0x7fffffffu >> 10)));
     render_mark_dirty();
   } else if(applied) {
     /* morph point / play values moved; frame service is rate-capped */

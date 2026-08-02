@@ -67,7 +67,7 @@ void scaler_fix_str(char* dst, void* scaler, io_t in) {
 
   /* print_dbg(" , adjusted for radix: 0x"); */
   /* print_dbg_hex(norm); */
-   print_fix16(dst, norm); 
+  print_fix16(dst, norm);
 }
 
 io_t scaler_fix_in(void* scaler, s32 val) {
@@ -81,7 +81,7 @@ io_t scaler_fix_in(void* scaler, s32 val) {
 }
 
 // increment input by pointer, return value
-s32 scaler_fix_inc(void* sc, io_t* pin, io_t inc ) {
+s32 scaler_fix_inc(void* sc, io_t* pin, io_t inc) {
   s32 val;
   ParamScaler* scaler = (ParamScaler*)sc;
   // use saturation
