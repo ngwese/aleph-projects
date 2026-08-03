@@ -1,19 +1,19 @@
 # ------------------------
 # -- aleph_avr32_config.mk (out-of-tree)
 #
-# path variables below are relative to PRJ_PATH (vendor/aleph/libavr32/asf).
+# path variables below are relative to PRJ_PATH (vendor/libavr32/asf).
 # app sources in each app's config.mk should use cwd-relative paths (src/...),
 # because ASF prefixes INC_PATH / LINKER_SCRIPT with $(PRJ_PATH)/ but resolves
 # many CSRCS via VPATH or the app working directory.
 
 include ../../aleph_root.mk
 
-# configure paths for libavr32, common code, and avr32 core (under vendor/aleph)
+# configure paths for libavr32 (vendor/libavr32) and aleph cores (vendor/aleph)
 LIB_AVR32 = ../
-ALEPH_COMMON = ../../common
-ALEPH_AVR32 = ../../avr32
+ALEPH_COMMON = ../../aleph/common
+ALEPH_AVR32 = ../../aleph/avr32
 # application directory relative to ASF -> aleph-projects/apps/$(APP)
-APP_DIR = ../../../../apps/$(APP)
+APP_DIR = ../../../apps/$(APP)
 
 # Target CPU architecture: ap, ucr1, ucr2 or ucr3
 ARCH = ucr2

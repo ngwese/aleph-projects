@@ -12,8 +12,11 @@ aleph-builder make
 `aleph-builder` provides all necessary toolchains to build AVR32 and Blackfin
 targets.
 
-Apps and modules in this repo build against `vendor/aleph`. Ensure submodules
-are initialized (`git submodule update --init --recursive`) before building.
+Apps and modules in this repo build against `vendor/aleph`. AVR32 apps also need
+`vendor/libavr32`. Ensure submodules are initialized
+(`git submodule update --init --recursive`) before building, then deinit aleph's
+nested libavr32 (`git -C vendor/aleph submodule deinit -f libavr32`) so apps use
+the top-level copy only.
 
 ## Commit messages
 

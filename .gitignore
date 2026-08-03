@@ -15,7 +15,10 @@ apps/**/avr32/
 apps/**/common/
 apps/src/
 
-# vendored avr32 objects sometimes land at repo root via ../../avr32
+# vendored avr32 objects land at repo root via ALEPH_AVR32=../../aleph/avr32
+/aleph/
+
+# legacy path from when PRJ_PATH was under vendor/aleph/libavr32
 /avr32/
 
 # build artifacts (modules)

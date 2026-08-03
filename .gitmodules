@@ -2,3 +2,6 @@
 	path = vendor/aleph
 	url = https://github.com/ngwese/aleph.git
 	branch = dev
+[submodule "vendor/libavr32"]
+	path = vendor/libavr32
+	url = https://github.com/monome/libavr32.git

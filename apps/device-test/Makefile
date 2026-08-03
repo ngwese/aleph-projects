@@ -25,7 +25,7 @@
 
 # Path to top level ASF directory under the vendored aleph tree.
 include ../../aleph_root.mk
-PRJ_PATH = $(ALEPH_ROOT)/libavr32/asf
+PRJ_PATH = $(LIB_AVR32_ROOT)/asf
 
 MAKEFILE_PATH = $(PRJ_PATH)/avr32/utils/make/Makefile.avr32.in
 include $(MAKEFILE_PATH)

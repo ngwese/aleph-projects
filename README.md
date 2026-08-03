@@ -12,6 +12,7 @@ modules_block/   block-processing Blackfin modules
 dsp/             out-of-tree classic DSP sources
 dsp_block/       out-of-tree block DSP sources
 vendor/aleph/    aleph firmware submodule (ngwese fork, branch `dev`)
+vendor/libavr32/ ASF + monome AVR32 lib (used by apps; not aleph's nested copy)
 ```
 
 ## clone
@@ -23,7 +24,12 @@ cd aleph-projects
 git submodule update --init --recursive
 ```
 
-`vendor/aleph` itself vendors `libavr32`; the recursive update is required.
+AVR32 apps build against `vendor/libavr32`. after a recursive update, deinit
+aleph's nested copy so it is not checked out twice:
+
+```sh
+git -C vendor/aleph submodule deinit -f libavr32
+```
 
 ## build
 
@@ -38,8 +44,9 @@ cd modules_block/mx44
 aleph-builder make
 ```
 
-override the firmware tree if needed:
+override the firmware tree or libavr32 if needed:
 
 ```sh
 make ALEPH_ROOT=/path/to/aleph
+make LIB_AVR32_ROOT=/path/to/libavr32
 ```

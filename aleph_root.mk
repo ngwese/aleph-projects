@@ -4,3 +4,4 @@
 
 ALEPH_PROJECTS_ROOT := $(abspath ../..)
 ALEPH_ROOT ?= $(ALEPH_PROJECTS_ROOT)/vendor/aleph
+LIB_AVR32_ROOT ?= $(ALEPH_PROJECTS_ROOT)/vendor/libavr32
