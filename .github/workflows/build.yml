@@ -22,6 +22,17 @@ jobs:
       - name: deinit nested libavr32
         run: git -C vendor/aleph submodule deinit -f libavr32
 
+      - name: install host build tools
+        run: |
+          set -euo pipefail
+          # *_desc_build compiles and runs against the host toolchain
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+          # avr32 gnu toolchain is 32-bit; enable i386 userspace on the runner
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y libc6:i386
+
       - name: set up apptainer
         uses: eWaterCycle/setup-apptainer@v2
         with:
