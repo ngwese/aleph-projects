@@ -1,0 +1,124 @@
+/*
+
+  spray_params.c
+
+  defines the module parameter descriptor fields.
+
+  this is done in the descriptor helper program,
+  *not* in the module code itself!
+
+  */
+
+#include <string.h>
+
+#include "module.h"
+#include "spray_params.h"
+
+extern void fill_param_desc(ParamDesc *desc) {
+
+  /// input values have param type "Amp"
+  // they range from 0 to the full positive value of fract32
+  /// and will be displayed as dB by bees.
+  strcpy(desc[eParam_adc1].label, "adc1");
+  desc[eParam_adc1].type = eParamTypeAmp;
+  desc[eParam_adc1].min = 0x00000000;
+  desc[eParam_adc1].max = PARAM_AMP_MAX;
+  desc[eParam_adc1].radix = 16;  // doesn't matter
+
+  strcpy(desc[eParam_adc2].label, "adc2");
+  desc[eParam_adc2].type = eParamTypeAmp;
+  desc[eParam_adc2].min = 0x00000000;
+  desc[eParam_adc2].max = PARAM_AMP_MAX;
+  desc[eParam_adc2].radix = 16;  // doesn't matter
+
+  strcpy(desc[eParam_adc3].label, "adc3");
+  desc[eParam_adc3].type = eParamTypeAmp;
+  desc[eParam_adc3].min = 0x00000000;
+  desc[eParam_adc3].max = PARAM_AMP_MAX;
+  desc[eParam_adc3].radix = 16;  // doesn't matter
+
+  strcpy(desc[eParam_adc4].label, "adc4");
+  desc[eParam_adc4].type = eParamTypeAmp;
+  desc[eParam_adc4].min = 0x00000000;
+  desc[eParam_adc4].max = PARAM_AMP_MAX;
+  desc[eParam_adc4].radix = 16;  // doesn't matter
+
+  /// slew values have param type "Integrator"
+  // they range from 0 to the full positive value of fract32
+  /// and will be displayed as seconds-to-convergence by bees.
+
+  strcpy(desc[eParam_adcSlew1].label, "adcSlew1");
+  desc[eParam_adcSlew1].type = eParamTypeIntegrator;
+  desc[eParam_adcSlew1].min = 0x00000000;
+  desc[eParam_adcSlew1].max = PARAM_SLEW_MAX;
+  desc[eParam_adcSlew1].radix = 16;  // doesn't matter
+
+  strcpy(desc[eParam_adcSlew2].label, "adcSlew2");
+  desc[eParam_adcSlew2].type = eParamTypeIntegrator;
+  desc[eParam_adcSlew2].min = 0x00000000;
+  desc[eParam_adcSlew2].max = PARAM_SLEW_MAX;
+  desc[eParam_adcSlew2].radix = 16;  // doesn't matter
+
+  strcpy(desc[eParam_adcSlew3].label, "adcSlew3");
+  desc[eParam_adcSlew3].type = eParamTypeIntegrator;
+  desc[eParam_adcSlew3].min = 0x00000000;
+  desc[eParam_adcSlew3].max = PARAM_SLEW_MAX;
+  desc[eParam_adcSlew3].radix = 16;  // doesn't matter
+
+  strcpy(desc[eParam_adcSlew4].label, "adcSlew4");
+  desc[eParam_adcSlew4].type = eParamTypeIntegrator;
+  desc[eParam_adcSlew4].min = 0x00000000;
+  desc[eParam_adcSlew4].max = PARAM_SLEW_MAX;
+  desc[eParam_adcSlew4].radix = 16;  // doesn't matter
+
+  /// CV values — retained for apps/mix param-index compatibility.
+  // bfin_lib_block has no CV DAC driver; these are no-ops in spray.
+
+  strcpy(desc[eParam_cv1].label, "cv1");
+  desc[eParam_cv1].type = eParamTypeFix;
+  desc[eParam_cv1].min = 0x00000000;
+  desc[eParam_cv1].max = PARAM_CV_MAX;
+  desc[eParam_cv1].radix = 16;  // full-scale 16.16
+
+  strcpy(desc[eParam_cv2].label, "cv2");
+  desc[eParam_cv2].type = eParamTypeFix;
+  desc[eParam_cv2].min = 0x00000000;
+  desc[eParam_cv2].max = PARAM_CV_MAX;
+  desc[eParam_cv2].radix = 16;  // full-scale 16.16
+
+  strcpy(desc[eParam_cv3].label, "cv3");
+  desc[eParam_cv3].type = eParamTypeFix;
+  desc[eParam_cv3].min = 0x00000000;
+  desc[eParam_cv3].max = PARAM_CV_MAX;
+  desc[eParam_cv3].radix = 16;  // full-scale 16.16
+
+  strcpy(desc[eParam_cv4].label, "cv4");
+  desc[eParam_cv4].type = eParamTypeFix;
+  desc[eParam_cv4].min = 0x00000000;
+  desc[eParam_cv4].max = PARAM_CV_MAX;
+  desc[eParam_cv4].radix = 16;  // full-scale 16.16
+
+  strcpy(desc[eParam_cvSlew1].label, "cvSlew1");
+  desc[eParam_cvSlew1].type = eParamTypeIntegrator;
+  desc[eParam_cvSlew1].min = 0x00000000;
+  desc[eParam_cvSlew1].max = PARAM_SLEW_MAX;
+  desc[eParam_cvSlew1].radix = 16;  // doesn't matter
+
+  strcpy(desc[eParam_cvSlew2].label, "cvSlew2");
+  desc[eParam_cvSlew2].type = eParamTypeIntegrator;
+  desc[eParam_cvSlew2].min = 0x00000000;
+  desc[eParam_cvSlew2].max = PARAM_SLEW_MAX;
+  desc[eParam_cvSlew2].radix = 16;  // doesn't matter
+
+  strcpy(desc[eParam_cvSlew3].label, "cvSlew3");
+  desc[eParam_cvSlew3].type = eParamTypeIntegrator;
+  desc[eParam_cvSlew3].min = 0x00000000;
+  desc[eParam_cvSlew3].max = PARAM_SLEW_MAX;
+  desc[eParam_cvSlew3].radix = 16;  // doesn't matter
+
+  strcpy(desc[eParam_cvSlew4].label, "cvSlew4");
+  desc[eParam_cvSlew4].type = eParamTypeIntegrator;
+  desc[eParam_cvSlew4].min = 0x00000000;
+  desc[eParam_cvSlew4].max = PARAM_SLEW_MAX;
+  desc[eParam_cvSlew4].radix = 16;  // doesn't matter
+}
