@@ -41,41 +41,23 @@ jobs:
             apptainer registry login -u '${{ github.actor }}' --password-stdin oras://ghcr.io
           apptainer pull --force aleph-builder.sif \
             oras://ghcr.io/ngwese/aleph-builder:latest
+          sudo install -d /usr/local/lib
+          sudo install -m 755 aleph-builder.sif /usr/local/lib/aleph-builder.sif
 
-          sif=/usr/local/lib/aleph-builder.sif
-          wrap=/usr/local/lib/aleph-builder-wrap
-          sudo install -d /usr/local/lib "$wrap"
-          sudo install -m 755 aleph-builder.sif "$sif"
-
-          # Under apptainer on GHA, avr32-gcc only finds libexec/cc1 when argv[0]
-          # is an absolute path. Bind thin wrappers that exec the real tools by
-          # absolute path and put them first on PATH inside the container.
-          for dir in /opt/avr/bin /opt/bfin/bin; do
-            while IFS= read -r tool; do
-              [ -n "$tool" ] || continue
-              printf '%s\n' '#!/bin/sh' "exec ${dir}/${tool} \"\$@\"" \
-                | sudo tee "$wrap/$tool" >/dev/null
-              sudo chmod 755 "$wrap/$tool"
-            done < <(apptainer exec "$sif" ls -1 "$dir")
-          done
-
+          # On GHA apptainer, avr32-gcc's internal find_a_file misses
+          # libexec/cc1 and falls back to execvp("cc1"). Put libexec on PATH
+          # so that fallback succeeds. (%environment prepends /opt/avr/bin.)
+          # --cleanenv avoids host toolchain vars interfering.
           printf '%s\n' '#!/bin/sh' \
-            "exec apptainer run --cleanenv --bind ${wrap}:/opt/toolwrap:ro --env PATH=/opt/toolwrap:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin ${sif} \"\$@\"" \
+            'exec apptainer run --cleanenv --env PATH=/opt/avr/libexec/gcc/avr32/4.4.7:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /usr/local/lib/aleph-builder.sif "$@"' \
             | sudo tee /usr/local/bin/aleph-builder >/dev/null
           sudo chmod 755 /usr/local/bin/aleph-builder
 
           echo "wrapper:"
           cat /usr/local/bin/aleph-builder
-          cc1_path="$(aleph-builder avr32-gcc -print-prog-name=cc1)"
-          echo "avr32 cc1 -> ${cc1_path}"
-          case "${cc1_path}" in
-            /*) ;;
-            *)
-              echo "avr32-gcc could not resolve cc1" >&2
-              aleph-builder avr32-gcc -print-search-dirs || true
-              exit 1
-              ;;
-          esac
+          aleph-builder which cc1
+          aleph-builder avr32-gcc -c -x c /dev/null -o /tmp/t.o
+          echo "avr32 compile ok"
 
       - name: build all apps and modules
         run: |
