@@ -1,0 +1,6 @@
+# shared paths for out-of-tree apps and modules.
+# include from apps/<name> or modules[_block]/<name> (cwd two levels below
+# repo root).
+
+ALEPH_PROJECTS_ROOT := $(abspath ../..)
+ALEPH_ROOT ?= $(ALEPH_PROJECTS_ROOT)/vendor/aleph

@@ -24,9 +24,9 @@
 # rebuilddoc              Rebuild the documentation
 
 
-# Path to top level ASF directory relative to this project directory.
-# our version-controlled dir
-PRJ_PATH = ../../libavr32/asf
+# Path to top level ASF directory under the vendored aleph tree.
+include ../../aleph_root.mk
+PRJ_PATH = $(ALEPH_ROOT)/libavr32/asf
 
 # Include the common Makefile, which will also include the project specific
 # config.mk file.

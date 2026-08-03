@@ -1,0 +1,25 @@
+# build artifacts (apps)
+*.o
+*.d
+*.elf
+*.hex
+*.bin
+*.map
+*.lss
+*.sym
+avr32/
+common/
+
+# ASF / libavr32 object mirrors under apps/
+apps/**/avr32/
+apps/**/common/
+apps/src/
+
+# vendored avr32 objects sometimes land at repo root via ../../avr32
+/avr32/
+
+# build artifacts (modules)
+obj/
+*.ldr
+*.dsc
+*_desc_build
