@@ -54,13 +54,22 @@ jobs:
       - name: debug avr32 toolchain
         run: |
           set -uo pipefail
-          echo "=== host env ==="
-          env | grep -E '^(GCC|COMPILER|LIBRARY_PATH|CPATH|C_INCLUDE)' || true
-          echo "=== wrapper ==="
-          which aleph-builder
-          cat "$(which aleph-builder)"
-          echo "=== inside container ==="
-          aleph-builder sh -c 'echo PATH=$PATH; echo GCC_EXEC_PREFIX=$GCC_EXEC_PREFIX; which avr32-gcc; avr32-gcc -print-prog-name=cc1; CC1=$(avr32-gcc -print-prog-name=cc1); ls -la "$CC1"; file "$CC1"; "$CC1" -v </dev/null | head -5; printf "int main(void){return 0;}\n" > /tmp/t.c; avr32-gcc -c /tmp/t.c -o /tmp/t.o -v; echo compile_exit:$?'
+          echo "=== host 32-bit support ==="
+          uname -a
+          grep -E 'CONFIG_IA32|ia32' /boot/config-$(uname -r) 2>/dev/null | head || true
+          ls /lib/ld-linux.so.2 /lib64/ld-linux-x86-64.so.2 2>&1 || true
+          echo "=== print cc1 path ==="
+          aleph-builder avr32-gcc -print-prog-name=cc1
+          echo "=== ls cc1 ==="
+          aleph-builder ls -la /opt/avr/libexec/gcc/avr32/4.4.7/cc1
+          echo "=== file cc1 ==="
+          aleph-builder file /opt/avr/libexec/gcc/avr32/4.4.7/cc1
+          echo "=== exec cc1 directly ==="
+          aleph-builder /opt/avr/libexec/gcc/avr32/4.4.7/cc1 -v </dev/null | head -20
+          echo "cc1_exit:$?"
+          echo "=== compile test ==="
+          aleph-builder avr32-gcc -c -x c /dev/null -o /tmp/t.o -v
+          echo "compile_exit:$?"
 
       - name: build all apps and modules
         run: |
