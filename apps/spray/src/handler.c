@@ -1,0 +1,150 @@
+/*
+  handler.c
+  
+  aleph/app/spray
+
+  app-specific UI event handlers.
+  
+  app.c defines a global array of function pointers to handle system events.
+  main.c defines its own handlers, most of which don't do anything.
+  some events (e.g. ftdiConnect, monomePoll) call pretty low-level driver stuff,
+  and there shouldn't be any need for applications to customize them.
+
+  handlers that do need to be customized go here.
+  define static functions,
+  and then populate the global array with pointers to these functions.
+  this step should happen in e.g. app_launch().
+
+*/
+
+// asf
+#include "gpio.h"
+#include "delay.h"
+#include "print_funcs.h"
+
+// aleph-avr32
+#include "conf_board.h"
+#include "app.h"
+#include "bfin.h"
+#include "events.h"
+
+// custom app sources
+#include "ctl.h"
+#include "handler.h"
+#include "render.h"
+
+
+//--------------------------------------
+//--- knob acceleration
+static s32 knob_accel(s32 inc) {
+  // map accumulated controller movement to a bigger range
+  // otherwise scrolling would take forever...
+  s32 incAbs = inc < 0 ? inc * -1 : inc;
+  if(incAbs == 1) {
+    //    print_dbg("\r\n >");
+    return inc;
+  }
+  if(incAbs < 6) {
+    //    print_dbg("\r\n >>");
+    return inc << 2;
+  }
+  //  print_dbg("\r\n >>>>>>");
+  return inc << 6;
+}
+
+///-------------------------------------
+///---- event handlers
+
+// switch handlers
+static void handle_Switch0(s32 data) {
+  if(data > 0) ctl_toggle_mute(0);
+}
+
+static void handle_Switch1(s32 data) {
+  if(data > 0) ctl_toggle_mute(1);
+}
+
+static void handle_Switch2(s32 data) {
+  if(data > 0) ctl_toggle_mute(2);
+}
+
+static void handle_Switch3(s32 data) {
+  if(data > 0) ctl_toggle_mute(3);
+}
+
+
+// power switch handler
+// note: if this isn't assigned, the power switch won't work!
+static void handle_Switch5(s32 data) {
+  //TODO: ... save current settings...
+  delay_ms(100);
+  // this pin is physically connected to the power system.
+  // bringing it low causes immediate shutdown
+  gpio_clr_gpio_pin(POWER_CTL_PIN);
+}
+
+// encoder handlers
+static void handle_Encoder0(s32 data) {
+  ctl_inc_level(0, knob_accel(data));
+}
+
+static void handle_Encoder1(s32 data) {
+  ctl_inc_level(1, knob_accel(data));
+}
+
+static void handle_Encoder2(s32 data) {
+  ctl_inc_level(2, knob_accel(data));
+}
+
+static void handle_Encoder3(s32 data) {
+  ctl_inc_level(3, knob_accel(data));
+}
+
+// low-rate xrun counter poll (posted from xrunTimer)
+static void handle_AppCustom(s32 data) {
+  static bfin_xrun_t last = {0, 0, 0, 0};
+  bfin_xrun_t cur;
+
+  (void)data;
+  bfin_get_xruns(&cur);
+  render_xruns(cur.windowRx, cur.windowTx, cur.clashRx, cur.clashTx);
+  if(cur.windowRx != last.windowRx || cur.windowTx != last.windowTx ||
+     cur.clashRx != last.clashRx || cur.clashTx != last.clashTx) {
+    print_dbg("\r\n xrun winRx=");
+    print_dbg_ulong(cur.windowRx);
+    print_dbg(" winTx=");
+    print_dbg_ulong(cur.windowTx);
+    print_dbg(" clashRx=");
+    print_dbg_ulong(cur.clashRx);
+    print_dbg(" clashTx=");
+    print_dbg_ulong(cur.clashTx);
+    last = cur;
+  }
+}
+
+
+//-------------------------------------
+//---- extern
+
+/// explicitly assign these...
+/// this way the order of the event types enum doesn't matter.
+void assign_event_handlers(void) {
+
+  // function switches
+  app_event_handlers[kEventSwitch0] = &handle_Switch0;
+  app_event_handlers[kEventSwitch1] = &handle_Switch1;
+  app_event_handlers[kEventSwitch2] = &handle_Switch2;
+  app_event_handlers[kEventSwitch3] = &handle_Switch3;
+
+  // power switch
+  // note: if this isn't assigned, the power switch won't work!
+  app_event_handlers[kEventSwitch5] = &handle_Switch5;
+
+  // encoders
+  app_event_handlers[kEventEncoder0] = &handle_Encoder0;
+  app_event_handlers[kEventEncoder1] = &handle_Encoder1;
+  app_event_handlers[kEventEncoder2] = &handle_Encoder2;
+  app_event_handlers[kEventEncoder3] = &handle_Encoder3;
+
+  app_event_handlers[kEventAppCustom] = &handle_AppCustom;
+}
