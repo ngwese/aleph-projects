@@ -191,9 +191,9 @@ void render_chan(u8 ch) {
   // except wait for the screen refresh timer to trigger a redraw.
 }
 
-void render_xruns(u32 windowRx, u32 windowTx, u32 clashRx, u32 clashTx) {
+void render_xruns(u16 windowRx, u16 windowTx, u16 clashRx, u16 clashTx) {
   char buf[6];
-  u32 values[4];
+  u16 values[4];
   u8 i;
 
   values[0] = windowRx;
@@ -203,7 +203,7 @@ void render_xruns(u32 windowRx, u32 windowTx, u32 clashRx, u32 clashTx) {
 
   region_fill(&regXruns, 0x0);
   for(i = 0; i < 4; i++) {
-    format_u32(buf, values[i]);
+    format_u32(buf, (u32)values[i]);
     region_string(&regXruns, buf, i * 32, 0, 0xf, 0, 0);
   }
 }
