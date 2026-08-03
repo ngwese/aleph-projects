@@ -1,0 +1,4 @@
+[submodule "vendor/aleph"]
+	path = vendor/aleph
+	url = https://github.com/ngwese/aleph.git
+	branch = dev
