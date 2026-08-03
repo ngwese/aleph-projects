@@ -1,0 +1,105 @@
+#ifndef BETWEEN_RENDER_H
+#define BETWEEN_RENDER_H
+
+#include "morph2d.h"
+#include "types.h"
+
+/* content rows below the page header (48px). diagnostic log overlays the
+ * last row when active; otherwise that row is normal content. */
+#define RENDER_CONTENT_ROWS 6
+#define RENDER_LOG_CLEAR_MS 2000
+#define RENDER_TICK_MS 50
+#define RENDER_MIDI_FLASH_MS 150
+/* frame rate cap; screen updates no faster than this. */
+#define RENDER_MIN_FRAME_MS 50
+
+void render_init(void);
+void render_boot(const char *str);
+/* flush dirty regions to the screen. */
+void render_update(void);
+
+/* current page content is stale; coalesced into the next frame. */
+void render_mark_dirty(void);
+/* run one frame if anything is pending and the min interval has elapsed.
+ * called from the screen-refresh event and from main-loop idle. */
+void render_frame_service(void);
+
+/* clear content area only (does not clear header, log, or footer). */
+void render_clear(void);
+void render_line(u8 row, const char *str);
+void render_line_inv(u8 row, const char *str);
+/* draw str at pixel x within a content row (fg white on black). */
+void render_line_at(u8 row, u8 x, const char *str);
+/* draw str at pixel (x, y) in the content region (fg on black). */
+void render_string_xy(u8 x, u8 y, const char *str, u8 fg);
+/* fill a content-region rectangle (inclusive of origin; clipped). */
+void render_fill_rect(u8 x, u8 y, u8 w, u8 h, u8 color);
+
+/* play morph square geometry (content-region pixels). */
+#define RENDER_PLAY_MORPH_OX 2
+#define RENDER_PLAY_MORPH_OY 2
+#define RENDER_PLAY_MORPH_SZ 36
+#define RENDER_PLAY_GREY 0x5
+#define RENDER_PLAY_GREY_DARK 0x3
+#define RENDER_PLAY_GREY_LIGHT 0xa
+
+/* status row: 2px mid-grey bar, 1px gap, then name (or "none"). */
+void render_status_line(u8 row, const char *name);
+
+/* name entry: draw str on content row with inverse glyph at cursor. */
+void render_edit_string(u8 row, const char *str, u8 cursor);
+/* charset row: draw chars in fixed-width cells; inverse glyph at sel
+ * (0xff = none). */
+void render_charset_row(u8 row, const char *chars, u8 sel);
+
+/* edit-mode page header: mid-grey bar, title box(es). the status glyphs sit
+ * in their own regions to the right. dirty draws a light-grey "*" after the
+ * title. */
+void render_header(const char *title, u8 dirty);
+/* like render_header, plus a second white name box (uses "none" if name
+ * is NULL/empty) — same pattern as the slot page preset box. dirty draws
+ * "*" after the name box. */
+void render_header_with_name(const char *title, const char *name, u8 dirty);
+/* slot page: capital letter box, optional preset-name box, light-grey "*"
+ * after the name when dirty. */
+void render_header_slot(char slot_letter, const char *preset, u8 dirty);
+/* clear the title area; status glyphs are untouched. */
+void render_header_clear(void);
+
+/* header status glyphs — each owns a region and is redrawn only when its own
+ * mark is set. all four are coalesced into the next frame. */
+
+/* USB-MIDI presence / activity for the header m glyph. */
+void render_midi_set_connected(u8 connected);
+void render_midi_pulse_activity(void);
+/* dark-grey "!!!" left of MIDI m when any DSP xrun counter is non-zero. */
+void render_xrun_set_warn(u8 warn);
+/* header VU boxes are stale (new peak values). */
+void render_meters_mark_dirty(void);
+/* header morph indicator is stale (morph point moved). */
+void render_morph_mark_dirty(void);
+/* age the MIDI activity flash; call once per RENDER_TICK_MS. */
+void render_status_tick(void);
+
+void render_footer(const char *a, const char *b, const char *c, const char *d);
+
+/* diagnostic log on the line above the footer; redrawn immediately. */
+void render_log(const char *str);
+void render_log_clear(void);
+/* call once per screen-refresh event; clears log after RENDER_LOG_CLEAR_MS
+ * idle. */
+void render_log_tick(void);
+
+/* footer triangle for single-slot param targets (morph corner). */
+void render_footer_slot_tri(u8 cell, MorphSlot slot);
+
+/* play morph square: light-gray frame + 3×3 white cursor in content area. */
+void render_play_morph(u16 x, u16 y);
+
+/* inspect i/o: full-height IN/OUT peak bars. */
+void render_inspect_vu_bars(void);
+/* inspect cv in: one content row — label, fixed volts string, spark columns. */
+void render_inspect_cv_row(u8 row, const char *label, const char *volts,
+                           const u8 *spark, u8 spark_n);
+
+#endif
