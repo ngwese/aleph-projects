@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: read
@@ -22,50 +22,32 @@ jobs:
       - name: deinit nested libavr32
         run: git -C vendor/aleph submodule deinit -f libavr32
 
-      - name: install host build tools
+      - name: install host tools
         run: |
           set -euo pipefail
-          # *_desc_build compiles and runs against the host toolchain
+          sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y build-essential
+          # *_desc_build compiles/runs on the host; avr32 toolchain is 32-bit
+          sudo apt-get install -y build-essential libc6:i386
 
-      - name: set up apptainer
-        uses: eWaterCycle/setup-apptainer@v2
-        with:
-          apptainer-version: 1.4.0
+      - name: install singularity
+        run: |
+          set -euo pipefail
+          # https://github.com/sylabs/singularity/releases/tag/v4.5.0
+          deb=singularity-ce_4.5.0-noble_amd64.deb
+          curl -fsSL -o "$deb" \
+            "https://github.com/sylabs/singularity/releases/download/v4.5.0/${deb}"
+          sudo apt-get install -y "./${deb}"
+          singularity --version
 
       - name: pull aleph-builder
         run: |
           set -euo pipefail
           echo "${{ secrets.GITHUB_TOKEN }}" | \
-            apptainer registry login -u '${{ github.actor }}' --password-stdin oras://ghcr.io
-          apptainer pull --force aleph-builder.sif \
+            singularity registry login -u '${{ github.actor }}' --password-stdin oras://ghcr.io
+          singularity pull --force aleph-builder.sif \
             oras://ghcr.io/ngwese/aleph-builder:latest
-          sudo install -d /usr/local/lib
-          sudo install -m 755 aleph-builder.sif /usr/local/lib/aleph-builder.sif
-
-          # 32-bit avr32-gcc/cc1 get EOVERFLOW ("Value too large for defined
-          # data type") stating paths on apptainer's overlay (64-bit inodes).
-          # Copy toolchains onto a tmpfs (32-bit-safe inodes) and bind them.
-          tools=/mnt/aleph-builder-tools
-          sudo mkdir -p "$tools"
-          sudo mount -t tmpfs -o size=1G tmpfs "$tools"
-          apptainer exec /usr/local/lib/aleph-builder.sif \
-            tar -C /opt -cf - avr bfin | sudo tar -C "$tools" -xf -
-
-          # Also put libexec on PATH: find_a_file misses cc1 under apptainer
-          # and falls back to execvp("cc1"). --env PATH replaces %environment.
-          printf '%s\n' '#!/bin/sh' \
-            "exec apptainer run --cleanenv --bind ${tools}/avr:/opt/avr:ro --bind ${tools}/bfin:/opt/bfin:ro --env PATH=/opt/avr/bin:/opt/bfin/bin:/opt/avr/libexec/gcc/avr32/4.4.7:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /usr/local/lib/aleph-builder.sif \"\$@\"" \
-            | sudo tee /usr/local/bin/aleph-builder >/dev/null
-          sudo chmod 755 /usr/local/bin/aleph-builder
-
-          echo "wrapper:"
-          cat /usr/local/bin/aleph-builder
-          aleph-builder which avr32-gcc
-          aleph-builder which cc1
-          aleph-builder avr32-gcc -c -x c /dev/null -o /tmp/t.o
-          echo "avr32 compile ok"
+          sudo install -m 755 aleph-builder.sif /usr/local/bin/aleph-builder
 
       - name: build all apps and modules
         run: |
