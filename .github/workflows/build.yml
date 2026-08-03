@@ -44,12 +44,19 @@ jobs:
           sudo install -d /usr/local/lib
           sudo install -m 755 aleph-builder.sif /usr/local/lib/aleph-builder.sif
 
-          # On GHA apptainer, avr32-gcc's internal find_a_file misses
-          # libexec/cc1 and falls back to execvp("cc1"). Put toolchain bins
-          # and that libexec dir on PATH (--env PATH replaces %environment's).
-          # --cleanenv avoids host toolchain vars interfering.
+          # 32-bit avr32-gcc/cc1 get EOVERFLOW ("Value too large for defined
+          # data type") stating paths on apptainer's overlay (64-bit inodes).
+          # Copy toolchains onto a tmpfs (32-bit-safe inodes) and bind them.
+          tools=/mnt/aleph-builder-tools
+          sudo mkdir -p "$tools"
+          sudo mount -t tmpfs -o size=1G tmpfs "$tools"
+          apptainer exec /usr/local/lib/aleph-builder.sif \
+            tar -C /opt -cf - avr bfin | sudo tar -C "$tools" -xf -
+
+          # Also put libexec on PATH: find_a_file misses cc1 under apptainer
+          # and falls back to execvp("cc1"). --env PATH replaces %environment.
           printf '%s\n' '#!/bin/sh' \
-            'exec apptainer run --cleanenv --env PATH=/opt/avr/bin:/opt/bfin/bin:/opt/avr/libexec/gcc/avr32/4.4.7:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /usr/local/lib/aleph-builder.sif "$@"' \
+            "exec apptainer run --cleanenv --bind ${tools}/avr:/opt/avr:ro --bind ${tools}/bfin:/opt/bfin:ro --env PATH=/opt/avr/bin:/opt/bfin/bin:/opt/avr/libexec/gcc/avr32/4.4.7:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /usr/local/lib/aleph-builder.sif \"\$@\"" \
             | sudo tee /usr/local/bin/aleph-builder >/dev/null
           sudo chmod 755 /usr/local/bin/aleph-builder
 
