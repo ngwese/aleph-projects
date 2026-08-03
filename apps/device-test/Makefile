@@ -23,8 +23,9 @@
 # rebuilddoc              Rebuild the documentation
 
 
-# Path to top level ASF directory relative to this project directory.
-PRJ_PATH = ../../libavr32/asf
+# Path to top level ASF directory under the vendored aleph tree.
+include ../../aleph_root.mk
+PRJ_PATH = $(ALEPH_ROOT)/libavr32/asf
 
 MAKEFILE_PATH = $(PRJ_PATH)/avr32/utils/make/Makefile.avr32.in
 include $(MAKEFILE_PATH)

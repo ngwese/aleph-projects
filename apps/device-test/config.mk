@@ -10,11 +10,12 @@ BAUD = 115200
 include ../aleph_avr32_config.mk
 include ../aleph_avr32_src.mk
 
+# app sources are cwd-relative (ASF APP_DIR is only for INC_PATH / linker)
 CSRCS += \
-	$(APP_DIR)/src/app_device_test.c \
-	$(APP_DIR)/src/app_timers.c \
-	$(APP_DIR)/src/handler.c \
-	$(APP_DIR)/src/render.c
+	src/app_device_test.c \
+	src/app_timers.c \
+	src/handler.c \
+	src/render.c
 
 ASSRCS +=
 
