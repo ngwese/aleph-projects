@@ -28,10 +28,6 @@ jobs:
           # *_desc_build compiles and runs against the host toolchain
           sudo apt-get update
           sudo apt-get install -y build-essential
-          # avr32 gnu toolchain is 32-bit; enable i386 userspace on the runner
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y libc6:i386
 
       - name: set up apptainer
         uses: eWaterCycle/setup-apptainer@v2
@@ -45,7 +41,15 @@ jobs:
             apptainer registry login -u '${{ github.actor }}' --password-stdin oras://ghcr.io
           apptainer pull --force aleph-builder.sif \
             oras://ghcr.io/ngwese/aleph-builder:latest
-          sudo install -m 755 aleph-builder.sif /usr/local/bin/aleph-builder
+          sudo install -d /usr/local/lib
+          sudo install -m 755 aleph-builder.sif /usr/local/lib/aleph-builder.sif
+          # --cleanenv drops host GCC_* vars that otherwise make avr32-gcc
+          # look for cc1 on the host and fail with execvp ENOENT
+          printf '%s\n' \
+            '#!/bin/sh' \
+            'exec apptainer run --cleanenv /usr/local/lib/aleph-builder.sif "$@"' \
+            | sudo tee /usr/local/bin/aleph-builder >/dev/null
+          sudo chmod 755 /usr/local/bin/aleph-builder
 
       - name: build all apps and modules
         run: |
