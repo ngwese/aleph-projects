@@ -45,16 +45,17 @@ jobs:
           sudo install -m 755 aleph-builder.sif /usr/local/lib/aleph-builder.sif
 
           # On GHA apptainer, avr32-gcc's internal find_a_file misses
-          # libexec/cc1 and falls back to execvp("cc1"). Put libexec on PATH
-          # so that fallback succeeds. (%environment prepends /opt/avr/bin.)
+          # libexec/cc1 and falls back to execvp("cc1"). Put toolchain bins
+          # and that libexec dir on PATH (--env PATH replaces %environment's).
           # --cleanenv avoids host toolchain vars interfering.
           printf '%s\n' '#!/bin/sh' \
-            'exec apptainer run --cleanenv --env PATH=/opt/avr/libexec/gcc/avr32/4.4.7:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /usr/local/lib/aleph-builder.sif "$@"' \
+            'exec apptainer run --cleanenv --env PATH=/opt/avr/bin:/opt/bfin/bin:/opt/avr/libexec/gcc/avr32/4.4.7:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /usr/local/lib/aleph-builder.sif "$@"' \
             | sudo tee /usr/local/bin/aleph-builder >/dev/null
           sudo chmod 755 /usr/local/bin/aleph-builder
 
           echo "wrapper:"
           cat /usr/local/bin/aleph-builder
+          aleph-builder which avr32-gcc
           aleph-builder which cc1
           aleph-builder avr32-gcc -c -x c /dev/null -o /tmp/t.o
           echo "avr32 compile ok"
