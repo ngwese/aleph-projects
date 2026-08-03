@@ -1,5 +1,7 @@
 # aleph-projects
 
+[![build](https://github.com/ngwese/aleph-projects/actions/workflows/build.yml/badge.svg)](https://github.com/ngwese/aleph-projects/actions/workflows/build.yml)
+
 out-of-tree apps, modules, and dsp objects for [aleph](https://github.com/monome/aleph),
 built against a vendored copy of the firmware tree.
 

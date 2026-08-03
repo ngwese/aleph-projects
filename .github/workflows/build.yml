@@ -1,0 +1,49 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: check out repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: deinit nested libavr32
+        run: git -C vendor/aleph submodule deinit -f libavr32
+
+      - name: set up apptainer
+        uses: eWaterCycle/setup-apptainer@v2
+        with:
+          apptainer-version: 1.4.0
+
+      - name: pull aleph-builder
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            apptainer registry login -u '${{ github.actor }}' --password-stdin oras://ghcr.io
+          apptainer pull --force aleph-builder.sif \
+            oras://ghcr.io/ngwese/aleph-builder:latest
+          sudo install -m 755 aleph-builder.sif /usr/local/bin/aleph-builder
+
+      - name: build all apps and modules
+        run: |
+          set -uo pipefail
+          failed=0
+          for d in apps/*/ modules/*/ modules_block/*/; do
+            [ -f "${d}Makefile" ] || continue
+            echo "::group::build ${d%/}"
+            (cd "$d" && aleph-builder make) || failed=1
+            echo "::endgroup::"
+          done
+          exit "$failed"
