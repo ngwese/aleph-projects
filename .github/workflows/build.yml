@@ -51,6 +51,17 @@ jobs:
             | sudo tee /usr/local/bin/aleph-builder >/dev/null
           sudo chmod 755 /usr/local/bin/aleph-builder
 
+      - name: debug avr32 toolchain
+        run: |
+          set -uo pipefail
+          echo "=== host env ==="
+          env | grep -E '^(GCC|COMPILER|LIBRARY_PATH|CPATH|C_INCLUDE)' || true
+          echo "=== wrapper ==="
+          which aleph-builder
+          cat "$(which aleph-builder)"
+          echo "=== inside container ==="
+          aleph-builder sh -c 'echo PATH=$PATH; echo GCC_EXEC_PREFIX=$GCC_EXEC_PREFIX; which avr32-gcc; avr32-gcc -print-prog-name=cc1; CC1=$(avr32-gcc -print-prog-name=cc1); ls -la "$CC1"; file "$CC1"; "$CC1" -v </dev/null | head -5; printf "int main(void){return 0;}\n" > /tmp/t.c; avr32-gcc -c /tmp/t.c -o /tmp/t.o -v; echo compile_exit:$?'
+
       - name: build all apps and modules
         run: |
           set -uo pipefail
