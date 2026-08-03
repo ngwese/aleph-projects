@@ -130,13 +130,13 @@ void redraw_info(void) {
   info_line(0, "version", ver);
   info_line(1, "build", (git != NULL && git[0] != '\0') ? git : "-");
 
-  format_u32(num, sizeof(num), xr->windowRx);
+  format_u32(num, sizeof(num), (u32)xr->windowRx);
   info_line(2, "winRx", num);
-  format_u32(num, sizeof(num), xr->windowTx);
+  format_u32(num, sizeof(num), (u32)xr->windowTx);
   info_line(3, "winTx", num);
-  format_u32(num, sizeof(num), xr->clashRx);
+  format_u32(num, sizeof(num), (u32)xr->clashRx);
   info_line(4, "clashRx", num);
-  format_u32(num, sizeof(num), xr->clashTx);
+  format_u32(num, sizeof(num), (u32)xr->clashTx);
   info_line(5, "clashTx", num);
 
   render_footer("", "", "", "");

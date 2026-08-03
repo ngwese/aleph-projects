@@ -659,6 +659,7 @@ body (six content rows; labels in dark grey, values in white):
   unavailable).
 - rows 2–5: DSP xrun counters — `winRx`, `winTx`, `clashRx`, `clashTx` —
   polled from the blackfin at ~10 Hz with meters (same SPI path as spray).
+  each counter is a `u16` over SPI (`MSG_GET_XRUN_COM`, 8 payload bytes).
 
 enc1 navigates the page ring; enc0 / enc2 / enc3 and all softkeys are
 unmapped.
