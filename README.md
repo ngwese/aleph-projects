@@ -1,7 +1,23 @@
 # aleph-projects
 
-out-of-tree apps, modules, and dsp objects for [aleph](https://github.com/monome/aleph),
-built against a vendored copy of the firmware tree.
+apps, modules, and dsp objects for [aleph](https://github.com/monome/aleph).
+
+## apps
+
+| name | description |
+|------|-------------|
+| [between](apps/between/README.md) | morph among four DSP parameter presets on a 2d plane |
+| [device-test](apps/device-test/README.md) | validate USB device connect/disconnect and per-class diagnostics |
+| [spray](apps/spray/README.md) | basic AVR32 control app for the companion spray DSP module |
+
+## modules
+
+| name | description |
+|------|-------------|
+| [dacs_block](modules_block/dacs_block/README.md) | block-rate slewed CV outs (`cv0`…`cv3`); audio silenced |
+| [mx44](modules_block/mx44/README.md) | 4×4 matrix mixer with per-output base-width bandpass |
+| [parallel](modules_block/parallel/README.md) | dual mono send/return delays with SVF feedback |
+| [spray](modules_block/spray/README.md) | slewed input attenuators mixed to all outputs |
 
 ## layout
 
