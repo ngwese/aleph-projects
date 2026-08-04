@@ -49,6 +49,12 @@ jobs:
             oras://ghcr.io/ngwese/aleph-builder:latest
           sudo install -m 755 aleph-builder.sif /usr/local/bin/aleph-builder
 
+      - name: diagnose avr32 cc1 path
+        run: |
+          set -euo pipefail
+          cc1_path="$(aleph-builder avr32-gcc -print-prog-name=cc1)"
+          echo "avr32-gcc -print-prog-name=cc1 -> ${cc1_path}"
+
       - name: build all apps and modules
         run: |
           set -uo pipefail
