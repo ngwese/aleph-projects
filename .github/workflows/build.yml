@@ -52,6 +52,17 @@ jobs:
       - name: build all apps and modules
         run: |
           set -uo pipefail
+
+          for var in GCC_EXEC_PREFIX COMPILER_PATH PATH GCC_ROOT; do
+            if [ -n "${!var+x}" ]; then
+              echo "${var}=${!var}"
+            else
+              echo "${var} is unset"
+            fi
+          done
+
+          unset GCC_EXEC_PREFIX COMPILER_PATH GCC_ROOT
+
           failed=0
           for d in apps/*/ modules/*/ modules_block/*/; do
             [ -f "${d}Makefile" ] || continue
