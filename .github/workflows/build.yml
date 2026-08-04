@@ -71,7 +71,7 @@ jobs:
             --bind "$RUNNER_TEMP:/work" \
             --pwd /work \
             oras://ghcr.io/ngwese/aleph-builder:latest \
-            bash -lc '
+            bash -c '
               set -euo pipefail
               cp -a /src/. /work/
               cd /work
