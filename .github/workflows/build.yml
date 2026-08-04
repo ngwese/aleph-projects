@@ -59,9 +59,9 @@ jobs:
         run: |
           set -uo pipefail
 
-          # export SINGULARITYENV_GCC_EXEC_PREFIX=
-          # export SINGULARITYENV_COMPILER_PATH=
-          # export SINGULARITYENV_LIBRARY_PATH=
+          export SINGULARITYENV_GCC_EXEC_PREFIX=
+          export SINGULARITYENV_COMPILER_PATH=
+          export SINGULARITYENV_LIBRARY_PATH=
 
           singularity exec \
             --cleanenv \
@@ -75,6 +75,11 @@ jobs:
               set -euo pipefail
               cp -a /src/. /work/
               cd /work
+
+              echo $PATH
+
+              unset GCC_EXEC_PREFIX COMPILER_PATH LIBRARY_PATH CPATH \
+                C_INCLUDE_PATH CPLUS_INCLUDE_PATH
 
               avr32-gcc -print-prog-name=cc1
 
