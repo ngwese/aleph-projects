@@ -8,7 +8,7 @@ ldr_name = $(module_name)-$(version).ldr
 # vendored paths + local obj dirs (see aleph_bfin_block.mk)
 include ../aleph_bfin_block.mk
 
-module_obj = mx44_module.o \
+module_obj = $(module_objdir)mx44_module.o \
 	$(dsp_block_objdir)filter_1p_blk.o \
 	$(dsp_block_objdir)filter_bp_blk.o \
 	$(dsp_block_objdir)filter_bp_alpha_tab.o \
@@ -35,7 +35,7 @@ desc: $(module_name)_desc_build
 $(module_name).dsc: $(module_name)_desc_build
 	./$(module_name)_desc_build
 
-mx44_module.o: mx44_module.c
+$(module_objdir)mx44_module.o: mx44_module.c | $(module_objdir)
 	$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
 
 $(module_name): bfin_lib_target $(module_obj)
@@ -46,7 +46,6 @@ $(module_name): bfin_lib_target $(module_obj)
 	-lm -lbfdsp -lbffastfp
 
 clean: bfin_lib_clean
-	rm -f mx44_module.o
 	rm -f $(module_name).ldr
 	rm -f $(module_name)
 	rm -f $(module_name).dsc

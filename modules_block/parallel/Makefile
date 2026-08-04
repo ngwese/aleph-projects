@@ -7,8 +7,8 @@ ldr_name = $(module_name)-$(version).ldr
 
 include ../aleph_bfin_block.mk
 
-module_obj = parallel_module.o \
-	delayFadeN.o \
+module_obj = $(module_objdir)parallel_module.o \
+	$(module_objdir)delayFadeN.o \
 	$(dsp_objdir)buffer.o \
 	$(dsp_objdir)conversion.o \
 	$(dsp_objdir)filter_1p.o \
@@ -39,10 +39,10 @@ desc: $(module_name)_desc_build
 $(module_name).dsc: $(module_name)_desc_build
 	./$(module_name)_desc_build
 
-parallel_module.o: parallel_module.c
+$(module_objdir)parallel_module.o: parallel_module.c | $(module_objdir)
 	$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
 
-delayFadeN.o: delayFadeN.c
+$(module_objdir)delayFadeN.o: delayFadeN.c | $(module_objdir)
 	$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
 
 $(module_name): bfin_lib_target $(module_obj)
@@ -53,7 +53,6 @@ $(module_name): bfin_lib_target $(module_obj)
 	-lm -lbfdsp -lbffastfp
 
 clean: bfin_lib_clean
-	rm -f parallel_module.o delayFadeN.o
 	rm -f $(module_name).ldr
 	rm -f $(module_name)
 	rm -f $(module_name).dsc

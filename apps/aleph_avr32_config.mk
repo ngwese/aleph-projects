@@ -8,6 +8,9 @@
 
 include ../../aleph_root.mk
 
+# objects / .d under repo-root build (ASF BUILD_DIR); final .elf stays in cwd
+BUILD_DIR ?= $(BUILD_ROOT)/apps/$(APP)
+
 # configure paths for libavr32 (vendor/libavr32) and aleph cores (vendor/aleph)
 LIB_AVR32 = ../
 ALEPH_COMMON = ../../aleph/common

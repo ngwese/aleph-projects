@@ -1,6 +1,7 @@
 # out-of-tree Blackfin block-module build support.
 # include from modules_block/<name>/Makefile after setting module_name / version.mk.
-# keeps core and DSP objects under ./obj so vendor/aleph stays clean.
+# keeps core and DSP objects under $(BUILD_ROOT)/modules_block/<name> so
+# vendor/aleph stays clean.
 
 include ../../aleph_root.mk
 
@@ -13,14 +14,16 @@ audio_block = $(ALEPH_ROOT)/dsp_block
 
 bfin_lib_dir = $(ALEPH_ROOT)/bfin_lib_block/
 bfin_lib_srcdir = $(bfin_lib_dir)src/
-bfin_lib_objdir = obj/bfin_lib/
+BUILD_DIR ?= $(BUILD_ROOT)/modules_block/$(module_name)
+bfin_lib_objdir = $(BUILD_DIR)/bfin_lib/
 common_dir = $(ALEPH_ROOT)/common
 audio_dir = $(ALEPH_ROOT)/dsp
 dsp_block_dir = $(ALEPH_ROOT)/dsp_block
 module_dir = ./
+module_objdir = $(BUILD_DIR)/
 
-dsp_objdir = obj/dsp/
-dsp_block_objdir = obj/dsp_block/
+dsp_objdir = $(BUILD_DIR)/dsp/
+dsp_block_objdir = $(BUILD_DIR)/dsp_block/
 
 bfin_lib_src = audio.c \
 	clock_ebiu.c \
@@ -57,7 +60,7 @@ LDRFLAGS += --bits 16 --dma 8
 LDRFLAGS += --bmode spi_slave --port F --gpio 2
 LDRFLAGS += --verbose
 
-$(bfin_lib_objdir) $(dsp_objdir) $(dsp_block_objdir):
+$(bfin_lib_objdir) $(dsp_objdir) $(dsp_block_objdir) $(module_objdir):
 	mkdir -p $@
 
 bfin_lib_target: $(patsubst %.o, $(bfin_lib_objdir)%.o, $(bfin_lib_obj))
@@ -72,7 +75,7 @@ $(bfin_lib_objdir)%.o : $(bfin_lib_srcdir)%.c $(bfin_lib_hdr) | $(bfin_lib_objdi
 	$(LDR) -T $(CPU) -c $(LDRFLAGS) $@ $<
 
 bfin_lib_clean:
-	rm -rf obj
+	rm -rf $(BUILD_DIR)
 
 $(dsp_objdir)%.o: $(audio)/%.c | $(dsp_objdir)
 	$(CC) $(CFLAGS) -c -o $@ $<

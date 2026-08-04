@@ -7,7 +7,7 @@ ldr_name = $(module_name)-$(version).ldr
 
 include ../aleph_bfin_block.mk
 
-module_obj = dacs_block_module.o \
+module_obj = $(module_objdir)dacs_block_module.o \
 	$(dsp_block_objdir)filter_1p_blk.o
 
 all: $(module_name).ldr $(module_name).dsc
@@ -31,7 +31,7 @@ desc: $(module_name)_desc_build
 $(module_name).dsc: $(module_name)_desc_build
 	./$(module_name)_desc_build
 
-dacs_block_module.o: dacs_block_module.c
+$(module_objdir)dacs_block_module.o: dacs_block_module.c | $(module_objdir)
 	$(CC) $(CFLAGS) -c -o $@ $< $(LDFLAGS)
 
 $(module_name): bfin_lib_target $(module_obj)
@@ -42,7 +42,6 @@ $(module_name): bfin_lib_target $(module_obj)
 	-lm -lbfdsp -lbffastfp
 
 clean: bfin_lib_clean
-	rm -f dacs_block_module.o
 	rm -f $(module_name).ldr
 	rm -f $(module_name)
 	rm -f $(module_name).dsc

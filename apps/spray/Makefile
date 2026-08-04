@@ -33,6 +33,7 @@ PRJ_PATH = $(LIB_AVR32_ROOT)/asf
 
 MAKEFILE_PATH = $(PRJ_PATH)/avr32/utils/make/Makefile.avr32.in
 include $(MAKEFILE_PATH)
+include ../aleph_avr32_post.mk
 
 # Prefix with aleph-builder when available (toolchain wrapper).
 ALEPH_BUILDER := $(shell command -v aleph-builder 2>/dev/null)

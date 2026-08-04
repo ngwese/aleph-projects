@@ -27,6 +27,8 @@ modules/         classic Blackfin modules
 modules_block/   block-processing Blackfin modules
 dsp/             out-of-tree classic DSP sources
 dsp_block/       out-of-tree block DSP sources
+build/           object and dependency files (`.o`, `.d`); final
+                 firmware images stay in each app/module directory
 vendor/aleph/    aleph firmware submodule (ngwese fork, branch `dev`)
 vendor/libavr32/ ASF + monome AVR32 lib (used by apps; not aleph's nested copy)
 ```

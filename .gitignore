@@ -1,3 +1,6 @@
+# object / dependency tree (apps + modules)
+/build/
+
 # build artifacts (apps)
 *.o
 *.d
