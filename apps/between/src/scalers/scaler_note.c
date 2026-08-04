@@ -50,7 +50,6 @@ s32 scaler_note_val(void* scaler, io_t in) {
 }
 
 void scaler_note_str(char* dst, void* scaler, io_t in) {
-  u16 uin = BIT_ABS_16((s16)in) >> inRshift;
   // top 7 bits are semitones (== midi note number)
   // low 3 bits are microtuning
   //// FIXME: print number.tune instead of hz ?
