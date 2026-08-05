@@ -3,54 +3,55 @@
 block-based DSP module: two mono channels with **parallel send/return
 delay lines**.
 
-hardware I/O (1-based jack numbers → 0-based ADC/DAC indices):
+hardware I/O (1-based jack / ADC / DAC numbers):
 
 | jack | role | bus |
 |-----:|------|-----|
-| in 1 / out 1 | mono channel 0 | `adc0` / `dac0` |
-| in 2 / out 2 | mono channel 1 | `adc1` / `dac1` |
-| in 3 / out 3 | return 0 / send 0 | `adc2` / `dac2` |
-| in 4 / out 4 | return 1 / send 1 | `adc3` / `dac3` |
+| in 1 / out 1 | mono channel 1 | `adc1` / `dac1` |
+| in 2 / out 2 | mono channel 2 | `adc2` / `dac2` |
+| in 3 / out 3 | return 1 / send 1 | `adc3` / `dac3` |
+| in 4 / out 4 | return 2 / send 2 | `adc4` / `dac4` |
 
 each mono input has a level control. two independent send buses are fed by
 a mix of the faded mono inputs (per-send `send` levels) plus an attenuated
 **feedback** of that bus’s delay tap after a **state-variable filter** (lines-
 style `filter_svf` + dry/wet). each delay is a lines-style `delayFadeN`
 single-tap line with **fixed replace-write**; its raw tap drives the matching
-hardware send (`dac2` / `dac3`). hardware inputs 3 and 4 are returns. each
+hardware send (`dac3` / `dac4`). hardware inputs 3 and 4 are returns. each
 mono output is the post-fade mono dry path plus a mix of the two returns.
 
 amplitude controls use 1-pole slewing (`filter_1p`) unless noted.
 delay time / fade / timescale and SVF controls follow
 [`modules/lines`](../../modules/lines/).
-parameter labels are **1-based**; ADC/DAC hardware indices stay 0-based.
+parameter labels and ADC/DAC endpoint names are **1-based** (jack 1 →
+`adc1`/`dac1`).
 
 ---
 
 ## topology
 
 ```text
-adc0 ──►[in1]──┬── dry1 ──────────────────────────────────┬──► dac0
+adc1 ──►[in1]──┬── dry1 ──────────────────────────────────┬──► dac1
                │                                          │
                ├──[send1-1]──►┐                           │
-               │              ├──► sum ──► delay1 ──┬─────► dac2  (send 1)
+               │              ├──► sum ──► delay1 ──┬─────► dac3  (send 1)
                │              │   (delayFadeN,      │
                │              │    replace-write)   │
                │   [fb1]◄──[SVF1]◄──────────────────┘
                │
                ├──[send2-1]──►┐
-               │              ├──► sum ──► delay2 ──┬─────► dac3  (send 2)
+               │              ├──► sum ──► delay2 ──┬─────► dac4  (send 2)
                │   [fb2]◄──[SVF2]◄──────────────────┘
                │
-adc1 ──►[in2]──┼── dry2 ──────────────────────────────────┬──► dac1
+adc2 ──►[in2]──┼── dry2 ──────────────────────────────────┬──► dac2
                │                                          │
                ├──[send1-2]──► (into send1 sum)           │
                └──[send2-2]──► (into send2 sum)           │
                                                           │
-adc2 (ret1) ──►[ret1-1]───────────────────────────────────┤
+adc3 (ret1) ──►[ret1-1]───────────────────────────────────┤
             └─►[ret1-2]───────────────────────────────────┤
                                                           │
-adc3 (ret2) ──►[ret2-1]───────────────────────────────────┤
+adc4 (ret2) ──►[ret2-1]───────────────────────────────────┤
             └─►[ret2-2]───────────────────────────────────┘
 ```
 
@@ -62,35 +63,36 @@ delay tap.
 ```text
 for each mono M in {1,2}:
   inM              — input level (slew: inMSlew)
-  dryM = adc(M-1) * inM
-  dac(M-1) = dryM + Σ_R retR-M * adc(1+R)
+  dryM = adcM * inM
+  dacM = dryM + Σ_R retR-M * adc(2+R)
 
 for each send S in {1,2}:
   sendS-1, sendS-2 — levels from dry1 / dry2 into send bus S
-  delayS           — delayFadeN; replace-write; tap → dac(1+S)
+  delayS           — delayFadeN; replace-write; tap → dac(2+S)
   SVFS             — cut/rq/band mixes + fwet/fdry on tap (feedback only)
   fbS              — level of filtered feedback into send bus S
 ```
 
-signal equation (per sample / frame), after slewed gains. arrays below are
-**0-based** hardware indices; param `in(k+1)` controls mono `k`:
+signal equation (per sample / frame), after slewed gains. ADC/DAC and
+param labels below are **1-based**; delay/SVF array slots `s` stay 0-based
+in code (`s = 0,1` ↔ send `1,2`):
 
 ```text
-dry[k]       = adc[k] * in[k+1]                       // k = 0,1
+dry[m]       = adc[m] * in[m]                         // m = 1,2
 
 delay_out[s] = delayFadeN_next(line[s], send_in[s])   // replace-write
 svf_out[s]   = filter_svf_next(&svf[s], delay_out[s])
 fb_sig[s]    = delay_out[s] * fdry[s+1]
              + svf_out[s]   * fwet[s+1]
 
-send_in[s]   = dry[0] * send[s+1]-1
-             + dry[1] * send[s+1]-2
+send_in[s]   = dry[1] * send[s+1]-1
+             + dry[2] * send[s+1]-2
              + fb_sig[s] * fb[s+1]                    // s = 0,1
 
-dac[2+s]     = delay_out[s]                           // raw tap → send
-dac[k]       = dry[k]
-             + adc[2] * ret1-(k+1)
-             + adc[3] * ret2-(k+1)                    // k = 0,1
+dac[3+s]     = delay_out[s]                           // raw tap → send
+dac[m]       = dry[m]
+             + adc[3] * ret1-m
+             + adc[4] * ret2-m                        // m = 1,2
 ```
 
 processing order per send (match lines): mix `send_in` → `delayFadeN_next` →
@@ -186,8 +188,8 @@ filtered feedback.
 | name | src | dst | description |
 |------|-----|-----|-------------|
 | `timescale` | — | `del*` | global delay time scaler (`calc_ms`) |
-| `in1` | `adc0` | `dry1` | mono 0 input level |
-| `in2` | `adc1` | `dry2` | mono 1 input level |
+| `in1` | `adc1` | `dry1` | mono 1 input level |
+| `in2` | `adc2` | `dry2` | mono 2 input level |
 | `in1Slew` | — | `in1` | slew for `in1` |
 | `in2Slew` | — | `in2` | slew for `in2` |
 | `send1-1` | `dry1` | `send1` | send 1 from mono 1 |
@@ -217,11 +219,11 @@ filtered feedback.
 | `fdry1Slew` | — | `fdry1` | slew for `fdry1` |
 | `fwet1Slew` | — | `fwet1` | slew for `fwet1` |
 | `cut2` … `fwet2Slew` | (same as `*1` for send 2) | | |
-| `ret1-1` | `adc2` | `dac0` | return 1 → mono out 1 |
-| `ret1-2` | `adc2` | `dac1` | return 1 → mono out 2 |
+| `ret1-1` | `adc3` | `dac1` | return 1 → mono out 1 |
+| `ret1-2` | `adc3` | `dac2` | return 1 → mono out 2 |
 | `ret1Slew` | — | `ret1-*` | shared slew for return 1 |
-| `ret2-1` | `adc3` | `dac0` | return 2 → mono out 1 |
-| `ret2-2` | `adc3` | `dac1` | return 2 → mono out 2 |
+| `ret2-1` | `adc4` | `dac1` | return 2 → mono out 1 |
+| `ret2-2` | `adc4` | `dac2` | return 2 → mono out 2 |
 | `ret2Slew` | — | `ret2-*` | shared slew for return 2 |
 
 (send-2 SVF rows omitted in the table for brevity; mirror `*1` → `*2`.)
