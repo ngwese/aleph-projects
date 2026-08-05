@@ -1,9 +1,9 @@
 #include <string.h>
 
-#include "module.h"
 #include "dacs_block_params.h"
+#include "module.h"
 
-extern void fill_param_desc(ParamDesc* desc) {
+extern void fill_param_desc(ParamDesc *desc) {
   strcpy(desc[eParam_cvVal0].label, "cv0");
   desc[eParam_cvVal0].type = eParamTypeFix;
   desc[eParam_cvVal0].min = 0x00000000;

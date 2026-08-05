@@ -24,7 +24,8 @@ typedef void (*input_role_fn)(s32 data);
 typedef struct {
   InputRole role;
   /* page callback; NULL ok for Unmapped.
-   * PageSelect: if fn non-NULL it is called (e.g. modal-aware); else pages_next. */
+   * PageSelect: if fn non-NULL it is called (e.g. modal-aware); else
+   * pages_next. */
   input_role_fn fn;
 } InputEncBinding;
 

@@ -1,11 +1,11 @@
 #include "handler.h"
 
-#include "gpio.h"
 #include "delay.h"
+#include "gpio.h"
 #include "print_funcs.h"
 
-#include "conf_board.h"
 #include "app.h"
+#include "conf_board.h"
 #include "events.h"
 #include "timers.h"
 
@@ -25,17 +25,17 @@ static u32 mode_press_ticks;
 static void handle_Switch4(s32 data) {
   u32 held;
 
-  if(data > 0) {
+  if (data > 0) {
     mode_held = 1;
     mode_press_ticks = time_now();
     return;
   }
-  if(!mode_held) {
+  if (!mode_held) {
     return;
   }
   mode_held = 0;
   held = time_now() - mode_press_ticks;
-  if(held >= MODE_LONG_TICKS) {
+  if (held >= MODE_LONG_TICKS) {
     pages_enter_inspect();
   } else {
     pages_mode_short_release();

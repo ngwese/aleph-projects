@@ -118,9 +118,11 @@ void test_io_range_like_amp(void) {
   const s32 in_max = 1023 * 32;
 
   TEST_ASSERT_EQUAL_INT32(0, midi_nrpn_v14_to_range(in_min, in_max, 0));
-  TEST_ASSERT_EQUAL_INT32(in_max, midi_nrpn_v14_to_range(in_min, in_max, 16383));
+  TEST_ASSERT_EQUAL_INT32(in_max,
+                          midi_nrpn_v14_to_range(in_min, in_max, 16383));
   TEST_ASSERT_EQUAL_UINT16(0, midi_nrpn_range_to_v14(in_min, in_max, 0));
-  TEST_ASSERT_EQUAL_UINT16(16383, midi_nrpn_range_to_v14(in_min, in_max, in_max));
+  TEST_ASSERT_EQUAL_UINT16(16383,
+                           midi_nrpn_range_to_v14(in_min, in_max, in_max));
   /* mid io should land near mid v14 — not stuck at 0/1 */
   {
     s32 mid_io = midi_nrpn_v14_to_range(in_min, in_max, 8192);

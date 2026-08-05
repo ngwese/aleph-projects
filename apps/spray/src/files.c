@@ -22,20 +22,20 @@
 #define NAME_LEN 64
 
 // byte-at-a-time read (fl_fread is unreliable for large files here)
-static void fake_fread(volatile u8* dst, u32 len, void* fp) {
+static void fake_fread(volatile u8 *dst, u32 len, void *fp) {
   u32 n = 0;
-  while(n < len) {
+  while (n < len) {
     *dst = fl_fgetc(fp);
     n++;
     dst++;
   }
 }
 
-static void strip_ext(char* str) {
+static void strip_ext(char *str) {
   int i = strlen(str);
-  while(i > 0) {
+  while (i > 0) {
     --i;
-    if(str[i] == '.') {
+    if (str[i] == '.') {
       str[i] = '\0';
       return;
     }
@@ -43,12 +43,12 @@ static void strip_ext(char* str) {
 }
 
 // Open /mod/<name>.ldr; set *size from the directory entry. Caller must fclose.
-static void* open_dsp_file(const char* name, u32* size) {
+static void *open_dsp_file(const char *name, u32 *size) {
   FL_DIR dirstat;
   struct fs_dir_ent dirent;
   char path[64];
   char nameTry[NAME_LEN];
-  void* fp = NULL;
+  void *fp = NULL;
 
   *size = 0;
 
@@ -58,15 +58,15 @@ static void* open_dsp_file(const char* name, u32* size) {
   strncat(nameTry, ".ldr", NAME_LEN - strlen(nameTry) - 1);
 
   strcpy(path, DSP_PATH);
-  if(!fl_opendir(path, &dirstat)) {
+  if (!fl_opendir(path, &dirstat)) {
     print_dbg("\r\n spray; cannot open ");
     print_dbg(DSP_PATH);
     render_boot("cannot open /mod/");
     return NULL;
   }
 
-  while(fl_readdir(&dirstat, &dirent) == 0) {
-    if(strcmp(dirent.filename, nameTry) == 0) {
+  while (fl_readdir(&dirstat, &dirent) == 0) {
+    if (strcmp(dirent.filename, nameTry) == 0) {
       strncat(path, dirent.filename, sizeof(path) - strlen(path) - 1);
       fp = fl_fopen(path, "r");
       *size = dirent.size;
@@ -74,7 +74,7 @@ static void* open_dsp_file(const char* name, u32* size) {
     }
   }
 
-  if(fp == NULL) {
+  if (fp == NULL) {
     print_dbg("\r\n spray; LDR not found: ");
     print_dbg(DSP_PATH);
     print_dbg(nameTry);
@@ -84,10 +84,10 @@ static void* open_dsp_file(const char* name, u32* size) {
   return fp;
 }
 
-u8 files_load_dsp(const char* name) {
-  void* fp;
+u8 files_load_dsp(const char *name) {
+  void *fp;
   u32 size = 0;
-  volatile u8* bfinLdrData = NULL;
+  volatile u8 *bfinLdrData = NULL;
   u8 ret = 0;
 
   delay_ms(10);
@@ -95,8 +95,8 @@ u8 files_load_dsp(const char* name) {
 
   fp = open_dsp_file(name, &size);
 
-  if(fp != NULL && size > 0) {
-    if(size > BFIN_LDR_MAX_BYTES) {
+  if (fp != NULL && size > 0) {
+    if (size > BFIN_LDR_MAX_BYTES) {
       print_dbg("\r\n spray; LDR too large: 0x");
       print_dbg_hex(size);
       render_boot("LDR too large");
@@ -107,7 +107,7 @@ u8 files_load_dsp(const char* name) {
 
       bfinLdrData = alloc_mem(size);
 
-      if(bfinLdrData == NULL) {
+      if (bfinLdrData == NULL) {
         print_dbg("\r\n spray; alloc_mem failed for LDR");
         render_boot("alloc failed");
         fl_fclose(fp);
@@ -115,12 +115,12 @@ u8 files_load_dsp(const char* name) {
         fake_fread(bfinLdrData, size, fp);
         fl_fclose(fp);
         render_boot("booting DSP...");
-        bfin_load_buf((const u8*)bfinLdrData, size);
+        bfin_load_buf((const u8 *)bfinLdrData, size);
         free_mem(bfinLdrData);
         ret = 1;
       }
     }
-  } else if(fp != NULL) {
+  } else if (fp != NULL) {
     print_dbg("\r\n spray; LDR empty");
     render_boot("LDR empty");
     fl_fclose(fp);

@@ -1,8 +1,8 @@
 // std
 #include <string.h>
 // asf
-#include "print_funcs.h"
 #include "param_scaler.h"
+#include "print_funcs.h"
 #include "scaler_note.h"
 
 // table size
@@ -11,18 +11,17 @@ static const u32 tabSize = 1024;
 // shift from io_t size to index
 static const u8 inRshift = 5;
 
-static const s32* tabVal;
+static const s32 *tabVal;
 
 static u8 initFlag = 0;
 
 //-------------------
 //--- static funcs
 
-
 //-----------------------
 //---- extern funcs
 
-s32 scaler_note_val(void* scaler, io_t in) {
+s32 scaler_note_val(void *scaler, io_t in) {
   print_dbg("\r\n requesting note_scaler value for input: 0x");
   print_dbg_hex((u32)in);
   print_dbg(" ; result: 0x");
@@ -31,11 +30,11 @@ s32 scaler_note_val(void* scaler, io_t in) {
   u16 idx1, idx2;
   u16 shiftMask = (1 << inRshift) - 1;
   u8 pan = (u16)in & shiftMask;
-  if(in < 0) {
+  if (in < 0) {
     idx1 = 0;
     idx2 = 0;
     pan = 0;
-  } else if(in >= (0x7FFF & ~shiftMask)) {
+  } else if (in >= (0x7FFF & ~shiftMask)) {
     idx1 = 0x7FFF >> inRshift;
     idx2 = idx1;
   } else {
@@ -49,7 +48,7 @@ s32 scaler_note_val(void* scaler, io_t in) {
   return sb * pan + sa * ((1 << inRshift) - pan);
 }
 
-void scaler_note_str(char* dst, void* scaler, io_t in) {
+void scaler_note_str(char *dst, void *scaler, io_t in) {
   // top 7 bits are semitones (== midi note number)
   // low 3 bits are microtuning
   //// FIXME: print number.tune instead of hz ?
@@ -57,8 +56,8 @@ void scaler_note_str(char* dst, void* scaler, io_t in) {
 }
 
 // init function
-void scaler_note_init(void* scaler) {
-  ParamScaler* sc = (ParamScaler*)scaler;
+void scaler_note_init(void *scaler) {
+  ParamScaler *sc = (ParamScaler *)scaler;
 
   // HACK: we are doing this from the svf scaler, so don't want a warning.
   // check descriptor
@@ -67,7 +66,7 @@ void scaler_note_init(void* scaler) {
   /* } */
 
   // init flag for static data
-  if(initFlag) {
+  if (initFlag) {
     ;
     ;
   } else {
@@ -76,7 +75,7 @@ void scaler_note_init(void* scaler) {
     tabVal = scaler_get_nv_data(eParamTypeNote);
   }
 
-  if(scaler != NULL) {
+  if (scaler != NULL) {
     sc->inMin = 0;
     sc->inMax = (tabSize - 1) << inRshift;
   }
@@ -85,9 +84,8 @@ void scaler_note_init(void* scaler) {
   //  sc->numTune = 0;
 }
 
-
 // get input given DSP value (use sparingly)
-io_t scaler_note_in(void* scaler, s32 x) {
+io_t scaler_note_in(void *scaler, s32 x) {
   // value table is monotonic, can binary search
   s32 jl = 0;
   s32 ju = tabSize - 1;
@@ -96,14 +94,14 @@ io_t scaler_note_in(void* scaler, s32 x) {
   print_dbg("\r\n scaler_note_in, x: 0x");
   print_dbg_hex(x);
 
-  if(x >= tabVal[tabSize - 1]) {
+  if (x >= tabVal[tabSize - 1]) {
     return (io_t)((tabSize - 1) << inRshift);
   }
 
-  while(ju - jl > 1) {
+  while (ju - jl > 1) {
     jm = (ju + jl) >> 1;
     // value table is always ascending
-    if(x >= tabVal[jm]) {
+    if (x >= tabVal[jm]) {
       jl = jm;
     } else {
       ju = jm;
@@ -114,10 +112,9 @@ io_t scaler_note_in(void* scaler, s32 x) {
   return (u16)jl << inRshift;
 }
 
-
 // increment input by pointer, return value
-s32 scaler_note_inc(void* scaler, io_t* pin, io_t inc) {
-  ParamScaler* sc = (ParamScaler*)scaler;
+s32 scaler_note_inc(void *scaler, io_t *pin, io_t inc) {
+  ParamScaler *sc = (ParamScaler *)scaler;
   // this speeds up the knob a great deal.
 #if 0
   s32 sinc;
@@ -135,8 +132,12 @@ s32 scaler_note_inc(void* scaler, io_t* pin, io_t inc) {
   // use saturation
   *pin = op_sadd(*pin, inc);
 
-  if(*pin < sc->inMin) { *pin = sc->inMin; }
-  if(*pin > sc->inMax) { *pin = sc->inMax; }
+  if (*pin < sc->inMin) {
+    *pin = sc->inMin;
+  }
+  if (*pin > sc->inMax) {
+    *pin = sc->inMax;
+  }
 
   // ignoring ranges in descriptor at least for now.
   return scaler_note_val(sc, *pin);

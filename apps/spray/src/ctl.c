@@ -6,11 +6,11 @@
   this defines the control logic interface.
 
   our 'spray' app doesn't have to do much:
-  
+
   - keep track of amplitude and mute values for each channel
-  - re-render screen regions 
+  - re-render screen regions
   - send parameter changes to blackfin
-  
+
 */
 
 //--- asf headers
@@ -49,10 +49,8 @@ static s32 ampDb[4];
 // adc parameter indices
 // keeping them here is clean and maintainable,
 // at the cost of a little code space.
-static const int ampParamId[] = {eParam_adc1,
-				 eParam_adc2,
-				 eParam_adc3,
-				 eParam_adc4};
+static const int ampParamId[] = {eParam_adc1, eParam_adc2, eParam_adc3,
+                                 eParam_adc4};
 
 //---------------------------------
 //---- static function declarations
@@ -70,7 +68,7 @@ static void ctl_set_mute(u32 ch, bool val);
 void ctl_init(void) {
   int i;
   // set inputs to defaults
-  for(i = 0; i < 4; i++) {
+  for (i = 0; i < 4; i++) {
     level[i] = maxLevelInput;
     scale_level(maxLevelInput, &ampLin[i], &ampDb[i]);
     ctl_set_amp(i);
@@ -96,15 +94,11 @@ void ctl_init(void) {
 
 // get amplitude for a channel
 // (e.g. for rendering)
-s32 ctl_get_amp_db(u32 ch) {
-  return ampDb[ch];
-}
+s32 ctl_get_amp_db(u32 ch) { return ampDb[ch]; }
 
 // get mute flag for a channel
 // (e.g. for rendering)
-s32 ctl_get_mute(u32 ch) {
-  return mute[ch];
-}
+s32 ctl_get_mute(u32 ch) { return mute[ch]; }
 
 // toggle mute flag for a channel
 // (e.g. from switch handler)
@@ -119,18 +113,22 @@ extern void ctl_inc_level(u32 ch, s32 inc) {
   s32 l;
   ch &= 3;
   // clamp increment to prevent overflow
-  if(inc < -65000) {
+  if (inc < -65000) {
     inc = -65000;
     print_dbg("\r\n !! clamp inc low");
   }
-  if(inc > 65000) {
+  if (inc > 65000) {
     inc = 65000;
     print_dbg("\r\n !! clamp inc high");
   }
   l = level[ch] + inc;
   // clamp addition result
-  if(l < minLevelInput) { l = minLevelInput; }
-  if(l > maxLevelInput) { l = maxLevelInput; }
+  if (l < minLevelInput) {
+    l = minLevelInput;
+  }
+  if (l > maxLevelInput) {
+    l = maxLevelInput;
+  }
   scale_level(l, &ampLin[ch], &ampDb[ch]);
   ctl_set_amp(ch);
   level[ch] = l;
@@ -141,12 +139,11 @@ extern void ctl_inc_level(u32 ch, s32 inc) {
 //-----------------------------------
 //--- static function definitions
 
-
 // SET amplitude for a channel
 static void ctl_set_amp(u32 ch) {
-  if(mute[ch]) {
+  if (mute[ch]) {
     ;
-    ;  // already muted, do nothing
+    ; // already muted, do nothing
   } else {
     // send the linear amplitude as a param change to the DSP
     ctl_param_change(ampParamId[ch], ampLin[ch]);
@@ -157,7 +154,7 @@ static void ctl_set_amp(u32 ch) {
 
 // set mute flag for a channel
 static void ctl_set_mute(u32 ch, bool val) {
-  if(val) {
+  if (val) {
     mute[ch] = 1;
     // send zero to the DSP
     ctl_param_change(ampParamId[ch], 0);

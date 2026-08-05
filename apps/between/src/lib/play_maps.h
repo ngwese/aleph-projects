@@ -37,10 +37,7 @@ typedef enum {
 } PlaySwKind;
 
 /* CC maps are param-label only; MIDI channel selects slot (1–4) or all (16). */
-typedef enum {
-  ePlayCcNone = 0,
-  ePlayCcParam
-} PlayCcKind;
+typedef enum { ePlayCcNone = 0, ePlayCcParam } PlayCcKind;
 
 typedef struct {
   PlayEncKind kind;

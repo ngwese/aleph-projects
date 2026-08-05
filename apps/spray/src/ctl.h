@@ -5,8 +5,9 @@
 
   this declares the control logic interface.
 
-  our 'spray' app doesn't have to do much, just keep track of amplitude and mute values for each channel.
-  
+  our 'spray' app doesn't have to do much, just keep track of amplitude and mute
+  values for each channel.
+
 */
 
 #ifndef _ALEPH_APP_SPRAY_CTL_H_
@@ -44,7 +45,6 @@ enum params {
   eParamNumParams
 };
 
-
 //---------------------------
 //---- -external functions
 
@@ -63,5 +63,4 @@ extern s32 ctl_get_amp_db(u32 ch);
 // get mute toggle for a channel
 extern s32 ctl_get_mute(u32 ch);
 
-
-#endif  // h guard
+#endif // h guard

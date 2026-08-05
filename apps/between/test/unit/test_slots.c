@@ -164,7 +164,7 @@ void test_exclude_skips_apply(void) {
   u16 i;
 
   memset(desc, 0, sizeof(desc));
-  for(i = 0; i < NPARAMS; ++i) {
+  for (i = 0; i < NPARAMS; ++i) {
     desc[i].type = eParamTypeFix;
     bank_a[i] = 10;
   }

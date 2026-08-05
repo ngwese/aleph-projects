@@ -18,11 +18,7 @@ typedef enum {
   eNumPages
 } PageId;
 
-typedef enum {
-  eAppModeEdit = 0,
-  eAppModePlay,
-  eAppModeInspect
-} AppMode;
+typedef enum { eAppModeEdit = 0, eAppModePlay, eAppModeInspect } AppMode;
 
 typedef void (*page_select_fn)(void);
 typedef void (*page_redraw_fn)(void);

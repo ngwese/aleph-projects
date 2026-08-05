@@ -235,8 +235,7 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
           mult_fr1x32x32(dry1, filter_1p_lo_next(&(sendSlew[s][0]))),
           mult_fr1x32x32(dry2, filter_1p_lo_next(&(sendSlew[s][1]))));
       send_in = add_fr1x32(
-          send_in,
-          mult_fr1x32x32(fbSig[s], filter_1p_lo_next(&(fbSlew[s]))));
+          send_in, mult_fr1x32x32(fbSig[s], filter_1p_lo_next(&(fbSlew[s]))));
 
       tap = delayFadeN_next(&(delay[s]), send_in);
 
@@ -246,8 +245,8 @@ void module_process_block(buffer_t *inChannels, buffer_t *outChannels) {
 
       fdry = filter_1p_lo_next(&(fdrySlew[s]));
       fwet = filter_1p_lo_next(&(fwetSlew[s]));
-      fbSig[s] = add_fr1x32(mult_fr1x32x32(tap, fdry),
-                            mult_fr1x32x32(svfOut, fwet));
+      fbSig[s] =
+          add_fr1x32(mult_fr1x32x32(tap, fdry), mult_fr1x32x32(svfOut, fwet));
 
       outCh[2 + s][frame] = tap; /* raw tap → hardware send */
     }

@@ -2,8 +2,8 @@
 
 #include <string.h>
 
-#include "gpio.h"
 #include "delay.h"
+#include "gpio.h"
 #include "print_funcs.h"
 
 #include "app.h"
@@ -46,9 +46,7 @@ static void handle_MidiDisconnect(s32 data) {
   render_log("midi down");
 }
 
-static void handle_MidiPacket(s32 data) {
-  render_midi_packet((u32)data);
-}
+static void handle_MidiPacket(s32 data) { render_midi_packet((u32)data); }
 
 static void append_u8(char *buf, u8 buf_len, u8 v) {
   char tmp[4];

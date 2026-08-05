@@ -2,8 +2,8 @@
 
 #include <string.h>
 
-#include "compiler.h"
 #include "app.h"
+#include "compiler.h"
 #include "filesystem.h"
 
 #include "between_limits.h"
@@ -30,7 +30,7 @@ PresetIoStatus preset_file_load(const char *module, const char *stem,
   make_path(path, module, stem);
   app_pause();
   fp = fl_fopen(path, "r");
-  if(fp == NULL) {
+  if (fp == NULL) {
     app_resume();
     return ePresetIoEof;
   }
@@ -54,14 +54,14 @@ PresetIoStatus preset_file_save(const char *module, const char *stem,
   make_path(path, module, stem);
   app_pause();
   fp = fl_fopen(path, "w");
-  if(fp == NULL) {
+  if (fp == NULL) {
     app_resume();
     return ePresetIoWriteFail;
   }
   lineio_fl_bind(&io, fp);
   st = preset_io_write(&io, meta, next_param, ctx);
-  if(st == ePresetIoOk) {
-    if(!lineio_fl_close_written(fp)) {
+  if (st == ePresetIoOk) {
+    if (!lineio_fl_close_written(fp)) {
       st = ePresetIoWriteFail;
     }
   } else {
@@ -74,7 +74,7 @@ PresetIoStatus preset_file_save(const char *module, const char *stem,
 u8 preset_file_delete(const char *module, const char *stem) {
   char path[BETWEEN_PATH_MAX];
   int rc;
-  if(module == NULL || stem == NULL || stem[0] == '\0') {
+  if (module == NULL || stem == NULL || stem[0] == '\0') {
     return 0;
   }
   render_log("delete preset...");
@@ -88,13 +88,13 @@ u8 preset_file_delete(const char *module, const char *stem) {
 u8 preset_file_exists(const char *module, const char *stem) {
   char path[BETWEEN_PATH_MAX];
   void *fp;
-  if(module == NULL || stem == NULL || stem[0] == '\0') {
+  if (module == NULL || stem == NULL || stem[0] == '\0') {
     return 0;
   }
   make_path(path, module, stem);
   app_pause();
   fp = fl_fopen(path, "r");
-  if(fp == NULL) {
+  if (fp == NULL) {
     app_resume();
     return 0;
   }

@@ -23,4 +23,4 @@
 
 #define NUM_PARAMS eParamNumParams
 
-#endif  // h guard
+#endif // h guard

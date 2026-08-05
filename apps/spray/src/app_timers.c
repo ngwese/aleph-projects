@@ -1,11 +1,12 @@
 /* app_timers.c
 
-   this is where callbacks are declared for all application-specific software timers.
-   these callbacks are performed from the TC interrupt service routine.
+   this is where callbacks are declared for all application-specific software
+   timers. these callbacks are performed from the TC interrupt service routine.
    therefore, they should be kept small.
 
-   avr32_lib defines a custom application event type, 
-   which should be used when timer-based processing needs to be deferred to the main loop.
+   avr32_lib defines a custom application event type,
+   which should be used when timer-based processing needs to be deferred to the
+   main loop.
 */
 
 // aleph-avr32
@@ -33,28 +34,25 @@ static softTimer_t encTimer = {.next = NULL, .prev = NULL};
 // poll DSP xrun counters (deferred to main via AppCustom)
 static softTimer_t xrunTimer = {.next = NULL, .prev = NULL};
 
-
 //--------------------------
 //----- static functions
 
 //----- callbacks
 
 // screen refresh callback
-static void screen_timer_callback(void* obj) {
-  render_update();
-}
+static void screen_timer_callback(void *obj) { render_update(); }
 
 // encoder accumulator polling callback
 // the encoder class is defined in avr32_lib.
 // each encoder object has an accumulator
-static void enc_timer_callback(void* obj) {
+static void enc_timer_callback(void *obj) {
   static s16 val, valAbs;
   u8 i;
 
-  for(i = 0; i < NUM_ENC; i++) {
+  for (i = 0; i < NUM_ENC; i++) {
     val = enc[i].val;
     valAbs = (val & 0x8000 ? (val ^ 0xffff) + 1 : val);
-    if(valAbs > enc[i].thresh) {
+    if (valAbs > enc[i].thresh) {
       e.type = enc[i].event;
       e.data = val;
       enc[i].val = 0;
@@ -64,7 +62,7 @@ static void enc_timer_callback(void* obj) {
 }
 
 // post AppCustom so main loop can SPI-read xrun counters
-static void xrun_timer_callback(void* obj) {
+static void xrun_timer_callback(void *obj) {
   e.type = kEventAppCustom;
   e.data = 0;
   event_post(&e);

@@ -16,6 +16,6 @@ extern const s32 minLevelInput;
 extern const s32 maxLevelInput;
 // lookup a level control value.
 // return both linear and decibel representations, by pointer
-extern void scale_level(s32 val, s32* resAmp, s32* resDb);
+extern void scale_level(s32 val, s32 *resAmp, s32 *resDb);
 
 #endif

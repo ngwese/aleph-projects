@@ -3,10 +3,7 @@
 
 #include "types.h"
 
-typedef enum {
-  eNameEditSetup = 0,
-  eNameEditPreset
-} NameEditKind;
+typedef enum { eNameEditSetup = 0, eNameEditPreset } NameEditKind;
 
 typedef void (*name_edit_done_fn)(const char *stem, void *ctx);
 

@@ -1,6 +1,6 @@
 /*
   render.c
-  
+
   aleph-spray
 
   definitions for rendering graphics.
@@ -25,7 +25,7 @@
 //-------------------------------------------------
 //----- -static variables
 
-/* 
+/*
    the screen-drawing routines in avr32_lib provide the "region" object
    a simple 16-bit pixel buffer with width, height, x/y offset, and dirty flag.
    there are also methods for basic fill and text rendering into regions.
@@ -33,36 +33,28 @@
 
 // Four-character level values stacked in the upper-left corner.
 static region regChan[] = {
-  {.w = 24, .h = 8, .x = 0, .y = 0},
-  {.w = 24, .h = 8, .x = 0, .y = 8},
-  {.w = 24, .h = 8, .x = 0, .y = 16},
-  {.w = 24, .h = 8, .x = 0, .y = 24},
+    {.w = 24, .h = 8, .x = 0, .y = 0},
+    {.w = 24, .h = 8, .x = 0, .y = 8},
+    {.w = 24, .h = 8, .x = 0, .y = 16},
+    {.w = 24, .h = 8, .x = 0, .y = 24},
 };
 
 // four compact xrun counters across the bottom
-static region regXruns = {
-  .w = 128,
-  .h = 8,
-  .x = 0,
-  .y = 56};
+static region regXruns = {.w = 128, .h = 8, .x = 0, .y = 56};
 
 // full-screen scrolling region for startup diagnostics
-static region bootScrollRegion = {
-  .w = 128,
-  .h = 64,
-  .x = 0,
-  .y = 0};
+static region bootScrollRegion = {.w = 128, .h = 64, .x = 0, .y = 0};
 static scroll bootScroll;
 
 //-------------------------------------------------
 //----- static functions
 
-static void format_u32(char* buf, u32 val) {
+static void format_u32(char *buf, u32 val) {
   char reverse[10];
   u8 digits = 0;
   u8 i;
 
-  if(val > 99999) {
+  if (val > 99999) {
     memcpy(buf, ">99k", 5);
     return;
   }
@@ -70,9 +62,9 @@ static void format_u32(char* buf, u32 val) {
   do {
     reverse[digits++] = '0' + (val % 10);
     val /= 10;
-  } while(val);
+  } while (val);
 
-  for(i = 0; i < digits; i++) {
+  for (i = 0; i < digits; i++) {
     buf[i] = reverse[digits - i - 1];
   }
   buf[digits] = '\0';
@@ -95,23 +87,25 @@ void render_init(void) {
 }
 
 // render text to scrolling buffer during boot (immediate screen blit)
-void render_boot(const char* str) {
+void render_boot(const char *str) {
   int i;
-  u8* p = bootScroll.reg->data;
+  u8 *p = bootScroll.reg->data;
 
   // dim older lines so new text stands out
-  for(i = 0; i < bootScroll.reg->len; i++) {
-    if(*p > 0x4) { *p = 0x4; }
+  for (i = 0; i < bootScroll.reg->len; i++) {
+    if (*p > 0x4) {
+      *p = 0x4;
+    }
     p++;
   }
-  scroll_string_front(&bootScroll, (char*)str);
+  scroll_string_front(&bootScroll, (char *)str);
   region_draw(bootScroll.reg);
 }
 
 // fill with initial graphics
 void render_startup(void) {
   u32 i;
-  for(i = 0; i < 4; i++) {
+  for (i = 0; i < 4; i++) {
     // fill the graphics buffer (with black)
     region_fill(&(regChan[i]), 0x0);
     // physically render the region data to the screen
@@ -145,7 +139,7 @@ void render_chan(u8 ch) {
   // text buffer
   static char buf[5];
   // point at the appropriate region
-  region* reg = &(regChan[ch]);
+  region *reg = &(regChan[ch]);
 
   // clear the region
   region_fill(reg, 1);
@@ -156,14 +150,14 @@ void render_chan(u8 ch) {
   // print "-inf" if very small,
   // otherwise print the value
   // make sure this is a signed comparison
-  if(db < (s32)0xffbf0000) {
+  if (db < (s32)0xffbf0000) {
     memcpy(buf, "-inf\0", 5);
   } else {
     s32 dbInteger = db >> 16;
     u32 magnitude;
     u8 pos = 0;
 
-    if(dbInteger < 0) {
+    if (dbInteger < 0) {
       buf[pos++] = '-';
       magnitude = (u32)(-dbInteger);
     } else {
@@ -178,7 +172,7 @@ void render_chan(u8 ch) {
   // if channel is muted,
   // highlight background, limit the foreground,
   // invert the value
-  if(ctl_get_mute(ch)) {
+  if (ctl_get_mute(ch)) {
     region_hl(reg, 2, 2);
     region_max(reg, 6);
   }
@@ -202,7 +196,7 @@ void render_xruns(u16 windowRx, u16 windowTx, u16 clashRx, u16 clashTx) {
   values[3] = clashTx;
 
   region_fill(&regXruns, 0x0);
-  for(i = 0; i < 4; i++) {
+  for (i = 0; i < 4; i++) {
     format_u32(buf, (u32)values[i]);
     region_string(&regXruns, buf, i * 32, 0, 0xf, 0, 0);
   }

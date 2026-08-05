@@ -15,7 +15,7 @@ static u8 scanned;
 
 static void do_scan(void) {
   dirlist_scan(&list, BETWEEN_MOD_PATH, ".ldr");
-  if(sel >= (s16)list.count) {
+  if (sel >= (s16)list.count) {
     sel = list.count ? (s16)list.count - 1 : 0;
   }
   scanned = 1;
@@ -26,10 +26,10 @@ static void redraw(void) {
   char line[24];
   render_clear();
   render_header_with_name("module", g_module.loaded ? g_module.name : NULL, 0);
-  if(list.count == 0) {
+  if (list.count == 0) {
     render_line(0, "(none)");
   } else {
-    for(i = 0; i < 5 && (u16)(sel + (s16)i) < list.count; ++i) {
+    for (i = 0; i < 5 && (u16)(sel + (s16)i) < list.count; ++i) {
       u16 idx = (u16)(sel + (s16)i);
       line[0] = (idx == (u16)sel) ? '>' : ' ';
       line[1] = ' ';
@@ -38,7 +38,7 @@ static void redraw(void) {
       render_line((u8)i, line);
     }
   }
-  if(g_alt_mode) {
+  if (g_alt_mode) {
     render_footer("-", "-", "scan", "alt");
   } else {
     render_footer("load", "-", "-", "alt");
@@ -48,25 +48,25 @@ static void redraw(void) {
 void redraw_modules(void) { redraw(); }
 
 static void handle_enc0(s32 data) {
-  if(list.count == 0) {
+  if (list.count == 0) {
     return;
   }
   sel += (data > 0) ? 1 : -1;
-  if(sel < 0) {
+  if (sel < 0) {
     sel = 0;
   }
-  if(sel >= (s16)list.count) {
+  if (sel >= (s16)list.count) {
     sel = (s16)list.count - 1;
   }
   render_mark_dirty();
 }
 
 static void handle_sw0(s32 data) {
-  if(data <= 0 || g_alt_mode || list.count == 0) {
+  if (data <= 0 || g_alt_mode || list.count == 0) {
     return;
   }
-  if(state_load_module(list.names[sel], 0)) {
-    if(g_new_setup_flow) {
+  if (state_load_module(list.names[sel], 0)) {
+    if (g_new_setup_flow) {
       g_new_setup_flow = 0;
       pages_set(ePageSlots);
       return;
@@ -78,7 +78,7 @@ static void handle_sw0(s32 data) {
 }
 
 static void handle_sw2(s32 data) {
-  if(data <= 0 || !g_alt_mode) {
+  if (data <= 0 || !g_alt_mode) {
     return;
   }
   do_scan();
@@ -93,21 +93,21 @@ static void handle_sw3(s32 data) {
 
 void select_modules(void) {
   static const InputEncBinding enc[4] = {
-    {eInputRoleListSelect, handle_enc0},
-    {eInputRolePageSelect, NULL},
-    {eInputRoleUnmapped, NULL},
-    {eInputRoleUnmapped, NULL},
+      {eInputRoleListSelect, handle_enc0},
+      {eInputRolePageSelect, NULL},
+      {eInputRoleUnmapped, NULL},
+      {eInputRoleUnmapped, NULL},
   };
   static const InputSwBinding sw[4] = {
-    {eInputSwRoleAction, handle_sw0},
-    {eInputSwRoleUnmapped, NULL},
-    {eInputSwRoleAction, handle_sw2},
-    {eInputSwRoleAlt, handle_sw3},
+      {eInputSwRoleAction, handle_sw0},
+      {eInputSwRoleUnmapped, NULL},
+      {eInputSwRoleAction, handle_sw2},
+      {eInputSwRoleAlt, handle_sw3},
   };
-  if(!scanned) {
+  if (!scanned) {
     do_scan();
   }
-  if(sel >= (s16)list.count) {
+  if (sel >= (s16)list.count) {
     sel = 0;
   }
   input_roles_bind(enc, sw);

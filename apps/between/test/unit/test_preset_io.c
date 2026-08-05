@@ -71,14 +71,16 @@ void test_roundtrip(void) {
   fp = fopen(path, "w");
   TEST_ASSERT_NOT_NULL(fp);
   host_lineio_init(&io, fp);
-  TEST_ASSERT_EQUAL_INT(ePresetIoOk, preset_io_write(&io, &meta, next_param, &src));
+  TEST_ASSERT_EQUAL_INT(ePresetIoOk,
+                        preset_io_write(&io, &meta, next_param, &src));
   fclose(fp);
 
   memset(&sink, 0, sizeof(sink));
   fp = fopen(path, "r");
   TEST_ASSERT_NOT_NULL(fp);
   host_lineio_init(&io, fp);
-  TEST_ASSERT_EQUAL_INT(ePresetIoOk, preset_io_read(&io, &meta2, on_param, &sink));
+  TEST_ASSERT_EQUAL_INT(ePresetIoOk,
+                        preset_io_read(&io, &meta2, on_param, &sink));
   fclose(fp);
 
   TEST_ASSERT_EQUAL_STRING("waves", meta2.module);
@@ -103,7 +105,8 @@ void test_bad_format(void) {
 
   fp = fopen(path, "r");
   host_lineio_init(&io, fp);
-  TEST_ASSERT_EQUAL_INT(ePresetIoBadFormat, preset_io_read(&io, &meta, NULL, NULL));
+  TEST_ASSERT_EQUAL_INT(ePresetIoBadFormat,
+                        preset_io_read(&io, &meta, NULL, NULL));
   fclose(fp);
 }
 
@@ -118,7 +121,8 @@ void test_missing_meta(void) {
 
   fp = fopen(path, "r");
   host_lineio_init(&io, fp);
-  TEST_ASSERT_EQUAL_INT(ePresetIoMissingMeta, preset_io_read(&io, &meta, NULL, NULL));
+  TEST_ASSERT_EQUAL_INT(ePresetIoMissingMeta,
+                        preset_io_read(&io, &meta, NULL, NULL));
   fclose(fp);
 }
 

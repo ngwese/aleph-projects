@@ -7,8 +7,8 @@
 #ifndef _OP_MATH_H_
 #define _OP_MATH_H_
 
-#include "types.h"
 #include "fix.h"
+#include "types.h"
 
 //! input/output data type
 
@@ -28,7 +28,7 @@ typedef s16 io_t;
 //! smallest incremnet
 #define OP_MIN_INC 1
 //! ranges
-#define OP_MIN_VAL 0  //??
+#define OP_MIN_VAL 0 //??
 #define OP_MAX_VAL 0x7fff
 
 #define op_from_int(x) (x)
@@ -47,6 +47,6 @@ extern io_t op_sadd(io_t a, io_t b);
 extern io_t op_ssub(io_t a, io_t b);
 
 //! print formatted string
-extern void op_print(char* buf, io_t x);
+extern void op_print(char *buf, io_t x);
 
 #endif

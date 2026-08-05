@@ -28,10 +28,10 @@ static void enc_timer_callback(void *obj) {
   u8 i;
   (void)obj;
 
-  for(i = 0; i < NUM_ENC; i++) {
+  for (i = 0; i < NUM_ENC; i++) {
     val = enc[i].val;
     valAbs = (val & 0x8000 ? (val ^ 0xffff) + 1 : val);
-    if(valAbs > enc[i].thresh) {
+    if (valAbs > enc[i].thresh) {
       e.type = enc[i].event;
       e.data = val;
       enc[i].val = 0;
@@ -70,14 +70,10 @@ void timers_set_midi(void) {
   timer_add(&midiPollTimer, 1, &midi_poll_timer_callback, NULL);
 }
 
-void timers_unset_midi(void) {
-  timer_remove(&midiPollTimer);
-}
+void timers_unset_midi(void) { timer_remove(&midiPollTimer); }
 
 void timers_set_adc(u32 period) {
   timer_add(&adcPollTimer, period, &adc_poll_timer_callback, NULL);
 }
 
-void timers_unset_adc(void) {
-  timer_remove(&adcPollTimer);
-}
+void timers_unset_adc(void) { timer_remove(&adcPollTimer); }

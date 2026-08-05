@@ -9,20 +9,20 @@
 #include "print_funcs.h"
 #include "sd_mmc_spi.h"
 
-#include "conf_board.h"
 #include "app.h"
 #include "bfin.h"
+#include "conf_board.h"
 
 #include "app_timers.h"
 #include "between_limits.h"
 #include "cv_in.h"
 #include "files_ensure.h"
 #include "handler.h"
+#include "meters.h"
 #include "pages.h"
 #include "render.h"
 #include "scaler_tables.h"
 #include "state.h"
-#include "meters.h"
 
 #ifndef VERSIONSTRING
 #define VERSIONSTRING "0.0.1"
@@ -44,12 +44,12 @@ u8 app_launch(eLaunchState state) {
   render_boot("BETWEEN " VERSIONSTRING);
 
   print_dbg("\r\n between; waiting for SD...");
-  while(!sd_mmc_spi_mem_check()) {
+  while (!sd_mmc_spi_mem_check()) {
     render_boot("waiting for SD...");
   }
 
   render_boot("data dirs...");
-  if(!files_ensure_data_dirs()) {
+  if (!files_ensure_data_dirs()) {
     render_log("dirs fail");
     print_dbg("\r\n between; failed to ensure data dirs");
   }
@@ -64,7 +64,7 @@ u8 app_launch(eLaunchState state) {
   assign_event_handlers();
 
   have_setup = state_read_last_setup(last, sizeof(last));
-  if(have_setup && state_load_setup(last)) {
+  if (have_setup && state_load_setup(last)) {
     render_boot("setup loaded");
     pages_enter_play();
   } else {

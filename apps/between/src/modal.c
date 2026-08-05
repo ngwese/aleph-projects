@@ -19,14 +19,14 @@ static s16 saved_enc_thresh[MODAL_ENC_N];
 void modal_open(const Modal *m) {
   u8 i;
 
-  if(m == NULL || m->redraw_fn == NULL || g_modal != NULL) {
+  if (m == NULL || m->redraw_fn == NULL || g_modal != NULL) {
     return;
   }
-  for(i = 0; i < MODAL_ENC_N; ++i) {
+  for (i = 0; i < MODAL_ENC_N; ++i) {
     saved_enc_fn[i] = app_event_handlers[kEventEncoder0 + i];
     saved_enc_thresh[i] = enc[i].thresh;
   }
-  for(i = 0; i < MODAL_SW_N; ++i) {
+  for (i = 0; i < MODAL_SW_N; ++i) {
     saved_sw_fn[i] = app_event_handlers[kEventSwitch0 + i];
   }
   g_modal = m;
@@ -36,15 +36,15 @@ void modal_open(const Modal *m) {
 void modal_close(void) {
   u8 i;
 
-  if(g_modal == NULL) {
+  if (g_modal == NULL) {
     return;
   }
   g_modal = NULL;
-  for(i = 0; i < MODAL_ENC_N; ++i) {
+  for (i = 0; i < MODAL_ENC_N; ++i) {
     app_event_handlers[kEventEncoder0 + i] = saved_enc_fn[i];
     set_enc_thresh(i, (u8)saved_enc_thresh[i]);
   }
-  for(i = 0; i < MODAL_SW_N; ++i) {
+  for (i = 0; i < MODAL_SW_N; ++i) {
     app_event_handlers[kEventSwitch0 + i] = saved_sw_fn[i];
   }
   render_mark_dirty();
@@ -53,11 +53,11 @@ void modal_close(void) {
 void modal_abort(void) {
   const Modal *m = g_modal;
 
-  if(m == NULL) {
+  if (m == NULL) {
     return;
   }
   g_modal = NULL;
-  if(m->abort_fn != NULL) {
+  if (m->abort_fn != NULL) {
     m->abort_fn();
   }
   render_mark_dirty();

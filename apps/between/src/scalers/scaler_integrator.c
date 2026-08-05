@@ -1,8 +1,8 @@
 // std
 #include <string.h>
 // asf
-#include "print_funcs.h"
 #include "param_scaler.h"
+#include "print_funcs.h"
 #include "scaler_integrator.h"
 
 // table size
@@ -11,24 +11,25 @@ static const u32 tabSize = 1024;
 // shift from io_t size to index
 static const u8 inRshift = 5;
 
-static const s32* tabVal;
-//static const s32* tabRep;
+static const s32 *tabVal;
+// static const s32* tabRep;
 
 static u8 initFlag = 0;
 
 //-------------------
 //--- static funcs
 
-
 //-----------------------
 //---- extern funcs
 
-s32 scaler_integrator_val(void* scaler, io_t in) {
-  if(in < 0) { in = 0; }
+s32 scaler_integrator_val(void *scaler, io_t in) {
+  if (in < 0) {
+    in = 0;
+  }
   return tabVal[(u16)((u16)in >> inRshift)];
 }
 
-void scaler_integrator_str(char* dst, void* scaler, io_t in) {
+void scaler_integrator_str(char *dst, void *scaler, io_t in) {
   //  u16 uin = (in < 0) ? 0 : ((u16)in >> inRshift) ;
   /* print_dbg("\r\n ingegrator_str() , input: 0x"); */
   /* print_dbg_hex(in); */
@@ -42,7 +43,9 @@ void scaler_integrator_str(char* dst, void* scaler, io_t in) {
   /// in this test, using known magic-number multiplier.
   /// should compute from descriptor in init.
   //  print_dbg(" , computed val : 0x");
-  if(in < 0) { in = 0; }
+  if (in < 0) {
+    in = 0;
+  }
   //  print_dbg_hex(fix16_mul((s32)in << 1, 0x400000) );
   print_fix16(dst, fix16_mul((s32)in << 1, 0x400000));
 
@@ -50,22 +53,21 @@ void scaler_integrator_str(char* dst, void* scaler, io_t in) {
 }
 
 // init function
-void scaler_integrator_init(void* scaler) {
-  ParamScaler* sc = (ParamScaler*)scaler;
-
+void scaler_integrator_init(void *scaler) {
+  ParamScaler *sc = (ParamScaler *)scaler;
 
   print_dbg("\r\n initializing integrator scaler for param, label: ");
   print_dbg(sc->desc->label);
 
   // check descriptor
-  if(sc->desc->type != eParamTypeIntegrator) {
+  if (sc->desc->type != eParamTypeIntegrator) {
     print_dbg("\r\n !!! warning: wrong param type for integrator scaler");
     print_dbg(" ; this param has type: ");
     print_dbg_ulong(sc->desc->type);
   }
 
   // init flag for static data
-  if(initFlag) {
+  if (initFlag) {
     ;
     ;
   } else {
@@ -79,7 +81,6 @@ void scaler_integrator_init(void* scaler) {
   sc->inMin = 0;
   sc->inMax = (tabSize - 1) << inRshift;
 
-
   //// FIXME: add tuning functions....
   /// here, that would mean adjusting for actual samplerate.
   /// table data assumes 48k.
@@ -87,9 +88,8 @@ void scaler_integrator_init(void* scaler) {
   //  sc->numTune = 0;
 }
 
-
 // get input given DSP value (use sparingly)
-io_t scaler_integrator_in(void* scaler, s32 x) {
+io_t scaler_integrator_in(void *scaler, s32 x) {
   // value table is monotonic, can binary search
   s32 jl = 0;
   s32 ju = tabSize - 1;
@@ -100,15 +100,17 @@ io_t scaler_integrator_in(void* scaler, s32 x) {
 
   // first, cheat and check zero.
   /// will often be true
-  if(x == 0) { return 0; }
-  if(x >= tabVal[tabSize - 1]) {
+  if (x == 0) {
+    return 0;
+  }
+  if (x >= tabVal[tabSize - 1]) {
     return (io_t)((tabSize - 1) << inRshift);
   }
 
-  while(ju - jl > 1) {
+  while (ju - jl > 1) {
     jm = (ju + jl) >> 1;
     // value table is always ascending
-    if(x >= tabVal[jm]) {
+    if (x >= tabVal[jm]) {
       jl = jm;
     } else {
       ju = jm;
@@ -119,10 +121,9 @@ io_t scaler_integrator_in(void* scaler, s32 x) {
   return (u16)jl << inRshift;
 }
 
-
 // increment input by pointer, return value
-s32 scaler_integrator_inc(void* scaler, io_t* pin, io_t inc) {
-  ParamScaler* sc = (ParamScaler*)scaler;
+s32 scaler_integrator_inc(void *scaler, io_t *pin, io_t inc) {
+  ParamScaler *sc = (ParamScaler *)scaler;
   // this speeds up the knob a great deal.
 #if 0
   s32 sinc;
@@ -140,8 +141,12 @@ s32 scaler_integrator_inc(void* scaler, io_t* pin, io_t inc) {
   // use saturation
   *pin = op_sadd(*pin, inc);
 
-  if(*pin < sc->inMin) { *pin = sc->inMin; }
-  if(*pin > sc->inMax) { *pin = sc->inMax; }
+  if (*pin < sc->inMin) {
+    *pin = sc->inMin;
+  }
+  if (*pin > sc->inMax) {
+    *pin = sc->inMax;
+  }
 
   // scale and return.
   // ignoring ranges in descriptor at least for now.

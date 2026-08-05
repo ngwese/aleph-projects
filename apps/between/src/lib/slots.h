@@ -59,7 +59,8 @@ void slots_snap_to(Slots *s, MorphSlot slot);
 /* recompute and send every non-excluded parameter for current morph point. */
 void slots_apply(Slots *s);
 
-/* send one parameter value to the module (play/MIDI path for excluded params). */
+/* send one parameter value to the module (play/MIDI path for excluded params).
+ */
 void slots_send_param(Slots *s, u16 index, ParamValue value);
 
 /* bake current effective values into a slot bank. */

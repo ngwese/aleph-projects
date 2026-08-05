@@ -1,10 +1,10 @@
 /*
   handler.c
-  
+
   aleph/app/spray
 
   app-specific UI event handlers.
-  
+
   app.c defines a global array of function pointers to handle system events.
   main.c defines its own handlers, most of which don't do anything.
   some events (e.g. ftdiConnect, monomePoll) call pretty low-level driver stuff,
@@ -18,14 +18,14 @@
 */
 
 // asf
-#include "gpio.h"
 #include "delay.h"
+#include "gpio.h"
 #include "print_funcs.h"
 
 // aleph-avr32
-#include "conf_board.h"
 #include "app.h"
 #include "bfin.h"
+#include "conf_board.h"
 #include "events.h"
 
 // custom app sources
@@ -33,18 +33,17 @@
 #include "handler.h"
 #include "render.h"
 
-
 //--------------------------------------
 //--- knob acceleration
 static s32 knob_accel(s32 inc) {
   // map accumulated controller movement to a bigger range
   // otherwise scrolling would take forever...
   s32 incAbs = inc < 0 ? inc * -1 : inc;
-  if(incAbs == 1) {
+  if (incAbs == 1) {
     //    print_dbg("\r\n >");
     return inc;
   }
-  if(incAbs < 6) {
+  if (incAbs < 6) {
     //    print_dbg("\r\n >>");
     return inc << 2;
   }
@@ -57,26 +56,29 @@ static s32 knob_accel(s32 inc) {
 
 // switch handlers
 static void handle_Switch0(s32 data) {
-  if(data > 0) ctl_toggle_mute(0);
+  if (data > 0)
+    ctl_toggle_mute(0);
 }
 
 static void handle_Switch1(s32 data) {
-  if(data > 0) ctl_toggle_mute(1);
+  if (data > 0)
+    ctl_toggle_mute(1);
 }
 
 static void handle_Switch2(s32 data) {
-  if(data > 0) ctl_toggle_mute(2);
+  if (data > 0)
+    ctl_toggle_mute(2);
 }
 
 static void handle_Switch3(s32 data) {
-  if(data > 0) ctl_toggle_mute(3);
+  if (data > 0)
+    ctl_toggle_mute(3);
 }
-
 
 // power switch handler
 // note: if this isn't assigned, the power switch won't work!
 static void handle_Switch5(s32 data) {
-  //TODO: ... save current settings...
+  // TODO: ... save current settings...
   delay_ms(100);
   // this pin is physically connected to the power system.
   // bringing it low causes immediate shutdown
@@ -84,21 +86,13 @@ static void handle_Switch5(s32 data) {
 }
 
 // encoder handlers
-static void handle_Encoder0(s32 data) {
-  ctl_inc_level(0, knob_accel(data));
-}
+static void handle_Encoder0(s32 data) { ctl_inc_level(0, knob_accel(data)); }
 
-static void handle_Encoder1(s32 data) {
-  ctl_inc_level(1, knob_accel(data));
-}
+static void handle_Encoder1(s32 data) { ctl_inc_level(1, knob_accel(data)); }
 
-static void handle_Encoder2(s32 data) {
-  ctl_inc_level(2, knob_accel(data));
-}
+static void handle_Encoder2(s32 data) { ctl_inc_level(2, knob_accel(data)); }
 
-static void handle_Encoder3(s32 data) {
-  ctl_inc_level(3, knob_accel(data));
-}
+static void handle_Encoder3(s32 data) { ctl_inc_level(3, knob_accel(data)); }
 
 // low-rate xrun counter poll (posted from xrunTimer)
 static void handle_AppCustom(s32 data) {
@@ -108,8 +102,8 @@ static void handle_AppCustom(s32 data) {
   (void)data;
   bfin_get_xruns(&cur);
   render_xruns(cur.windowRx, cur.windowTx, cur.clashRx, cur.clashTx);
-  if(cur.windowRx != last.windowRx || cur.windowTx != last.windowTx ||
-     cur.clashRx != last.clashRx || cur.clashTx != last.clashTx) {
+  if (cur.windowRx != last.windowRx || cur.windowTx != last.windowTx ||
+      cur.clashRx != last.clashRx || cur.clashTx != last.clashTx) {
     print_dbg("\r\n xrun winRx=");
     print_dbg_ulong(cur.windowRx);
     print_dbg(" winTx=");
@@ -121,7 +115,6 @@ static void handle_AppCustom(s32 data) {
     last = cur;
   }
 }
-
 
 //-------------------------------------
 //---- extern

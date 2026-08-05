@@ -1,8 +1,8 @@
 // std
 #include <string.h>
 // asf
-#include "print_funcs.h"
 #include "param_scaler.h"
+#include "print_funcs.h"
 #include "scaler_amp.h"
 
 // table size
@@ -11,8 +11,8 @@ static const u32 tabSize = 1024;
 // shift from io_t size to index
 static const u8 inRshift = 5;
 
-static const s32* tabVal;
-static const s32* tabRep;
+static const s32 *tabVal;
+static const s32 *tabRep;
 
 static u8 initFlag = 0;
 
@@ -22,20 +22,24 @@ static u8 initFlag = 0;
 //-----------------------
 //---- extern funcs
 
-s32 scaler_amp_val(void* scaler, io_t in) {
-  if(in < 0) { in = 0; }
+s32 scaler_amp_val(void *scaler, io_t in) {
+  if (in < 0) {
+    in = 0;
+  }
   return tabVal[(u16)((u16)in >> inRshift)];
 }
 
-void scaler_amp_str(char* dst, void* scaler, io_t in) {
+void scaler_amp_str(char *dst, void *scaler, io_t in) {
   //  u16 uin = BIT_ABS_16((s16)in) >> inRshift;
-  if(in < 0) { in = 0; }
+  if (in < 0) {
+    in = 0;
+  }
 
   in >>= inRshift;
 
-  if(in == 0) {
+  if (in == 0) {
     strcpy(dst, "   -inf");
-  } else if(in == (tabSize - 1)) {
+  } else if (in == (tabSize - 1)) {
     print_fix16(dst, 0);
   } else {
     print_fix16(dst, tabRep[(u16)in]);
@@ -43,19 +47,19 @@ void scaler_amp_str(char* dst, void* scaler, io_t in) {
 }
 
 // init function
-void scaler_amp_init(void* scaler) {
-  ParamScaler* sc = (ParamScaler*)scaler;
+void scaler_amp_init(void *scaler) {
+  ParamScaler *sc = (ParamScaler *)scaler;
   print_dbg("\r\n initializing amp scaler for param, label: ");
   print_dbg(sc->desc->label);
   // check descriptor
-  if(sc->desc->type != eParamTypeAmp) {
+  if (sc->desc->type != eParamTypeAmp) {
     print_dbg("\r\n !!! warning: wrong param type for amp scaler");
     print_dbg(" ; this param has type: ");
     print_dbg_ulong(sc->desc->type);
   }
 
   // init flag for static data
-  if(initFlag) {
+  if (initFlag) {
     ;
     ;
   } else {
@@ -73,7 +77,7 @@ void scaler_amp_init(void* scaler) {
 }
 
 // get input given DSP value (use sparingly)
-io_t scaler_amp_in(void* scaler, s32 x) {
+io_t scaler_amp_in(void *scaler, s32 x) {
   // value table is monotonic, can binary search
   s32 jl = 0;
   s32 ju = tabSize - 1;
@@ -81,15 +85,17 @@ io_t scaler_amp_in(void* scaler, s32 x) {
 
   // first, cheat and check zero.
   /// will often be true
-  if(x == 0) { return 0; }
-  if(x >= tabVal[tabSize - 1]) {
+  if (x == 0) {
+    return 0;
+  }
+  if (x >= tabVal[tabSize - 1]) {
     return (io_t)((tabSize - 1) << inRshift);
   }
 
-  while(ju - jl > 1) {
+  while (ju - jl > 1) {
     jm = (ju + jl) >> 1;
     // value table is always ascending
-    if(x >= tabVal[jm]) {
+    if (x >= tabVal[jm]) {
       jl = jm;
     } else {
       ju = jm;
@@ -99,10 +105,9 @@ io_t scaler_amp_in(void* scaler, s32 x) {
   return (u16)jl << inRshift;
 }
 
-
 // increment input by pointer, return value
-s32 scaler_amp_inc(void* scaler, io_t* pin, io_t inc) {
-  ParamScaler* sc = (ParamScaler*)scaler;
+s32 scaler_amp_inc(void *scaler, io_t *pin, io_t inc) {
+  ParamScaler *sc = (ParamScaler *)scaler;
   // this speeds up the knob a great deal.
 #if 0
   s32 sinc;
@@ -120,8 +125,12 @@ s32 scaler_amp_inc(void* scaler, io_t* pin, io_t inc) {
   // use saturation
   *pin = op_sadd(*pin, inc);
 
-  if(*pin < sc->inMin) { *pin = sc->inMin; }
-  if(*pin > sc->inMax) { *pin = sc->inMax; }
+  if (*pin < sc->inMin) {
+    *pin = sc->inMin;
+  }
+  if (*pin > sc->inMax) {
+    *pin = sc->inMax;
+  }
 
   // FIXME: no customization of output range.
   return scaler_amp_val(sc, *pin);

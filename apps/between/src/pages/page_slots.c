@@ -19,7 +19,7 @@ static s16 preset_sel;
 #define SLOT_COL_B_X 64
 
 static void slot_name(MorphSlot s, char *name) {
-  if(g_slots.occupied[s]) {
+  if (g_slots.occupied[s]) {
     strncpy(name, g_slots.stem[s], 14);
     name[14] = '\0';
   } else {
@@ -65,10 +65,10 @@ static void redraw_modal(void) {
   char line[24];
   render_clear();
   render_header("preset", 0);
-  if(presets.count == 0) {
+  if (presets.count == 0) {
     render_line(0, "(none)");
   } else {
-    for(i = 0; i < 5 && (u16)(preset_sel + (s16)i) < presets.count; ++i) {
+    for (i = 0; i < 5 && (u16)(preset_sel + (s16)i) < presets.count; ++i) {
       u16 idx = (u16)(preset_sel + (s16)i);
       line[0] = (idx == (u16)preset_sel) ? '>' : ' ';
       line[1] = ' ';
@@ -77,7 +77,7 @@ static void redraw_modal(void) {
       render_line((u8)i, line);
     }
   }
-  if(g_alt_mode) {
+  if (g_alt_mode) {
     render_footer("delete", "-", "-", "alt");
   } else {
     render_footer("load", "cancel", "new", "alt");
@@ -89,13 +89,13 @@ static void rescan_presets(void) {
   strcpy(path, BETWEEN_PRESET_PATH);
   strcat(path, g_module.name);
   dirlist_scan(&presets, path, ".txt");
-  if(preset_sel >= (s16)presets.count) {
+  if (preset_sel >= (s16)presets.count) {
     preset_sel = presets.count ? (s16)presets.count - 1 : 0;
   }
 }
 
 static void redraw(void) {
-  if(modal) {
+  if (modal) {
     redraw_modal();
   } else {
     redraw_grid();
@@ -105,7 +105,7 @@ static void redraw(void) {
 void redraw_slots(void) { redraw(); }
 
 static void open_modal(void) {
-  if(!g_module.loaded) {
+  if (!g_module.loaded) {
     pages_set(ePageModules);
     return;
   }
@@ -116,15 +116,15 @@ static void open_modal(void) {
 }
 
 static void handle_enc0(s32 data) {
-  if(modal) {
-    if(presets.count == 0) {
+  if (modal) {
+    if (presets.count == 0) {
       return;
     }
     preset_sel += (data > 0) ? 1 : -1;
-    if(preset_sel < 0) {
+    if (preset_sel < 0) {
       preset_sel = 0;
     }
-    if(preset_sel >= (s16)presets.count) {
+    if (preset_sel >= (s16)presets.count) {
       preset_sel = (s16)presets.count - 1;
     }
   } else {
@@ -134,29 +134,28 @@ static void handle_enc0(s32 data) {
 }
 
 static void handle_enc1(s32 data) {
-  if(!modal) {
+  if (!modal) {
     pages_next(data > 0 ? 1 : -1);
   }
 }
 
-
 static void handle_sw0(s32 data) {
-  if(data <= 0) {
+  if (data <= 0) {
     return;
   }
-  if(modal) {
-    if(g_alt_mode) {
-      if(presets.count == 0) {
+  if (modal) {
+    if (g_alt_mode) {
+      if (presets.count == 0) {
         return;
       }
-      if(preset_file_delete(g_module.name, presets.names[preset_sel])) {
+      if (preset_file_delete(g_module.name, presets.names[preset_sel])) {
         rescan_presets();
         render_log("deleted");
       } else {
         render_log("delete fail");
       }
-    } else if(presets.count > 0) {
-      if(state_load_preset(sel_slot, presets.names[preset_sel])) {
+    } else if (presets.count > 0) {
+      if (state_load_preset(sel_slot, presets.names[preset_sel])) {
         render_log("preset loaded");
       } else {
         render_log("load fail");
@@ -171,10 +170,10 @@ static void handle_sw0(s32 data) {
 }
 
 static void handle_sw1(s32 data) {
-  if(data <= 0) {
+  if (data <= 0) {
     return;
   }
-  if(modal) {
+  if (modal) {
     modal = 0;
   } else {
     pages_set((PageId)(ePageSlotA + sel_slot));
@@ -185,21 +184,21 @@ static void handle_sw1(s32 data) {
 
 static void handle_sw2(s32 data) {
   char stem[BETWEEN_NAME_LEN];
-  if(data <= 0) {
+  if (data <= 0) {
     return;
   }
-  if(modal) {
-    if(!state_unique_preset_stem(stem, sizeof(stem))) {
+  if (modal) {
+    if (!state_unique_preset_stem(stem, sizeof(stem))) {
       render_log("name fail");
       return;
     }
-    if(state_new_preset(sel_slot, stem)) {
+    if (state_new_preset(sel_slot, stem)) {
       render_log("preset new");
       modal = 0;
     } else {
       render_log("new fail");
     }
-  } else if(g_alt_mode) {
+  } else if (g_alt_mode) {
     slots_clear_all(&g_slots);
     state_setup_mark_dirty();
     state_apply();
@@ -220,16 +219,16 @@ static void handle_sw3(s32 data) {
 
 void select_slots(void) {
   static const InputEncBinding enc[4] = {
-    {eInputRoleListSelect, handle_enc0},
-    {eInputRolePageSelect, handle_enc1},
-    {eInputRoleUnmapped, NULL},
-    {eInputRoleUnmapped, NULL},
+      {eInputRoleListSelect, handle_enc0},
+      {eInputRolePageSelect, handle_enc1},
+      {eInputRoleUnmapped, NULL},
+      {eInputRoleUnmapped, NULL},
   };
   static const InputSwBinding sw[4] = {
-    {eInputSwRoleAction, handle_sw0},
-    {eInputSwRoleAction, handle_sw1},
-    {eInputSwRoleAction, handle_sw2},
-    {eInputSwRoleAlt, handle_sw3},
+      {eInputSwRoleAction, handle_sw0},
+      {eInputSwRoleAction, handle_sw1},
+      {eInputSwRoleAction, handle_sw2},
+      {eInputSwRoleAlt, handle_sw3},
   };
   modal = 0;
   input_roles_bind(enc, sw);

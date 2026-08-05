@@ -31,6 +31,6 @@ enum params {
   eParamNumParams
 };
 
-extern void fill_param_desc(ParamDesc* desc);
+extern void fill_param_desc(ParamDesc *desc);
 
-#endif  // header guard
+#endif // header guard

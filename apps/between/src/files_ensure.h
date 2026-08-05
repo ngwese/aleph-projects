@@ -7,7 +7,8 @@
  * returns 1 if all required dirs exist afterward. */
 u8 files_ensure_data_dirs(void);
 
-/* ensure /data/between/presets/<module>/ exists (after module load / before save). */
+/* ensure /data/between/presets/<module>/ exists (after module load / before
+ * save). */
 u8 files_ensure_preset_module_dir(const char *module);
 
 #endif

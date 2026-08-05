@@ -16,7 +16,7 @@ static u8 scanned;
 
 static void do_scan(void) {
   dirlist_scan(&list, BETWEEN_SETUP_PATH, ".txt");
-  if(sel >= (s16)list.count) {
+  if (sel >= (s16)list.count) {
     sel = list.count ? (s16)list.count - 1 : 0;
   }
   scanned = 1;
@@ -35,10 +35,10 @@ static void redraw(void) {
   render_clear();
   render_header_with_name("setup", g_setup_name[0] ? g_setup_name : NULL,
                           state_setup_dirty());
-  if(list.count == 0) {
+  if (list.count == 0) {
     render_line(0, "(none)");
   } else {
-    for(i = 0; i < 5 && (u16)(sel + (s16)i) < list.count; ++i) {
+    for (i = 0; i < 5 && (u16)(sel + (s16)i) < list.count; ++i) {
       u16 idx = (u16)(sel + (s16)i);
       line[0] = (idx == (u16)sel) ? '>' : ' ';
       line[1] = ' ';
@@ -47,7 +47,7 @@ static void redraw(void) {
       render_line((u8)i, line);
     }
   }
-  if(g_alt_mode) {
+  if (g_alt_mode) {
     render_footer("delete", "rename", "scan", "alt");
   } else {
     render_footer("load", "save", "new", "alt");
@@ -57,29 +57,29 @@ static void redraw(void) {
 void redraw_setups(void) { redraw(); }
 
 static void handle_enc0(s32 data) {
-  if(list.count == 0) {
+  if (list.count == 0) {
     return;
   }
   sel += (data > 0) ? 1 : -1;
-  if(sel < 0) {
+  if (sel < 0) {
     sel = 0;
   }
-  if(sel >= (s16)list.count) {
+  if (sel >= (s16)list.count) {
     sel = (s16)list.count - 1;
   }
   render_mark_dirty();
 }
 
 static void handle_sw0(s32 data) {
-  if(data <= 0 || list.count == 0) {
+  if (data <= 0 || list.count == 0) {
     return;
   }
-  if(g_alt_mode) {
+  if (g_alt_mode) {
     setup_file_delete(list.names[sel]);
     do_scan();
     render_log("deleted");
   } else {
-    if(state_load_setup(list.names[sel])) {
+    if (state_load_setup(list.names[sel])) {
       render_log("setup loaded");
     }
     /* on failure state_load_setup already logged a specific reason */
@@ -89,28 +89,28 @@ static void handle_sw0(s32 data) {
 
 static void handle_sw1(s32 data) {
   char stem[BETWEEN_NAME_LEN];
-  if(data <= 0) {
+  if (data <= 0) {
     return;
   }
-  if(g_alt_mode) {
-    if(g_setup_name[0] != '\0') {
+  if (g_alt_mode) {
+    if (g_setup_name[0] != '\0') {
       strncpy(stem, g_setup_name, BETWEEN_NAME_LEN - 1);
       stem[BETWEEN_NAME_LEN - 1] = '\0';
-    } else if(!state_unique_setup_stem(stem, sizeof(stem))) {
+    } else if (!state_unique_setup_stem(stem, sizeof(stem))) {
       render_log("name fail");
       return;
     }
     name_edit_open(eNameEditSetup, stem, on_rename_ok, NULL);
     return;
   }
-  if(g_setup_name[0] != '\0') {
+  if (g_setup_name[0] != '\0') {
     strncpy(stem, g_setup_name, BETWEEN_NAME_LEN - 1);
     stem[BETWEEN_NAME_LEN - 1] = '\0';
-  } else if(!state_unique_setup_stem(stem, sizeof(stem))) {
+  } else if (!state_unique_setup_stem(stem, sizeof(stem))) {
     render_log("name fail");
     return;
   }
-  if(state_save_setup(stem)) {
+  if (state_save_setup(stem)) {
     render_log("setup saved");
     do_scan();
   } else {
@@ -120,16 +120,16 @@ static void handle_sw1(s32 data) {
 }
 
 static void handle_sw2(s32 data) {
-  if(data <= 0) {
+  if (data <= 0) {
     return;
   }
-  if(g_alt_mode) {
+  if (g_alt_mode) {
     do_scan();
     render_log("scanned");
     render_mark_dirty();
     return;
   }
-  if(!state_unique_setup_stem(g_setup_name, sizeof(g_setup_name))) {
+  if (!state_unique_setup_stem(g_setup_name, sizeof(g_setup_name))) {
     render_log("name fail");
     render_mark_dirty();
     return;
@@ -146,21 +146,21 @@ static void handle_sw3(s32 data) {
 
 void select_setups(void) {
   static const InputEncBinding enc[4] = {
-    {eInputRoleListSelect, handle_enc0},
-    {eInputRolePageSelect, NULL},
-    {eInputRoleUnmapped, NULL},
-    {eInputRoleUnmapped, NULL},
+      {eInputRoleListSelect, handle_enc0},
+      {eInputRolePageSelect, NULL},
+      {eInputRoleUnmapped, NULL},
+      {eInputRoleUnmapped, NULL},
   };
   static const InputSwBinding sw[4] = {
-    {eInputSwRoleAction, handle_sw0},
-    {eInputSwRoleAction, handle_sw1},
-    {eInputSwRoleAction, handle_sw2},
-    {eInputSwRoleAlt, handle_sw3},
+      {eInputSwRoleAction, handle_sw0},
+      {eInputSwRoleAction, handle_sw1},
+      {eInputSwRoleAction, handle_sw2},
+      {eInputSwRoleAlt, handle_sw3},
   };
-  if(!scanned) {
+  if (!scanned) {
     do_scan();
   }
-  if(sel >= (s16)list.count) {
+  if (sel >= (s16)list.count) {
     sel = 0;
   }
   input_roles_bind(enc, sw);

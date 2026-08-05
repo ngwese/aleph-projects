@@ -1,8 +1,8 @@
 #ifndef BETWEEN_STATE_H
 #define BETWEEN_STATE_H
 
-#include "slots.h"
 #include "play_maps.h"
+#include "slots.h"
 #include "types.h"
 
 #include "between_limits.h"

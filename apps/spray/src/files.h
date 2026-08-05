@@ -8,6 +8,6 @@
 
 // Load a Blackfin LDR from /mod/ by filename (with or without .ldr).
 // Returns 1 on success, 0 on failure.
-extern u8 files_load_dsp(const char* name);
+extern u8 files_load_dsp(const char *name);
 
 #endif

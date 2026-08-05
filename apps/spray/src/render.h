@@ -7,7 +7,7 @@
 extern void render_init(void);
 
 // startup diagnostic line on OLED (immediate blit)
-extern void render_boot(const char* str);
+extern void render_boot(const char *str);
 
 // startup state
 extern void render_startup(void);
@@ -21,4 +21,4 @@ extern void render_xruns(u16 windowRx, u16 windowTx, u16 clashRx, u16 clashTx);
 // update
 extern void render_update(void);
 
-#endif  // h guard
+#endif // h guard

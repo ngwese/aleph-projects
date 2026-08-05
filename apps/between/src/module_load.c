@@ -22,7 +22,7 @@ ParamScaler g_scalers[BETWEEN_PARAMS_MAX];
 
 static void fake_fread(volatile u8 *dst, u32 len, void *fp) {
   u32 n = 0;
-  while(n < len) {
+  while (n < len) {
     *dst = (u8)fl_fgetc(fp);
     n++;
     dst++;
@@ -34,12 +34,12 @@ static void fake_fread(volatile u8 *dst, u32 len, void *fp) {
 static void strip_suffix(char *str, const char *ext) {
   u32 nlen;
   u32 elen;
-  if(str == NULL || ext == NULL) {
+  if (str == NULL || ext == NULL) {
     return;
   }
   nlen = (u32)strlen(str);
   elen = (u32)strlen(ext);
-  if(nlen > elen && strcmp(str + nlen - elen, ext) == 0) {
+  if (nlen > elen && strcmp(str + nlen - elen, ext) == 0) {
     str[nlen - elen] = '\0';
   }
 }
@@ -62,7 +62,7 @@ static const u8 *unpickle_32(const u8 *src, u32 *dst) {
 static const u8 *pdesc_unpickle(ParamDesc *pdesc, const u8 *src) {
   u32 val;
   u32 i;
-  for(i = 0; i < PARAM_LABEL_LEN; ++i) {
+  for (i = 0; i < PARAM_LABEL_LEN; ++i) {
     pdesc->label[i] = (char)(*src++);
   }
   src = unpickle_32(src, &val);
@@ -90,11 +90,11 @@ static void *open_mod_file(const char *name, const char *ext, u32 *size) {
   strncat(nameTry, ext, sizeof(nameTry) - strlen(nameTry) - 1);
 
   strcpy(path, BETWEEN_MOD_PATH);
-  if(!fl_opendir(path, &dirstat)) {
+  if (!fl_opendir(path, &dirstat)) {
     return NULL;
   }
-  while(fl_readdir(&dirstat, &dirent) == 0) {
-    if(fatfs_compare_names(dirent.filename, nameTry)) {
+  while (fl_readdir(&dirstat, &dirent) == 0) {
+    if (fatfs_compare_names(dirent.filename, nameTry)) {
       strncat(path, dirent.filename, sizeof(path) - strlen(path) - 1);
       fp = fl_fopen(path, "r");
       *size = dirent.size;
@@ -112,18 +112,18 @@ static u8 load_ldr(const char *name) {
 
   render_log("load ldr...");
   fp = open_mod_file(name, ".ldr", &size);
-  if(fp == NULL || size == 0) {
-    if(fp != NULL) {
+  if (fp == NULL || size == 0) {
+    if (fp != NULL) {
       fl_fclose(fp);
     }
     return 0;
   }
-  if(size > BFIN_LDR_MAX_BYTES) {
+  if (size > BFIN_LDR_MAX_BYTES) {
     fl_fclose(fp);
     return 0;
   }
   buf = alloc_mem(size);
-  if(buf == NULL) {
+  if (buf == NULL) {
     fl_fclose(fp);
     return 0;
   }
@@ -144,23 +144,23 @@ static u8 load_dsc(const char *name, u8 *out_truncated) {
   s32 nparams = -1;
   int i;
 
-  if(out_truncated != NULL) {
+  if (out_truncated != NULL) {
     *out_truncated = 0;
   }
   render_log("load dsc...");
   fp = open_mod_file(name, ".dsc", &size);
-  if(fp == NULL) {
+  if (fp == NULL) {
     return 0;
   }
 
   fake_fread(nbuf, 4, fp);
   unpickle_32(nbuf, (u32 *)&nparams);
-  if(nparams <= 0) {
+  if (nparams <= 0) {
     fl_fclose(fp);
     return 0;
   }
-  if(nparams > BETWEEN_PARAMS_MAX) {
-    if(out_truncated != NULL) {
+  if (nparams > BETWEEN_PARAMS_MAX) {
+    if (out_truncated != NULL) {
       *out_truncated = 1;
     }
     nparams = BETWEEN_PARAMS_MAX;
@@ -169,7 +169,7 @@ static u8 load_dsc(const char *name, u8 *out_truncated) {
   bfin_wait_ready();
 
   g_module.num_params = (u16)nparams;
-  for(i = 0; i < nparams; i++) {
+  for (i = 0; i < nparams; i++) {
     fake_fread(dbuf, PARAM_DESC_PICKLE_BYTES, fp);
     pdesc_unpickle(&desc, dbuf);
     g_module.desc[i] = desc;
@@ -184,7 +184,7 @@ u8 module_load(const char *name) {
   char stem[MODULE_NAME_LEN];
   u8 truncated = 0;
 
-  if(name == NULL) {
+  if (name == NULL) {
     return 0;
   }
   strncpy(stem, name, MODULE_NAME_LEN - 1);
@@ -196,7 +196,7 @@ u8 module_load(const char *name) {
 
   render_log("load module...");
   memset(&g_module, 0, sizeof(g_module));
-  if(!load_ldr(stem)) {
+  if (!load_ldr(stem)) {
     render_log("ldr fail");
     app_resume();
     return 0;
@@ -205,7 +205,7 @@ u8 module_load(const char *name) {
   bfin_wait_ready();
   delay_ms(10);
 
-  if(!load_dsc(stem, &truncated)) {
+  if (!load_dsc(stem, &truncated)) {
     render_log("dsc fail");
     app_resume();
     return 0;
@@ -217,7 +217,7 @@ u8 module_load(const char *name) {
   g_module.loaded = 1;
   bfin_enable();
   xruns_clear_local();
-  if(truncated) {
+  if (truncated) {
     render_log("too many params");
   } else {
     render_log("module ok");
@@ -228,11 +228,11 @@ u8 module_load(const char *name) {
 
 s16 module_find_param(const char *label) {
   u16 i;
-  if(label == NULL || !g_module.loaded) {
+  if (label == NULL || !g_module.loaded) {
     return -1;
   }
-  for(i = 0; i < g_module.num_params; ++i) {
-    if(strncmp(g_module.desc[i].label, label, PARAM_LABEL_LEN) == 0) {
+  for (i = 0; i < g_module.num_params; ++i) {
+    if (strncmp(g_module.desc[i].label, label, PARAM_LABEL_LEN) == 0) {
       return (s16)i;
     }
   }

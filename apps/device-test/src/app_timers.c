@@ -79,9 +79,7 @@ void timers_set_midi(void) {
   timer_add(&midiPollTimer, 1, &midi_poll_timer_callback, NULL);
 }
 
-void timers_unset_midi(void) {
-  timer_remove(&midiPollTimer);
-}
+void timers_unset_midi(void) { timer_remove(&midiPollTimer); }
 
 void timers_set_monome(void) {
   timer_add(&monomePollTimer, 1, &monome_poll_timer_callback, NULL);
@@ -97,6 +95,4 @@ void timers_set_hid(void) {
   timer_add(&hidPollTimer, 20, &hid_poll_timer_callback, NULL);
 }
 
-void timers_unset_hid(void) {
-  timer_remove(&hidPollTimer);
-}
+void timers_unset_hid(void) { timer_remove(&hidPollTimer); }
