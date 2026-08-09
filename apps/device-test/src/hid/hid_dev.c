@@ -271,6 +271,14 @@ void hid_dev_on_connect(s32 event_data) {
   apply_selected();
   maybe_set_boot_protocol(info.iface_index);
 
+  /*
+   * SET_PROTOCOL can race with the IN pipe already armed by uhi_hid_enable.
+   * Abort so the reception callback re-arms after the protocol switch.
+   */
+  if (slots[0].valid && slots[0].ep_addr != 0 && hid_uhc_dev != NULL) {
+    uhd_ep_abort(hid_usb_addr, slots[0].ep_addr);
+  }
+
   /* Drop the host's power-on "all bytes dirty" zero frame on iface 0. */
   hid_clear_frame_dirty();
 }

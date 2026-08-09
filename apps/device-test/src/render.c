@@ -363,7 +363,25 @@ static void draw_hid(void) {
   char line[22];
   const hid_dev_info_t *dev;
 
+  /*
+   * Known kinds: show the empty decode view immediately so a quiet mouse
+   * (no interrupt until movement) is not stuck on "waiting". Unknown kinds
+   * still wait for the first frame / hex fallback.
+   */
   if (!hid_have_report && hid_len == 0) {
+    if (hid_view_kind == HID_KIND_KEYBOARD) {
+      draw_hid_kbd();
+      return;
+    }
+    if (hid_view_kind == HID_KIND_MOUSE) {
+      draw_hid_mouse();
+      return;
+    }
+    if (hid_view_kind == HID_KIND_GAMEPAD) {
+      draw_hid_pad();
+      return;
+    }
+
     region_fill(&regMain, COL_BLACK);
     region_string(&regMain, "waiting", 0, 0, COL_WHITE, COL_BLACK, 0);
     dev = hid_dev_info();

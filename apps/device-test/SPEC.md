@@ -231,8 +231,9 @@ unless diagnosing setup itself.
 - log disconnect: `hid down`
 - start/stop HID poll timer (bees pattern).
 
-note: the host path ignores transfers shorter than 4 bytes, so pure 3-byte
-boot mice may not update until that vendored guard is revisited.
+note: the host path accepts interrupt transfers of at least 3 bytes (boot
+mouse minimum) and passes the actual transfer length into the frame buffer
+(not only `wMaxPacketSize`).
 
 ### msc
 
