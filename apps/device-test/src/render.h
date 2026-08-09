@@ -38,6 +38,9 @@ void render_set_focus(focus_class_t focus);
 focus_class_t render_get_focus(void);
 
 void render_midi_packet(u32 data);
+void render_hid_connect(void);
+void render_hid_disconnect(void);
+void render_hid_iface_changed(void);
 void render_hid_frame(void);
 
 void render_monome_connect(void);

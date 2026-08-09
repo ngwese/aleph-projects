@@ -12,6 +12,7 @@
 #include "monome.h"
 
 #include "app_timers.h"
+#include "hid_dev.h"
 #include "render.h"
 
 static void take_focus(focus_class_t f) {
@@ -114,16 +115,88 @@ static void handle_MonomeRingEnc(s32 data) {
   render_monome_ring_enc(n, delta);
 }
 
+static void append_hex16(char *buf, u8 buf_len, u16 v) {
+  static const char hex[] = "0123456789ABCDEF";
+  u8 n = (u8)strlen(buf);
+  if (n + 4 >= buf_len) {
+    return;
+  }
+  buf[n++] = hex[(v >> 12) & 0xf];
+  buf[n++] = hex[(v >> 8) & 0xf];
+  buf[n++] = hex[(v >> 4) & 0xf];
+  buf[n++] = hex[v & 0xf];
+  buf[n] = '\0';
+}
+
+static void handle_Switch0(s32 data) {
+  const hid_dev_info_t *dev;
+  char buf[22];
+
+  if (data == 0) {
+    return;
+  }
+  if (render_get_focus() != FOCUS_HID) {
+    return;
+  }
+  if (!hid_dev_next_iface()) {
+    return;
+  }
+
+  render_hid_iface_changed();
+  render_mark_dirty();
+
+  dev = hid_dev_info();
+  strncpy(buf, "hid iface ", sizeof(buf) - 1);
+  buf[sizeof(buf) - 1] = '\0';
+  append_u8(buf, sizeof(buf), (u8)(dev->iface_index + 1));
+  strncat(buf, "/", sizeof(buf) - strlen(buf) - 1);
+  append_u8(buf, sizeof(buf), dev->hid_iface_count);
+  render_log(buf);
+}
+
 static void handle_HidConnect(s32 data) {
-  (void)data;
+  const hid_dev_info_t *dev;
+  char buf[22];
+  const char *kind_str;
+
+  hid_dev_on_connect(data);
+  render_hid_connect();
   timers_set_hid();
   take_focus(FOCUS_HID);
-  render_log("hid up");
+
+  dev = hid_dev_info();
+  switch (dev->kind) {
+  case HID_KIND_KEYBOARD:
+    kind_str = "hid kbd ";
+    break;
+  case HID_KIND_MOUSE:
+    kind_str = "hid mouse ";
+    break;
+  case HID_KIND_GAMEPAD:
+    kind_str = "hid pad ";
+    break;
+  default:
+    kind_str = "hid up ";
+    break;
+  }
+  strncpy(buf, kind_str, sizeof(buf) - 1);
+  buf[sizeof(buf) - 1] = '\0';
+  if (dev->hid_iface_count > 1) {
+    strncat(buf, "x", sizeof(buf) - strlen(buf) - 1);
+    append_u8(buf, sizeof(buf), dev->hid_iface_count);
+    strncat(buf, " ", sizeof(buf) - strlen(buf) - 1);
+  }
+  append_hex16(buf, sizeof(buf), dev->vid);
+  strncat(buf, ":", sizeof(buf) - strlen(buf) - 1);
+  append_hex16(buf, sizeof(buf), dev->pid);
+  render_log(buf);
 }
 
 static void handle_HidDisconnect(s32 data) {
   (void)data;
   timers_unset_hid();
+  hid_dev_on_disconnect();
+  render_hid_disconnect();
   clear_focus_if(FOCUS_HID);
   render_log("hid down");
 }
@@ -151,6 +224,7 @@ static void handle_ScreenRefresh(s32 data) {
 }
 
 void assign_event_handlers(void) {
+  app_event_handlers[kEventSwitch0] = handle_Switch0;
   app_event_handlers[kEventSwitch5] = handle_Switch5;
   app_event_handlers[kEventMidiConnect] = handle_MidiConnect;
   app_event_handlers[kEventMidiDisconnect] = handle_MidiDisconnect;

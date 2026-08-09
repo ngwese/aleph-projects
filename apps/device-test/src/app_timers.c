@@ -2,7 +2,7 @@
 
 #include "encoders.h"
 #include "events.h"
-#include "hid.h"
+#include "hid_dev.h"
 #include "midi.h"
 #include "monome.h"
 #include "timers.h"
@@ -62,8 +62,7 @@ static void monome_refresh_timer_callback(void *obj) {
 
 static void hid_poll_timer_callback(void *obj) {
   (void)obj;
-  /* HID stack updates the frame + dirty flags; post so the main loop logs */
-  if (hid_get_frame_dirty()) {
+  if (hid_dev_frame_dirty()) {
     e.type = kEventHidPacket;
     e.data = 0;
     event_post(&e);

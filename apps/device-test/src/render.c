@@ -5,6 +5,11 @@
 #include "app.h"
 #include "font.h"
 #include "hid.h"
+#include "hid_dev.h"
+#include "hid_gamepad.h"
+#include "hid_kbd.h"
+#include "hid_mouse.h"
+#include "kbd.h"
 #include "monome.h"
 #include "region.h"
 #include "timers.h"
@@ -47,6 +52,12 @@ static u8 midi_head = 0;
 static char hid_lines[HID_LOG_LINES][22];
 static u8 hid_len = 0;
 static u8 hid_head = 0;
+
+static hid_kind_t hid_view_kind = HID_KIND_UNKNOWN;
+static u8 hid_have_report = 0;
+static hid_kbd_state_t hid_kbd;
+static hid_mouse_state_t hid_mouse;
+static hid_gamepad_state_t hid_pad;
 
 static u8 grid_press[GRID_MAP_SIZE][GRID_MAP_SIZE];
 static s16 arc_accum[ARC_MAX_ENCS];
@@ -129,7 +140,16 @@ static const char *focus_label(void) {
     }
     return "MONOME";
   case FOCUS_HID:
-    return "HID";
+    switch (hid_view_kind) {
+    case HID_KIND_KEYBOARD:
+      return "HID KBD";
+    case HID_KIND_MOUSE:
+      return "HID MOUSE";
+    case HID_KIND_GAMEPAD:
+      return "HID PAD";
+    default:
+      return "HID";
+    }
   case FOCUS_MSC:
     return "MSC";
   default:
@@ -180,7 +200,18 @@ static void draw_midi(void) {
   regMain.dirty = 1;
 }
 
-static void draw_hid(void) {
+static void append_hex_u8(char *dst, u8 dst_len, u8 v) {
+  static const char hex[] = "0123456789ABCDEF";
+  u8 n = (u8)strlen(dst);
+  if (n + 2 >= dst_len) {
+    return;
+  }
+  dst[n++] = hex[(v >> 4) & 0xf];
+  dst[n++] = hex[v & 0xf];
+  dst[n] = '\0';
+}
+
+static void draw_hid_hex_fallback(void) {
   u8 i;
   u8 idx;
   u8 start;
@@ -193,6 +224,191 @@ static void draw_hid(void) {
                   COL_BLACK, 0);
   }
   regMain.dirty = 1;
+}
+
+static void draw_hid_kbd(void) {
+  char line[22];
+  char num[8];
+  char ch[2];
+  u8 i;
+  u8 c;
+
+  region_fill(&regMain, COL_BLACK);
+
+  strncpy(line, "mod ", sizeof(line) - 1);
+  line[sizeof(line) - 1] = '\0';
+  if (hid_kbd.modifiers & CTRL) {
+    strncat(line, "C", sizeof(line) - strlen(line) - 1);
+  }
+  if (hid_kbd.modifiers & SHIFT) {
+    strncat(line, "S", sizeof(line) - strlen(line) - 1);
+  }
+  if (hid_kbd.modifiers & ALT) {
+    strncat(line, "A", sizeof(line) - strlen(line) - 1);
+  }
+  if (hid_kbd.modifiers & META) {
+    strncat(line, "M", sizeof(line) - strlen(line) - 1);
+  }
+  if ((hid_kbd.modifiers & (CTRL | SHIFT | ALT | META)) == 0) {
+    strncat(line, "-", sizeof(line) - strlen(line) - 1);
+  }
+  region_string(&regMain, line, 0, 0, COL_WHITE, COL_BLACK, 0);
+
+  strncpy(line, "keys ", sizeof(line) - 1);
+  line[sizeof(line) - 1] = '\0';
+  if (hid_kbd.key_count == 0) {
+    strncat(line, "-", sizeof(line) - strlen(line) - 1);
+  } else {
+    for (i = 0; i < hid_kbd.key_count && i < 6; i++) {
+      c = hid_to_ascii(hid_kbd.keys[i], hid_kbd.modifiers);
+      if (c >= 0x20 && c < 0x7f) {
+        ch[0] = (char)c;
+        ch[1] = '\0';
+        strncat(line, ch, sizeof(line) - strlen(line) - 1);
+      } else {
+        append_hex_u8(line, sizeof(line), hid_kbd.keys[i]);
+      }
+      if (i + 1 < hid_kbd.key_count && i + 1 < 6) {
+        strncat(line, " ", sizeof(line) - strlen(line) - 1);
+      }
+    }
+  }
+  region_string(&regMain, line, 0, 8, COL_WHITE, COL_BLACK, 0);
+
+  if (hid_have_report) {
+    strncpy(line, "n=", sizeof(line) - 1);
+    line[sizeof(line) - 1] = '\0';
+    format_u32_dec(num, sizeof(num), (s16)hid_kbd.key_count);
+    strncat(line, num, sizeof(line) - strlen(line) - 1);
+    region_string(&regMain, line, 0, 16, COL_WHITE, COL_BLACK, 0);
+  }
+
+  regMain.dirty = 1;
+}
+
+static void draw_hid_mouse(void) {
+  char line[22];
+  char num[8];
+
+  region_fill(&regMain, COL_BLACK);
+
+  strncpy(line, "btn ", sizeof(line) - 1);
+  line[sizeof(line) - 1] = '\0';
+  append_hex_u8(line, sizeof(line), hid_mouse.buttons);
+  region_string(&regMain, line, 0, 0, COL_WHITE, COL_BLACK, 0);
+
+  strncpy(line, "dx ", sizeof(line) - 1);
+  line[sizeof(line) - 1] = '\0';
+  format_u32_dec(num, sizeof(num), hid_mouse.dx);
+  strncat(line, num, sizeof(line) - strlen(line) - 1);
+  strncat(line, " dy ", sizeof(line) - strlen(line) - 1);
+  format_u32_dec(num, sizeof(num), hid_mouse.dy);
+  strncat(line, num, sizeof(line) - strlen(line) - 1);
+  region_string(&regMain, line, 0, 8, COL_WHITE, COL_BLACK, 0);
+
+  strncpy(line, "wh ", sizeof(line) - 1);
+  line[sizeof(line) - 1] = '\0';
+  format_u32_dec(num, sizeof(num), (s16)hid_mouse.wheel);
+  strncat(line, num, sizeof(line) - strlen(line) - 1);
+  region_string(&regMain, line, 0, 16, COL_WHITE, COL_BLACK, 0);
+
+  regMain.dirty = 1;
+}
+
+static void draw_hid_pad(void) {
+  char line[22];
+  char num[8];
+
+  region_fill(&regMain, COL_BLACK);
+
+  strncpy(line, "xy ", sizeof(line) - 1);
+  line[sizeof(line) - 1] = '\0';
+  format_u32_dec(num, sizeof(num), (s16)hid_pad.x);
+  strncat(line, num, sizeof(line) - strlen(line) - 1);
+  strncat(line, " ", sizeof(line) - strlen(line) - 1);
+  format_u32_dec(num, sizeof(num), (s16)hid_pad.y);
+  strncat(line, num, sizeof(line) - strlen(line) - 1);
+  region_string(&regMain, line, 0, 0, COL_WHITE, COL_BLACK, 0);
+
+  strncpy(line, "zr ", sizeof(line) - 1);
+  line[sizeof(line) - 1] = '\0';
+  format_u32_dec(num, sizeof(num), (s16)hid_pad.z);
+  strncat(line, num, sizeof(line) - strlen(line) - 1);
+  strncat(line, " ", sizeof(line) - strlen(line) - 1);
+  format_u32_dec(num, sizeof(num), (s16)hid_pad.rz);
+  strncat(line, num, sizeof(line) - strlen(line) - 1);
+  region_string(&regMain, line, 0, 8, COL_WHITE, COL_BLACK, 0);
+
+  strncpy(line, "hat ", sizeof(line) - 1);
+  line[sizeof(line) - 1] = '\0';
+  format_u32_dec(num, sizeof(num), (s16)hid_pad.hat);
+  strncat(line, num, sizeof(line) - strlen(line) - 1);
+  strncat(line, " rx ", sizeof(line) - strlen(line) - 1);
+  format_u32_dec(num, sizeof(num), (s16)hid_pad.rx);
+  strncat(line, num, sizeof(line) - strlen(line) - 1);
+  region_string(&regMain, line, 0, 16, COL_WHITE, COL_BLACK, 0);
+
+  strncpy(line, "btn ", sizeof(line) - 1);
+  line[sizeof(line) - 1] = '\0';
+  append_hex_u8(line, sizeof(line), (u8)((hid_pad.buttons >> 24) & 0xff));
+  append_hex_u8(line, sizeof(line), (u8)((hid_pad.buttons >> 16) & 0xff));
+  append_hex_u8(line, sizeof(line), (u8)((hid_pad.buttons >> 8) & 0xff));
+  append_hex_u8(line, sizeof(line), (u8)(hid_pad.buttons & 0xff));
+  region_string(&regMain, line, 0, 24, COL_WHITE, COL_BLACK, 0);
+
+  regMain.dirty = 1;
+}
+
+static void draw_hid(void) {
+  char line[22];
+  const hid_dev_info_t *dev;
+
+  if (!hid_have_report && hid_len == 0) {
+    region_fill(&regMain, COL_BLACK);
+    region_string(&regMain, "waiting", 0, 0, COL_WHITE, COL_BLACK, 0);
+    dev = hid_dev_info();
+    strncpy(line, "p", sizeof(line) - 1);
+    line[sizeof(line) - 1] = '\0';
+    {
+      char num[8];
+      format_u32_dec(num, sizeof(num), (s16)dev->iface_protocol);
+      strncat(line, num, sizeof(line) - strlen(line) - 1);
+      strncat(line, " s", sizeof(line) - strlen(line) - 1);
+      format_u32_dec(num, sizeof(num), (s16)dev->report_size);
+      strncat(line, num, sizeof(line) - strlen(line) - 1);
+      if (dev->hid_iface_count > 1) {
+        strncat(line, " ", sizeof(line) - strlen(line) - 1);
+        format_u32_dec(num, sizeof(num), (s16)(dev->iface_index + 1));
+        strncat(line, num, sizeof(line) - strlen(line) - 1);
+        strncat(line, "/", sizeof(line) - strlen(line) - 1);
+        format_u32_dec(num, sizeof(num), (s16)dev->hid_iface_count);
+        strncat(line, num, sizeof(line) - strlen(line) - 1);
+      }
+    }
+    region_string(&regMain, line, 0, 8, COL_WHITE, COL_BLACK, 0);
+    regMain.dirty = 1;
+    return;
+  }
+
+  if (!hid_have_report) {
+    draw_hid_hex_fallback();
+    return;
+  }
+
+  switch (hid_view_kind) {
+  case HID_KIND_KEYBOARD:
+    draw_hid_kbd();
+    break;
+  case HID_KIND_MOUSE:
+    draw_hid_mouse();
+    break;
+  case HID_KIND_GAMEPAD:
+    draw_hid_pad();
+    break;
+  default:
+    draw_hid_hex_fallback();
+    break;
+  }
 }
 
 static void draw_grid(void) {
@@ -296,6 +512,11 @@ void render_init(void) {
   }
   hid_len = 0;
   hid_head = 0;
+  hid_view_kind = HID_KIND_UNKNOWN;
+  hid_have_report = 0;
+  memset(&hid_kbd, 0, sizeof(hid_kbd));
+  memset(&hid_mouse, 0, sizeof(hid_mouse));
+  memset(&hid_pad, 0, sizeof(hid_pad));
   for (i = 0; i < HID_LOG_LINES; i++) {
     hid_lines[i][0] = '\0';
   }
@@ -440,21 +661,31 @@ static void hid_push_line(const char *line) {
   }
 }
 
-void render_hid_frame(void) {
+static void hid_push_hex_frame(const volatile u8 *frame, u8 size) {
   static const char hex[] = "0123456789ABCDEF";
-  const volatile u8 *frame = hid_get_frame_data();
-  u8 size = (u8)hid_get_frame_size();
   char line[22];
   u8 i;
   u8 n = 0;
   u8 li = 0;
+  u8 show;
 
-  if (size > HID_FRAME_MAX_BYTES) {
-    size = HID_FRAME_MAX_BYTES;
+  /* Host reports wMaxPacketSize; trim trailing zeros for display. */
+  show = size;
+  if (show > 14) {
+    show = 14;
+  }
+  while (show > 8) {
+    if (frame[show - 1] != 0) {
+      break;
+    }
+    show--;
   }
 
+  hid_len = 0;
+  hid_head = 0;
+
   line[0] = '\0';
-  for (i = 0; i < size; i++) {
+  for (i = 0; i < show; i++) {
     if (n >= HID_BYTES_PER_LINE) {
       hid_push_line(line);
       n = 0;
@@ -472,8 +703,88 @@ void render_hid_frame(void) {
   if (n > 0) {
     hid_push_line(line);
   }
+}
 
-  hid_clear_frame_dirty();
+void render_hid_connect(void) {
+  const hid_dev_info_t *dev = hid_dev_info();
+
+  hid_view_kind = dev->kind;
+  hid_have_report = 0;
+  hid_len = 0;
+  hid_head = 0;
+  memset(&hid_kbd, 0, sizeof(hid_kbd));
+  memset(&hid_mouse, 0, sizeof(hid_mouse));
+  memset(&hid_pad, 0, sizeof(hid_pad));
+  page_dirty = 1;
+}
+
+void render_hid_iface_changed(void) {
+  render_hid_connect();
+}
+
+void render_hid_disconnect(void) {
+  hid_view_kind = HID_KIND_UNKNOWN;
+  hid_have_report = 0;
+  hid_len = 0;
+  hid_head = 0;
+  page_dirty = 1;
+}
+
+void render_hid_frame(void) {
+  const volatile u8 *frame = hid_dev_frame_data();
+  u8 size = hid_dev_frame_size();
+  bool report_proto = hid_dev_report_protocol();
+  u8 local[HID_FRAME_MAX_BYTES];
+  u8 i;
+  bool ok = false;
+  hid_kind_t kind;
+
+  if (size > HID_FRAME_MAX_BYTES) {
+    size = HID_FRAME_MAX_BYTES;
+  }
+  for (i = 0; i < size; i++) {
+    local[i] = frame[i];
+  }
+
+  kind = hid_dev_kind_for_size(size);
+  if (kind == HID_KIND_UNKNOWN) {
+    kind = hid_dev_guess_kind(local, size);
+  }
+
+  switch (kind) {
+  case HID_KIND_KEYBOARD:
+    ok = hid_kbd_parse(local, size, report_proto, &hid_kbd);
+    break;
+  case HID_KIND_MOUSE:
+    ok = hid_mouse_parse(local, size, report_proto, &hid_mouse);
+    break;
+  case HID_KIND_GAMEPAD:
+    ok = hid_gamepad_parse(local, size, &hid_pad);
+    break;
+  default:
+    /* Last resort: try boot-compatible keyboard, then mouse. */
+    if (hid_kbd_parse(local, size, report_proto, &hid_kbd)) {
+      kind = HID_KIND_KEYBOARD;
+      ok = true;
+    } else if (hid_mouse_parse(local, size, report_proto, &hid_mouse)) {
+      kind = HID_KIND_MOUSE;
+      ok = true;
+    } else if (hid_gamepad_parse(local, size, &hid_pad)) {
+      kind = HID_KIND_GAMEPAD;
+      ok = true;
+    }
+    break;
+  }
+
+  if (ok) {
+    hid_view_kind = kind;
+    hid_have_report = 1;
+  } else {
+    hid_have_report = 0;
+    hid_push_hex_frame(frame, size);
+  }
+
+  hid_dev_clear_frame_dirty();
   if (focus == FOCUS_HID) {
     page_dirty = 1;
   }

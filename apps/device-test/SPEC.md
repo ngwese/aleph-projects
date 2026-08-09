@@ -17,7 +17,8 @@ multi-device focus.
 - keep the event loop and screen path responsive under device I/O; a
   header heartbeat proves the loop and draw path have not locked up.
 - provide per-class diagnostic views sufficient to debug aleph + libavr32
-  USB work (input parse vs LED TX vs connect identify).
+  USB work (input parse vs LED TX vs connect identify), including HID
+  keyboard / mouse / gamepad decode via local fixed-layout parsers.
 - stay a thin control app: no blackfin module load, no bees operator
   network, no scene/preset system.
 
@@ -25,12 +26,13 @@ non-goals (v1):
 
 - USB hub topology UI or simultaneous multi-pane content for several
   classes.
-- HID key decode / keymap display (raw hex dump only in v1).
 - MSC filesystem browse (header + log only; content TBD).
 - MIDI send, or bulk monome LED stress patterns beyond the held-key and
   arc-accumulator feedback described below.
 - footer-driven focus switching among connected classes (deferred with
   hub support).
+- HID report-descriptor parsing / NKRO / `SET_PROTOCOL` (fixed layouts
+  only in the device-test `src/hid/` parsers).
 
 ---
 
@@ -206,14 +208,31 @@ unless diagnosing setup itself.
 
 ### hid
 
-- header: `HID`
-- content: scrolling multi-line hex log of each HID report (same shape as
-  MIDI: newest at bottom, up to five lines). each report is dumped as hex
-  bytes; long frames wrap across successive lines (7 bytes per line).
+- header: `HID`, or `HID KBD` / `HID MOUSE` / `HID PAD` once the device
+  kind is known from the interface protocol and report size.
+- on connect, snapshot VID/PID and HID interface protocol/subclass from the
+  `uhc_device_t*` in `kEventHidConnect` (no vendored host changes). log e.g.
+  `hid kbd 046D:C31C`, `hid mouse ...`, `hid pad ...`, or `hid up ...`.
+  multi-interface devices include `xN` in the connect log.
+- SW0 (while HID focused): cycle to the next HID interface when more than one
+  is present. allocates/reads that interface's IN endpoint (iface 0 still uses
+  the stock `uhi_hid` pipe). log `hid iface a/b` and reset the decode view.
+- for keyboard and mouse interfaces, issue HID `SET_PROTOCOL(BOOT)` on select
+  so fixed boot layouts apply (devices default to report protocol after config).
+- content: per-kind decode via the local parser library under `src/hid/`:
+  - keyboard: modifiers + key usages (ASCII when possible)
+  - mouse: buttons, dx/dy, wheel
+  - gamepad: axes, hat, button mask (12–16 byte de facto layout)
+  - unknown: short hex dump fallback (same 5-line / 7 bytes-per-line shape)
+- keyboard and mouse parsers support boot and common report-mode layouts
+  (optional Report ID; mouse 8/16-bit deltas). no report-descriptor parse.
 - the HID stack updates a dirty frame without posting events; the app poll
-  timer posts `kEventHidPacket` when dirty so the main loop can log.
-- log: `hid up` / `hid down`
+  timer posts `kEventHidPacket` when dirty so the main loop can decode.
+- log disconnect: `hid down`
 - start/stop HID poll timer (bees pattern).
+
+note: the host path ignores transfers shorter than 4 bytes, so pure 3-byte
+boot mice may not update until that vendored guard is revisited.
 
 ### msc
 
@@ -290,7 +309,8 @@ cd apps/device-test && aleph-builder make
   from the accumulator; screen lines track accum; heartbeat keeps pulsing.
 - monome mis-detect (wrong grid vs arc / bad size) is visible in the
   header and/or diagnostic log.
-- HID reports appear as hex lines without freezing the heartbeat; MSC
-  connect updates header + log (content may remain `TBD`).
+- HID: kind-specific decode appears without freezing the heartbeat; unknown
+  devices fall back to hex; MSC connect updates header + log (content may
+  remain `TBD`).
 - diagnostic log shows connect/disconnect phrases and auto-clears after
   ~2 s.

@@ -15,11 +15,17 @@ CSRCS += \
 	src/app_device_test.c \
 	src/app_timers.c \
 	src/handler.c \
-	src/render.c
+	src/render.c \
+	src/hid/hid_kbd.c \
+	src/hid/hid_mouse.c \
+	src/hid/hid_gamepad.c \
+	src/hid/hid_dev.c \
+	vendor/libavr32/src/kbd.c
 
 ASSRCS +=
 
 INC_PATH += \
 	$(APP_DIR) \
 	$(APP_DIR)/src \
+	$(APP_DIR)/src/hid \
 	$(APP_DIR)/../../../avr32-toolchain-linux/include
