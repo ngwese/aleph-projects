@@ -809,26 +809,9 @@ void render_hid_frame(void) {
 }
 
 void render_monome_connect(void) {
-  u8 i;
-  u8 nenc;
-
   memset(grid_press, 0, sizeof(grid_press));
   memset(arc_accum, 0, sizeof(arc_accum));
   memset(arc_led_idx, 0, sizeof(arc_led_idx));
-
-  for (i = 0; i < MONOME_MAX_LED_BYTES; i++) {
-    monomeLedBuffer[i] = 0;
-  }
-  monomeFrameDirty = 0x0f;
-
-  if (monome_device() == eDeviceArc) {
-    nenc = monome_encs();
-    for (i = 0; i < nenc && i < ARC_MAX_ENCS; i++) {
-      monome_arc_led_set(i, 0, LED_ON);
-      arc_led_idx[i] = 0;
-    }
-  }
-
   page_dirty = 1;
 }
 
@@ -837,37 +820,26 @@ void render_monome_grid_key(u8 x, u8 y, u8 z) {
     return;
   }
   grid_press[y][x] = z ? 1 : 0;
-  monome_led_set(x, y, z ? LED_ON : 0);
   if (focus == FOCUS_MONOME) {
     page_dirty = 1;
   }
 }
 
 void render_monome_ring_enc(u8 n, s8 delta) {
-  u8 prev;
-
   if (n >= ARC_MAX_ENCS || n >= monome_encs()) {
     return;
   }
-  prev = arc_led_idx[n];
-  monome_arc_led_set(n, prev, 0);
   arc_accum[n] = (s16)(arc_accum[n] + delta);
   arc_led_idx[n] = (u8)(arc_accum[n] & 63);
-  monome_arc_led_set(n, arc_led_idx[n], LED_ON);
   if (focus == FOCUS_MONOME) {
     page_dirty = 1;
   }
 }
 
 void render_monome_clear(void) {
-  u8 i;
-
   memset(grid_press, 0, sizeof(grid_press));
   memset(arc_accum, 0, sizeof(arc_accum));
   memset(arc_led_idx, 0, sizeof(arc_led_idx));
-  for (i = 0; i < MONOME_MAX_LED_BYTES; i++) {
-    monomeLedBuffer[i] = 0;
-  }
   monomeFrameDirty = 0;
   page_dirty = 1;
 }

@@ -20,6 +20,8 @@ CSRCS += \
 	src/hid/hid_mouse.c \
 	src/hid/hid_gamepad.c \
 	src/hid/hid_dev.c \
+	src/cdc/cdc_dev.c \
+	src/cdc/cdc_probe.c \
 	vendor/libavr32/src/kbd.c
 
 ASSRCS +=
@@ -28,4 +30,5 @@ INC_PATH += \
 	$(APP_DIR) \
 	$(APP_DIR)/src \
 	$(APP_DIR)/src/hid \
+	$(APP_DIR)/src/cdc \
 	$(APP_DIR)/../../../avr32-toolchain-linux/include

@@ -46,9 +46,10 @@ static void midi_poll_timer_callback(void *obj) {
 
 static void monome_poll_timer_callback(void *obj) {
   (void)obj;
-  if (serial_read != NULL) {
-    serial_read();
-  }
+  /* TC IRQ context — do not call USB here. */
+  e.type = kEventMonomePoll;
+  e.data = 0;
+  event_post(&e);
 }
 
 static void monome_refresh_timer_callback(void *obj) {
@@ -81,8 +82,8 @@ void timers_set_midi(void) {
 void timers_unset_midi(void) { timer_remove(&midiPollTimer); }
 
 void timers_set_monome(void) {
-  timer_add(&monomePollTimer, 1, &monome_poll_timer_callback, NULL);
-  timer_add(&monomeRefreshTimer, 50, &monome_refresh_timer_callback, NULL);
+  /* poll only: refresh OUT still off until LED buffer writes are safe. */
+  timer_add(&monomePollTimer, 20, &monome_poll_timer_callback, NULL);
 }
 
 void timers_unset_monome(void) {

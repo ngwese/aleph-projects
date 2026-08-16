@@ -40,7 +40,7 @@ non-goals (v1):
 
 | term | meaning |
 |------|---------|
-| **class** | a USB device category the app understands: midi, monome, hid, msc. |
+| **class** | a USB device category the app understands: midi, monome, hid, msc, cdc (crow / unknown). |
 | **focus** | the single class that owns the right-hand header label and the content view. |
 | **heartbeat** | a 2×2 white square in the header that toggles every 0.5 s while the frame path runs. |
 | **diagnostic log** | one transient mid-grey line at the bottom of the content band (between-style). |
@@ -103,7 +103,7 @@ same semantics as between:
 - when inactive, leave that row to the page content.
 
 example phrases: `midi up`, `midi down`, `monome grid 16x8`, `monome arc 4`,
-`hid up`, `msc up`, `monome down`.
+`hid up`, `msc up`, `monome down`, `crow up`, `cdc unknown CAFE:0000`.
 
 ### footer
 
@@ -166,10 +166,19 @@ triggered by focus after `kEventMonomeConnect`.
   device LEDs update without blocking handlers (mark dirty / set buffer
   only in the event handler).
 
-framework note: `avr32` owns `kEventSerialConnect` → `monome_setup_mext()`
-and FTDI setup → `kEventMonomeConnect`. device-test consumes monome
-connect/key/enc/disconnect events and must not override framework setup
-unless diagnosing setup itself.
+CDC path: device-test owns `kEventSerialConnect` / `Disconnect` via
+`src/cdc/` (see [CDC.md](CDC.md)). classify by VID/PID then optional
+bounded mext probe; only then call `monome_setup_mext()`. crow is
+identify/log only in v1. FTDI monomes still use framework
+`kEventFtdiConnect` → `ftdi_setup`. monome UI consumes
+`kEventMonomeConnect` / key / enc / disconnect as before.
+
+### crow (CDC)
+
+- no focus view in v1.
+- on SerialConnect with crow VID/PID (`0483:5740`): log `crow up`.
+- on SerialDisconnect: log `crow down`.
+- do **not** call `monome_setup_mext()` for crow.
 
 #### grid (screen + device LEDs)
 
@@ -254,14 +263,17 @@ assign app handlers for:
 | class | events |
 |-------|--------|
 | midi | `kEventMidiConnect`, `kEventMidiDisconnect`, `kEventMidiPacket` |
+| cdc | `kEventSerialConnect`, `kEventSerialDisconnect` (device-test classify / dispatch) |
 | monome | `kEventMonomeConnect`, `kEventMonomeDisconnect`, `kEventMonomeGridKey`, `kEventMonomeRingEnc` |
 | hid | `kEventHidConnect`, `kEventHidDisconnect`, `kEventHidPacket` |
 | msc | `kEventMscConnect`, `kEventMscDisconnect` |
 | ui | `kEventScreenRefresh`; encoders/switches no-op or ignored |
 
-do **not** override framework `kEventSerialConnect` / `kEventFtdiConnect`
-setup handlers for normal operation. log monome identify outcome on
-`kEventMonomeConnect` (`monome_device()`, sizes, `monome_encs()`).
+override `kEventSerialConnect` / `kEventSerialDisconnect` for CDC
+classify (do **not** override `kEventFtdiConnect`). log monome identify
+outcome on `kEventMonomeConnect` (`monome_device()`, sizes,
+`monome_encs()`). SerialConnect also logs `cdc monome VID:PID`,
+`crow up`, or `cdc unknown VID:PID`.
 
 canonical event definitions live in `libavr32/src/events.h`. connect
 replay after `app_launch` is handled in `avr32/src/main.c` (same as other
@@ -284,6 +296,8 @@ apps/device-test/
   src/handler.c           event assignment + focus
   src/render.c / .h       regions, heartbeat, log, views
   src/app_timers.c / .h   screen, midi, monome, hid polls
+  src/cdc/               CDC classify / monome+crow dispatch
+  src/hid/                HID parsers + multi-iface device façade
 ```
 
 scaffold from mix/between. build:
@@ -308,6 +322,8 @@ cd apps/device-test && aleph-builder make
   pixels; release clears both; heartbeat keeps pulsing.
 - CDC or FTDI arc: turning a ring moves a single lit LED around that ring
   from the accumulator; screen lines track accum; heartbeat keeps pulsing.
+- crow CDC (`0483:5740`): log `crow up` / `crow down`; no monome UI.
+- unknown CDC: log `cdc unknown VID:PID`; no MonomeConnect.
 - monome mis-detect (wrong grid vs arc / bad size) is visible in the
   header and/or diagnostic log.
 - HID: kind-specific decode appears without freezing the heartbeat; unknown

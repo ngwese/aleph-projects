@@ -6,5 +6,6 @@ control application for validating aleph USB device handling without bees or
 DSP module load.
 
 see [HID.md](HID.md) for USB HID composite behaviour, endpoint polling, and
-multi-interface notes. see [HUB.md](HUB.md) for USB hub / multi-device host
-support planning.
+multi-interface notes. see [CDC.md](CDC.md) for USB CDC classify / monome /
+crow dispatch. see [HUB.md](HUB.md) for USB hub / multi-device host support
+planning.

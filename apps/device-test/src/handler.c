@@ -7,6 +7,8 @@
 #include "print_funcs.h"
 
 #include "app.h"
+#include "cdc.h"
+#include "cdc_dev.h"
 #include "conf_board.h"
 #include "events.h"
 #include "monome.h"
@@ -71,9 +73,11 @@ static void handle_MonomeConnect(s32 data) {
   char buf[22];
 
   (void)data;
-  timers_set_monome();
+  print_dbg("\r\nhandle_MonomeConnect");
   render_monome_connect();
+  print_dbg("\r\nafter render_monome_connect");
   take_focus(FOCUS_MONOME);
+  print_dbg("\r\nafter take_focus");
 
   if (monome_device() == eDeviceGrid) {
     strncpy(buf, "monome grid ", sizeof(buf) - 1);
@@ -90,14 +94,35 @@ static void handle_MonomeConnect(s32 data) {
   } else {
     render_log("monome up");
   }
+  print_dbg("\r\nafter render_log");
+  timers_set_monome();
+  print_dbg("\r\nmonome poll timer on");
+}
+
+static void handle_MonomePoll(s32 data) {
+  (void)data;
+  if (!cdc_connected()) {
+    return;
+  }
+  /* parse last IN on the event loop (not in the USB DMA callback). */
+  if (monome_read_serial != NULL && rx_bytes != NULL && rx_bytes() != 0 &&
+      rx_bytes() != 64) {
+    (*monome_read_serial)();
+  }
+  if (serial_read != NULL) {
+    serial_read();
+  }
 }
 
 static void handle_MonomeDisconnect(s32 data) {
   (void)data;
+  print_dbg("\r\nhandle_MonomeDisconnect");
   timers_unset_monome();
   render_monome_clear();
+  print_dbg("\r\nafter render_monome_clear");
   clear_focus_if(FOCUS_MONOME);
   render_log("monome down");
+  print_dbg("\r\nmonome down");
 }
 
 static void handle_MonomeGridKey(s32 data) {
@@ -126,6 +151,61 @@ static void append_hex16(char *buf, u8 buf_len, u16 v) {
   buf[n++] = hex[(v >> 4) & 0xf];
   buf[n++] = hex[v & 0xf];
   buf[n] = '\0';
+}
+
+static void handle_SerialConnect(s32 data) {
+  const cdc_dev_info_t *dev;
+  char buf[22];
+
+  print_dbg("\r\nhandle_SerialConnect");
+  cdc_dev_on_connect(data);
+
+  dev = cdc_dev_info();
+  switch (dev->kind) {
+  case CDC_KIND_CROW:
+    render_log("crow up");
+    break;
+  case CDC_KIND_MONOME:
+    strncpy(buf, "cdc monome ", sizeof(buf) - 1);
+    buf[sizeof(buf) - 1] = '\0';
+    append_hex16(buf, sizeof(buf), dev->vid);
+    strncat(buf, ":", sizeof(buf) - strlen(buf) - 1);
+    append_hex16(buf, sizeof(buf), dev->pid);
+    render_log(buf);
+    if (cdc_acm_open()) {
+      print_dbg("\r\ncdc acm open ok");
+      monome_mext_identify();
+    } else {
+      print_dbg("\r\ncdc acm open fail");
+      monome_mext_identify();
+    }
+    break;
+  default:
+    strncpy(buf, "cdc unknown ", sizeof(buf) - 1);
+    buf[sizeof(buf) - 1] = '\0';
+    append_hex16(buf, sizeof(buf), dev->vid);
+    strncat(buf, ":", sizeof(buf) - strlen(buf) - 1);
+    append_hex16(buf, sizeof(buf), dev->pid);
+    render_log(buf);
+    break;
+  }
+}
+
+static void handle_SerialDisconnect(s32 data) {
+  const cdc_dev_info_t *dev;
+  cdc_kind_t kind;
+
+  (void)data;
+  /* snapshot kind before cdc_dev_on_disconnect clears it */
+  dev = cdc_dev_info();
+  kind = dev->kind;
+  cdc_dev_on_disconnect();
+
+  if (kind == CDC_KIND_CROW) {
+    render_log("crow down");
+  } else if (kind != CDC_KIND_MONOME) {
+    render_log("cdc down");
+  }
 }
 
 static void handle_Switch0(s32 data) {
@@ -218,6 +298,14 @@ static void handle_MscDisconnect(s32 data) {
   render_log("msc down");
 }
 
+static void handle_MonomeRefresh(s32 data) {
+  (void)data;
+  if (!cdc_connected() || monome_refresh == NULL) {
+    return;
+  }
+  (*monome_refresh)();
+}
+
 static void handle_ScreenRefresh(s32 data) {
   (void)data;
   render_tick();
@@ -229,8 +317,12 @@ void assign_event_handlers(void) {
   app_event_handlers[kEventMidiConnect] = handle_MidiConnect;
   app_event_handlers[kEventMidiDisconnect] = handle_MidiDisconnect;
   app_event_handlers[kEventMidiPacket] = handle_MidiPacket;
+  app_event_handlers[kEventSerialConnect] = handle_SerialConnect;
+  app_event_handlers[kEventSerialDisconnect] = handle_SerialDisconnect;
   app_event_handlers[kEventMonomeConnect] = handle_MonomeConnect;
   app_event_handlers[kEventMonomeDisconnect] = handle_MonomeDisconnect;
+  app_event_handlers[kEventMonomePoll] = handle_MonomePoll;
+  app_event_handlers[kEventMonomeRefresh] = handle_MonomeRefresh;
   app_event_handlers[kEventMonomeGridKey] = handle_MonomeGridKey;
   app_event_handlers[kEventMonomeRingEnc] = handle_MonomeRingEnc;
   app_event_handlers[kEventHidConnect] = handle_HidConnect;
