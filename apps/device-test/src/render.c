@@ -10,6 +10,7 @@
 #include "hid_kbd.h"
 #include "hid_mouse.h"
 #include "kbd.h"
+#include "app_timers.h"
 #include "monome.h"
 #include "region.h"
 #include "timers.h"
@@ -26,6 +27,15 @@
 #define COL_GREY 0x5
 #define COL_WHITE 0xf
 #define LED_ON 0xf
+#define LED_SIDE 0x6
+#define ARC_LED_SHIFT 2
+#define GRID_WAVE_MS_MIN 10
+#define GRID_WAVE_MS_MAX 350
+#define GRID_WAVE_MS_DEFAULT 250
+#define GRID_ENC_SHIFT 2
+#define GRID_SAW_MAX 11
+#define GRID_MODE_KEYS 0
+#define GRID_MODE_WAVE 1
 
 static region regHead = {.w = HEAD_W, .h = HEAD_H, .x = 0, .y = 0};
 static region regMain = {.w = MAIN_W, .h = MAIN_H, .x = 0, .y = 8};
@@ -62,6 +72,12 @@ static hid_gamepad_state_t hid_pad;
 static u8 grid_press[GRID_MAP_SIZE][GRID_MAP_SIZE];
 static s16 arc_accum[ARC_MAX_ENCS];
 static u8 arc_led_idx[ARC_MAX_ENCS];
+static u8 grid_mode = GRID_MODE_KEYS;
+static s16 grid_wave_shift_acc = 0;
+static s16 grid_wave_mul_acc = (1 << GRID_ENC_SHIFT);
+static s16 grid_wave_rate_acc = GRID_WAVE_MS_DEFAULT;
+static u8 grid_wave_phase = 0;
+static u16 grid_wave_period_ms = GRID_WAVE_MS_DEFAULT;
 
 static void reg_put_px(region *r, u8 x, u8 y, u8 color) {
   if (x < r->w && y < r->h) {
@@ -429,20 +445,67 @@ static void draw_hid(void) {
   }
 }
 
+static u8 grid_saw_at(u8 i) {
+  return (u8)(((i & 7) * GRID_SAW_MAX) / 7);
+}
+
+static void grid_wave_apply(void) {
+  u8 x;
+  u8 y;
+  u8 cols;
+  u8 rows;
+  u8 z;
+  s16 t;
+
+  if (monome_device() != eDeviceGrid) {
+    return;
+  }
+  cols = monome_size_x();
+  rows = monome_size_y();
+  if (cols > GRID_MAP_SIZE) {
+    cols = GRID_MAP_SIZE;
+  }
+  if (rows > GRID_MAP_SIZE) {
+    rows = GRID_MAP_SIZE;
+  }
+  for (y = 0; y < rows; y++) {
+    for (x = 0; x < cols; x++) {
+      t = (s16)x + (grid_wave_shift_acc >> GRID_ENC_SHIFT) +
+          (s16)y * (grid_wave_mul_acc >> GRID_ENC_SHIFT) +
+          (s16)grid_wave_phase;
+      z = grid_saw_at((u8)(t & 15));
+      if (grid_press[y][x]) {
+        z = LED_ON;
+      }
+      monome_led_set(x, y, z);
+    }
+  }
+  page_dirty = 1;
+}
+
 static void draw_grid(void) {
   u8 x;
   u8 y;
+  u8 z;
   u8 px;
   u8 py;
 
   region_fill(&regMain, COL_BLACK);
   for (y = 0; y < GRID_MAP_SIZE; y++) {
     for (x = 0; x < GRID_MAP_SIZE; x++) {
-      px = x;
-      py = y;
-      if (grid_press[y][x]) {
-        reg_put_px(&regMain, px, py, COL_WHITE);
+      z = monomeLedBuffer[monome_xy_idx(x, y)];
+      if (z == 0) {
+        continue;
       }
+      if (z > COL_WHITE) {
+        z = COL_WHITE;
+      }
+      px = (u8)(x * 3);
+      py = (u8)(y * 3);
+      reg_put_px(&regMain, px, py, z);
+      reg_put_px(&regMain, (u8)(px + 1), py, z);
+      reg_put_px(&regMain, px, (u8)(py + 1), z);
+      reg_put_px(&regMain, (u8)(px + 1), (u8)(py + 1), z);
     }
   }
   regMain.dirty = 1;
@@ -808,6 +871,19 @@ void render_hid_frame(void) {
   }
 }
 
+static u8 arc_led_pos(s16 accum) {
+  return (u8)((accum >> ARC_LED_SHIFT) & 63);
+}
+
+static void arc_paint_triplet(u8 enc, u8 idx, u8 on) {
+  u8 side = on ? LED_SIDE : 0;
+  u8 cen = on ? LED_ON : 0;
+
+  monome_arc_led_set(enc, (u8)((idx + 63) & 63), side);
+  monome_arc_led_set(enc, idx, cen);
+  monome_arc_led_set(enc, (u8)((idx + 1) & 63), side);
+}
+
 void render_monome_connect(void) {
   u8 i;
   u8 nenc;
@@ -816,13 +892,21 @@ void render_monome_connect(void) {
   memset(arc_accum, 0, sizeof(arc_accum));
   memset(arc_led_idx, 0, sizeof(arc_led_idx));
 
+  grid_mode = GRID_MODE_KEYS;
+  grid_wave_shift_acc = 0;
+  grid_wave_mul_acc = (1 << GRID_ENC_SHIFT);
+  grid_wave_rate_acc = GRID_WAVE_MS_DEFAULT;
+  grid_wave_phase = 0;
+  grid_wave_period_ms = GRID_WAVE_MS_DEFAULT;
+  timers_unset_grid_wave();
+
   memset(monomeLedBuffer, 0, MONOME_MAX_LED_BYTES);
   monomeFrameDirty = 0;
 
   if (monome_device() == eDeviceArc) {
     nenc = monome_encs();
     for (i = 0; i < nenc && i < ARC_MAX_ENCS; i++) {
-      monome_arc_led_set(i, 0, LED_ON);
+      arc_paint_triplet(i, 0, 1);
       arc_led_idx[i] = 0;
     }
   } else {
@@ -837,7 +921,11 @@ void render_monome_grid_key(u8 x, u8 y, u8 z) {
     return;
   }
   grid_press[y][x] = z ? 1 : 0;
-  monome_led_set(x, y, z ? LED_ON : 0);
+  if (grid_mode == GRID_MODE_WAVE) {
+    grid_wave_apply();
+  } else {
+    monome_led_set(x, y, z ? LED_ON : 0);
+  }
   if (focus == FOCUS_MONOME) {
     page_dirty = 1;
   }
@@ -850,10 +938,12 @@ void render_monome_ring_enc(u8 n, s8 delta) {
     return;
   }
   prev = arc_led_idx[n];
-  monome_arc_led_set(n, prev, 0);
   arc_accum[n] = (s16)(arc_accum[n] + delta);
-  arc_led_idx[n] = (u8)(arc_accum[n] & 63);
-  monome_arc_led_set(n, arc_led_idx[n], LED_ON);
+  arc_led_idx[n] = arc_led_pos(arc_accum[n]);
+  if (arc_led_idx[n] != prev) {
+    arc_paint_triplet(n, prev, 0);
+    arc_paint_triplet(n, arc_led_idx[n], 1);
+  }
   if (focus == FOCUS_MONOME) {
     page_dirty = 1;
   }
@@ -863,6 +953,81 @@ void render_monome_clear(void) {
   memset(grid_press, 0, sizeof(grid_press));
   memset(arc_accum, 0, sizeof(arc_accum));
   memset(arc_led_idx, 0, sizeof(arc_led_idx));
+  grid_mode = GRID_MODE_KEYS;
+  grid_wave_shift_acc = 0;
+  grid_wave_mul_acc = (1 << GRID_ENC_SHIFT);
+  grid_wave_rate_acc = GRID_WAVE_MS_DEFAULT;
+  grid_wave_phase = 0;
+  grid_wave_period_ms = GRID_WAVE_MS_DEFAULT;
+  timers_unset_grid_wave();
   monomeFrameDirty = 0;
   page_dirty = 1;
+}
+
+static u16 grid_wave_period_from_acc(void) {
+  return (u16)grid_wave_rate_acc;
+}
+
+void render_monome_grid_mode(u8 mode) {
+  u8 x;
+  u8 y;
+
+  if (mode > 3) {
+    return;
+  }
+  grid_mode = mode;
+  if (mode == GRID_MODE_WAVE && monome_device() == eDeviceGrid) {
+    grid_wave_period_ms = grid_wave_period_from_acc();
+    timers_set_grid_wave(grid_wave_period_ms);
+    grid_wave_apply();
+    return;
+  }
+  timers_unset_grid_wave();
+  if (monome_device() == eDeviceGrid) {
+    for (y = 0; y < GRID_MAP_SIZE; y++) {
+      for (x = 0; x < GRID_MAP_SIZE; x++) {
+        monome_led_set(x, y, grid_press[y][x] ? LED_ON : 0);
+      }
+    }
+  }
+  page_dirty = 1;
+}
+
+void render_monome_enc(u8 n, s16 delta) {
+  u16 period;
+
+  if (render_get_focus() != FOCUS_MONOME ||
+      monome_device() != eDeviceGrid || grid_mode != GRID_MODE_WAVE) {
+    return;
+  }
+  if (n == 0) {
+    grid_wave_shift_acc = (s16)(grid_wave_shift_acc + delta);
+  } else if (n == 1) {
+    grid_wave_mul_acc = (s16)(grid_wave_mul_acc + delta);
+  } else if (n == 2) {
+    grid_wave_rate_acc = (s16)(grid_wave_rate_acc + delta);
+    if (grid_wave_rate_acc < GRID_WAVE_MS_MIN) {
+      grid_wave_rate_acc = GRID_WAVE_MS_MIN;
+    }
+    if (grid_wave_rate_acc > GRID_WAVE_MS_MAX) {
+      grid_wave_rate_acc = GRID_WAVE_MS_MAX;
+    }
+    period = grid_wave_period_from_acc();
+    if (period != grid_wave_period_ms) {
+      grid_wave_period_ms = period;
+      timers_set_grid_wave_period(period);
+    }
+    return;
+  } else {
+    return;
+  }
+  grid_wave_apply();
+}
+
+void render_monome_grid_wave_tick(void) {
+  if (grid_mode != GRID_MODE_WAVE || monome_device() != eDeviceGrid) {
+    return;
+  }
+  grid_wave_phase = (u8)((grid_wave_phase + 1) & 15);
+  grid_wave_apply();
 }

@@ -47,5 +47,8 @@ void render_monome_connect(void);
 void render_monome_grid_key(u8 x, u8 y, u8 z);
 void render_monome_ring_enc(u8 n, s8 delta);
 void render_monome_clear(void);
+void render_monome_grid_mode(u8 mode);
+void render_monome_enc(u8 n, s16 delta);
+void render_monome_grid_wave_tick(void);
 
 #endif

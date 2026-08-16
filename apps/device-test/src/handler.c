@@ -208,10 +208,34 @@ static void handle_SerialDisconnect(s32 data) {
   }
 }
 
+static void handle_grid_mode_switch(u8 mode, s32 data) {
+  if (data == 0) {
+    return;
+  }
+  if (render_get_focus() != FOCUS_MONOME ||
+      monome_device() != eDeviceGrid) {
+    return;
+  }
+  render_monome_grid_mode(mode);
+  if (mode == 0) {
+    render_log("grid keys");
+  } else if (mode == 1) {
+    render_log("grid wave");
+  } else if (mode == 2) {
+    render_log("grid mode 2");
+  } else {
+    render_log("grid mode 3");
+  }
+}
+
 static void handle_Switch0(s32 data) {
   const hid_dev_info_t *dev;
   char buf[22];
 
+  if (render_get_focus() == FOCUS_MONOME) {
+    handle_grid_mode_switch(0, data);
+    return;
+  }
   if (data == 0) {
     return;
   }
@@ -232,6 +256,23 @@ static void handle_Switch0(s32 data) {
   strncat(buf, "/", sizeof(buf) - strlen(buf) - 1);
   append_u8(buf, sizeof(buf), dev->hid_iface_count);
   render_log(buf);
+}
+
+static void handle_Switch1(s32 data) { handle_grid_mode_switch(1, data); }
+
+static void handle_Switch2(s32 data) { handle_grid_mode_switch(2, data); }
+
+static void handle_Switch3(s32 data) { handle_grid_mode_switch(3, data); }
+
+static void handle_Encoder0(s32 data) { render_monome_enc(0, (s16)data); }
+
+static void handle_Encoder1(s32 data) { render_monome_enc(1, (s16)data); }
+
+static void handle_Encoder2(s32 data) { render_monome_enc(2, (s16)data); }
+
+static void handle_AppCustom(s32 data) {
+  (void)data;
+  render_monome_grid_wave_tick();
 }
 
 static void handle_HidConnect(s32 data) {
@@ -313,7 +354,14 @@ static void handle_ScreenRefresh(s32 data) {
 
 void assign_event_handlers(void) {
   app_event_handlers[kEventSwitch0] = handle_Switch0;
+  app_event_handlers[kEventSwitch1] = handle_Switch1;
+  app_event_handlers[kEventSwitch2] = handle_Switch2;
+  app_event_handlers[kEventSwitch3] = handle_Switch3;
   app_event_handlers[kEventSwitch5] = handle_Switch5;
+  app_event_handlers[kEventEncoder0] = handle_Encoder0;
+  app_event_handlers[kEventEncoder1] = handle_Encoder1;
+  app_event_handlers[kEventEncoder2] = handle_Encoder2;
+  app_event_handlers[kEventAppCustom] = handle_AppCustom;
   app_event_handlers[kEventMidiConnect] = handle_MidiConnect;
   app_event_handlers[kEventMidiDisconnect] = handle_MidiDisconnect;
   app_event_handlers[kEventMidiPacket] = handle_MidiPacket;

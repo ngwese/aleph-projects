@@ -14,4 +14,8 @@ void timers_unset_monome(void);
 void timers_set_hid(void);
 void timers_unset_hid(void);
 
+void timers_set_grid_wave(u16 ms);
+void timers_set_grid_wave_period(u16 ms);
+void timers_unset_grid_wave(void);
+
 #endif

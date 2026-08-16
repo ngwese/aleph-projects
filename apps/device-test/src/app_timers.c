@@ -14,6 +14,7 @@ static softTimer_t midiPollTimer = {.next = NULL, .prev = NULL};
 static softTimer_t monomePollTimer = {.next = NULL, .prev = NULL};
 static softTimer_t monomeRefreshTimer = {.next = NULL, .prev = NULL};
 static softTimer_t hidPollTimer = {.next = NULL, .prev = NULL};
+static softTimer_t gridWaveTimer = {.next = NULL, .prev = NULL};
 
 static void screen_timer_callback(void *obj) {
   (void)obj;
@@ -61,6 +62,13 @@ static void monome_refresh_timer_callback(void *obj) {
   }
 }
 
+static void grid_wave_timer_callback(void *obj) {
+  (void)obj;
+  e.type = kEventAppCustom;
+  e.data = 0;
+  event_post(&e);
+}
+
 static void hid_poll_timer_callback(void *obj) {
   (void)obj;
   if (hid_dev_frame_dirty()) {
@@ -89,6 +97,7 @@ void timers_set_monome(void) {
 void timers_unset_monome(void) {
   timer_remove(&monomePollTimer);
   timer_remove(&monomeRefreshTimer);
+  timers_unset_grid_wave();
 }
 
 void timers_set_hid(void) {
@@ -96,3 +105,26 @@ void timers_set_hid(void) {
 }
 
 void timers_unset_hid(void) { timer_remove(&hidPollTimer); }
+
+void timers_set_grid_wave(u16 ms) {
+  if (ms < 10) {
+    ms = 10;
+  }
+  if (ms > 350) {
+    ms = 350;
+  }
+  timer_remove(&gridWaveTimer);
+  timer_add(&gridWaveTimer, ms, &grid_wave_timer_callback, NULL);
+}
+
+void timers_set_grid_wave_period(u16 ms) {
+  if (ms < 10) {
+    ms = 10;
+  }
+  if (ms > 350) {
+    ms = 350;
+  }
+  timer_set(&gridWaveTimer, ms);
+}
+
+void timers_unset_grid_wave(void) { timer_remove(&gridWaveTimer); }
