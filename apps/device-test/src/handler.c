@@ -96,7 +96,7 @@ static void handle_MonomeConnect(s32 data) {
   }
   print_dbg("\r\nafter render_log");
   timers_set_monome();
-  print_dbg("\r\nmonome poll timer on");
+  print_dbg("\r\nmonome poll+refresh timers on");
 }
 
 static void handle_MonomePoll(s32 data) {

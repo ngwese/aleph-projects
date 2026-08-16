@@ -82,8 +82,8 @@ void timers_set_midi(void) {
 void timers_unset_midi(void) { timer_remove(&midiPollTimer); }
 
 void timers_set_monome(void) {
-  /* poll only: refresh OUT still off until LED buffer writes are safe. */
-  timer_add(&monomePollTimer, 20, &monome_poll_timer_callback, NULL);
+  timer_add(&monomePollTimer, 5, &monome_poll_timer_callback, NULL);
+  timer_add(&monomeRefreshTimer, 12, &monome_refresh_timer_callback, NULL);
 }
 
 void timers_unset_monome(void) {
